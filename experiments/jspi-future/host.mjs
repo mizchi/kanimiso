@@ -29,7 +29,7 @@ export async function instantiate(
     if (!dead) {
       dead = true;
       fatal = error;
-      gates.retire(error);
+      gates.retire_(error);
       jobs.clear();
       completed.clear();
       for (const name in functions) delete functions[name];
@@ -51,14 +51,14 @@ export async function instantiate(
       throw Error("JF" + code);
     }),
     open: sync(() => {
-      const id = gates.open();
+      const id = gates.open_();
       completed.set(id, []);
       return id;
     }),
-    signal: sync((id) => gates.signal(id)),
+    signal: sync((id) => gates.signal_(id)),
     close: sync((id) => {
       completed.delete(id);
-      gates.close(id);
+      gates.close_(id);
     }),
     drain: sync((id) => {
       const queue = completed.get(id);
@@ -68,7 +68,7 @@ export async function instantiate(
     park: new WebAssembly.Suspending(async (id) => {
       alive();
       try {
-        await gates.park(id);
+        await gates.park_(id);
         alive();
       } catch (e) {
         throw poison(e);
@@ -77,15 +77,15 @@ export async function instantiate(
     begin: sync((gate, a, b) => {
       if (next === 0x7fffffff) throw Error("job IDs exhausted");
       const id = ++next,
-        job = { gate, ready: false, value: 0 };
+        job = { gate_: gate, ready_: false, value_: 0 };
       jobs.set(id, job);
       Promise.resolve(add(a, b)).then(
         (value) => {
           if (dead || jobs.get(id) !== job) return;
-          job.value = value;
-          job.ready = true;
+          job.value_ = value;
+          job.ready_ = true;
           completed.get(gate).push(id);
-          gates.signal(gate);
+          gates.signal_(gate);
         },
         (error) => {
           if (!dead && jobs.get(id) === job) poison(error);
@@ -97,13 +97,13 @@ export async function instantiate(
       polls++;
       const job = jobs.get(id);
       if (!job) throw Error("unknown job");
-      return +job.ready;
+      return +job.ready_;
     }),
     take: sync((id) => {
       const job = jobs.get(id);
-      if (!job?.ready) throw Error("job pending");
+      if (!job?.ready_) throw Error("job pending");
       jobs.delete(id);
-      return job.value;
+      return job.value_;
     }),
     cancel: sync((id) => jobs.delete(id)),
     dropped: sync(() => {
@@ -149,7 +149,7 @@ export async function instantiate(
     call,
     promise: call,
     stats: () => ({
-      ...gates.stats(),
+      ...gates.stats_(),
       jobs: jobs.size,
       completion_queues: completed.size,
       queued,

@@ -59,6 +59,17 @@ host reject / Wasm trap / JF1 / JF2 は instance を閉じ、Rust Drop / unwind 
 
 最初の Arc + Vec 版は no_std の Wasm 3,291 Bのうち allocator 関数群が1,288 Bを占めていた。Future 本体を stack に置くだけでは、Arc / Vec 由来の allocator が残る。今回の固定版はその動的確保を除去する一方、登録上限という制約が加わる。比較 host には JF1/JF2 用 import を追加したため、前回の JS 2,848 Bから2,881 Bになっている。
 
-最新の測定では bounded は Wasm 1,842 B + JS 2,881 B = **4,723 B**、std/no_std の Wasm バイト列も一致した。同じ host を使う Arc + Vec 版は no_std 6,172 B / std 10,409 B。前回の host 追加前の no_std 6,139 Bに対しても約23%小さい。二段 await の bounded 中央値は約1.27 μs/taskで、今回の既存 Future 版と近い。汎用的な速度優位は主張しない。
+最新の測定では bounded は Wasm 1,842 B + JS 2,700 B = **4,542 B**。std/no_std の Wasm バイト列も一致した。同じ host を使う Arc + Vec 版は no_std 5,991 B / std 10,228 B。時間の比較は[測定表](../../docs/jspi-future-measurements.md)を参照。汎用的な速度優位は主張しない。
 
-採用判断は保留する。固定表の制約と同一 instance の直列実行を既存版と同じ契約とは扱わない。現時点の残りは JS host が2,881 Bを占める。
+採用判断は保留する。固定表の制約と同一 instance の直列実行を既存版と同じ契約とは扱わない。現時点の残りは JS host が2,700 Bを占める。
+
+
+## JS の private property mangling
+
+`bundle.mjs` は minify に加え、末尾 `_` を内部 property の目印として esbuild で短縮する。job の `ready_` / `value_`、gate の `notified_` / `waiter_`、waiter の `resolve_` / `reject_`、Gates の補助メソッドが対象。Gates は bundle 内部の補助クラスで、短縮されたメソッド名を外部から参照する契約はない。host と Gates は必ず同じ bundle で処理し、別 bundle 間で短縮名を共有しない。
+
+WIT の `ready` / `park` / `cancel` などの import 名、`bindings.add`、公開 `call` / `promise` / `stats` と全診断キー、`Promise.resolve` / `then` / `catch` などの標準 API は対象外。外部とやりとりする property にこの private 目印を付けない。
+
+private 命名前の minify JS は2,881 B。命名後の同じソースは minify のみ2,919 B、property mangling 有効2,700 B（219 B削減）。従来の配信 JS に対する削減は181 B、約6.3%。これは property 名だけの変更で、object の割り当て件数やレコードの構造、Wasm は変えていない。
+
+計測スクリプトは `host.mjs` と `host-unmangled.mjs` を出力し、**同じ Wasm バイト列**に対して双方で共通ケースと全 probes、公開 API / 診断キーを検証する。サイズは各構成で配信する一方の JS だけを加算する。速度は両 host を各4,096 task 暖機後、各4,096 task の11サンプルを交互順で測る。暖機回数・測定順はテストでも確認する。各ファイルの SHA-256 と短縮名の対応表も JSON に保存する。local workerd でも実際に生成した短縮済み host を読む。

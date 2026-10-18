@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-10-18T15:22:31.173Z",
+  "created_at": "2026-10-18T15:46:09.036Z",
   "adopted": false,
   "engine": "Node v24.21.0 / V8 13.6.233.17-node.53",
   "machine": {
@@ -20,9 +20,10 @@
     "binaryen": 133,
     "optimization": "Oz / flatten / rereloop / Oz / converge",
     "cold": "empty target, cached dependencies, offline; 3 warm builds",
-    "timing": "4096 warmup, 11 samples × 4096 tasks, 512 JS submissions; bounded/adapter/direct serialize guest entry",
+    "timing": "4096 warmup per host, 11 samples × 4096 tasks, 512 JS submissions; mangled/unmangled hosts alternate sample order after both warmups; bounded/adapter/direct serialize guest entry",
     "contract": "common signed i32 arithmetic and two host requests only; no claim of identical cancellation/fatal/concurrency contracts",
-    "deployment": "core/app.wasm + host.mjs only; probe exports excluded from size comparison"
+    "deployment": "core/app.wasm + host.mjs only; probe exports excluded from size comparison",
+    "property_mangling": "bounded/adapter: trailing-underscore private properties only, one bundle; same Wasm and complete tests also run with host-unmangled.mjs; public API, WIT and builtins preserved"
   },
   "bounded_std_matches_no_std": true,
   "profiles": [
@@ -30,13 +31,13 @@
       "id": "bounded-no_std",
       "backend": "bounded",
       "mode": "no_std",
-      "cold_build_ms": 7603.9595420000005,
+      "cold_build_ms": 6719.601208,
       "warm_build_ms": [
-        79.98974999999973,
-        50.64545799999996,
-        50.54512499999964
+        42.27924999999959,
+        41.40900000000056,
+        40.834084000000075
       ],
-      "transform_ms": 480.0457919999999,
+      "transform_ms": 322.2670420000004,
       "files": [
         {
           "file": "core/app.wasm",
@@ -48,17 +49,114 @@
         },
         {
           "file": "host.mjs",
-          "bytes": 2881,
-          "raw": 2881,
-          "gzip": 1294,
-          "brotli": 1170,
-          "sha256": "ff3c39129a3dc354aa59f132abcda86bab682a17dddafd71b9fc0980c7641680"
+          "bytes": 2700,
+          "raw": 2700,
+          "gzip": 1245,
+          "brotli": 1148,
+          "sha256": "25f79abbbc59179dc96c90fd463490cca1434e339edbda445372254e5384153c"
         }
       ],
       "wasm_bytes": 1842,
-      "js_bytes": 2881,
-      "total_bytes": 4723,
-      "gzip_bytes": 2326,
+      "js_bytes": 2700,
+      "total_bytes": 4542,
+      "gzip_bytes": 2277,
+      "property_mangling": {
+        "pattern": "_$",
+        "mapping": {
+          "close_": "c",
+          "gate_": "h",
+          "notified_": "t",
+          "open_": "i",
+          "park_": "f",
+          "ready_": "r",
+          "reject_": "n",
+          "resolve_": "a",
+          "retire_": "u",
+          "signal_": "s",
+          "stats_": "l",
+          "value_": "o",
+          "waiter_": "e"
+        },
+        "same_wasm": true
+      },
+      "unmangled": {
+        "file": "host-unmangled.mjs",
+        "sha256": "7b06858e0144fa22f080738406bd7dcad80d08a60edc6314315fbd9ae9684a9f",
+        "js_bytes": 2919,
+        "total_bytes": 4761,
+        "gzip_bytes": 2336,
+        "js_sizes": {
+          "raw": 2919,
+          "gzip": 1304,
+          "brotli": 1191
+        },
+        "common": {
+          "all_passed": true,
+          "tasks": 3507,
+          "host_requests": 7014,
+          "controlled_io": [
+            [
+              7,
+              9
+            ],
+            [
+              16,
+              1
+            ]
+          ],
+          "actual_suspensions": 2
+        },
+        "probes": {
+          "all_passed": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": null,
+          "fixed_capacity": 16,
+          "overflow_before_io": true,
+          "coded_borrow_failure": true,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "heap_probes": {
+          "all_passed": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": true,
+          "fixed_capacity": 16,
+          "overflow_before_io": true,
+          "coded_borrow_failure": true,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.6150104980479085,
+            1.6338500976562642,
+            1.3713684082024002,
+            1.3703205566404364,
+            1.3408916015631434,
+            1.3259987792970662,
+            1.3182880859385904,
+            1.2915749511730468,
+            1.3142597656248256,
+            1.2715656738286896,
+            1.2550964355462213
+          ],
+          "median": 1.3259987792970662,
+          "min": 1.2550964355462213,
+          "max": 1.6338500976562642
+        }
+      },
       "probes_wasm_bytes": 4444,
       "fixed_capacity": 16,
       "allocator": "trap on alloc/free; no general heap allocator",
@@ -114,34 +212,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.4836833496083557,
-          1.20155834961011,
-          1.23333740234699,
-          1.2113342285147155,
-          2.641916992189408,
-          2.2723796386721062,
-          1.2682900390608154,
-          1.2689614257794801,
-          1.3049113769518783,
-          1.2225747070324644,
-          1.2572224121107922
+          1.5775351562492546,
+          2.0021972656252274,
+          3.094411376952877,
+          1.395935058592812,
+          1.3609416503914673,
+          1.3402607421877377,
+          1.3634338378913924,
+          1.400512695314049,
+          1.3313598632809232,
+          1.2762653808593427,
+          1.2868041992177837
         ],
-        "median": 1.2682900390608154,
-        "min": 1.20155834961011,
-        "max": 2.641916992189408
+        "median": 1.3634338378913924,
+        "min": 1.2762653808593427,
+        "max": 3.094411376952877
       }
     },
     {
       "id": "adapter-no_std",
       "backend": "adapter",
       "mode": "no_std",
-      "cold_build_ms": 7762.916458,
+      "cold_build_ms": 6767.427125,
       "warm_build_ms": [
-        48.863916999998764,
-        45.83525000000009,
-        43.819917000000714
+        46.92625000000044,
+        41.07324999999946,
+        41.19050000000061
       ],
-      "transform_ms": 74.10116599999674,
+      "transform_ms": 67.16254200000003,
       "files": [
         {
           "file": "core/app.wasm",
@@ -153,17 +251,99 @@
         },
         {
           "file": "host.mjs",
-          "bytes": 2881,
-          "raw": 2881,
-          "gzip": 1294,
-          "brotli": 1170,
-          "sha256": "ff3c39129a3dc354aa59f132abcda86bab682a17dddafd71b9fc0980c7641680"
+          "bytes": 2700,
+          "raw": 2700,
+          "gzip": 1245,
+          "brotli": 1148,
+          "sha256": "25f79abbbc59179dc96c90fd463490cca1434e339edbda445372254e5384153c"
         }
       ],
       "wasm_bytes": 3291,
-      "js_bytes": 2881,
-      "total_bytes": 6172,
-      "gzip_bytes": 3066,
+      "js_bytes": 2700,
+      "total_bytes": 5991,
+      "gzip_bytes": 3017,
+      "property_mangling": {
+        "pattern": "_$",
+        "mapping": {
+          "close_": "c",
+          "gate_": "h",
+          "notified_": "t",
+          "open_": "i",
+          "park_": "f",
+          "ready_": "r",
+          "reject_": "n",
+          "resolve_": "a",
+          "retire_": "u",
+          "signal_": "s",
+          "stats_": "l",
+          "value_": "o",
+          "waiter_": "e"
+        },
+        "same_wasm": true
+      },
+      "unmangled": {
+        "file": "host-unmangled.mjs",
+        "sha256": "7b06858e0144fa22f080738406bd7dcad80d08a60edc6314315fbd9ae9684a9f",
+        "js_bytes": 2919,
+        "total_bytes": 6210,
+        "gzip_bytes": 3076,
+        "js_sizes": {
+          "raw": 2919,
+          "gzip": 1304,
+          "brotli": 1191
+        },
+        "common": {
+          "all_passed": true,
+          "tasks": 3507,
+          "host_requests": 7014,
+          "controlled_io": [
+            [
+              7,
+              9
+            ],
+            [
+              16,
+              1
+            ]
+          ],
+          "actual_suspensions": 2
+        },
+        "probes": {
+          "all_passed": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": true,
+          "fixed_capacity": null,
+          "overflow_before_io": null,
+          "coded_borrow_failure": null,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.3432514648439309,
+            1.1295979003893564,
+            1.1107890624995065,
+            1.2133688964848233,
+            1.0972900390626705,
+            1.230082275391453,
+            1.3042397460942823,
+            1.3128559570301235,
+            1.1553039550786792,
+            1.2725932617190239,
+            1.156758544922809
+          ],
+          "median": 1.2133688964848233,
+          "min": 1.0972900390626705,
+          "max": 1.3432514648439309
+        }
+      },
       "probes_wasm_bytes": 9192,
       "common": {
         "all_passed": true,
@@ -200,34 +380,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.717763183595622,
-          1.3443400878934142,
-          1.3501384277319062,
-          1.5550639648438391,
-          1.633778808592723,
-          1.8027241210916145,
-          1.8360595703121874,
-          1.6620383300782748,
-          1.5096843261730442,
-          1.9498393554684412,
-          1.323852539062642
+          1.2642722167974796,
+          1.2329101562507105,
+          1.199635986328218,
+          1.0944824218750426,
+          1.206024169920994,
+          1.5629169921869135,
+          1.4828288574211257,
+          1.197855712891993,
+          1.3102927246109175,
+          1.2267761230457808,
+          1.3359882812498114
         ],
-        "median": 1.633778808592723,
-        "min": 1.323852539062642,
-        "max": 1.9498393554684412
+        "median": 1.2329101562507105,
+        "min": 1.0944824218750426,
+        "max": 1.5629169921869135
       }
     },
     {
       "id": "jspi-no_std",
       "backend": "jspi",
       "mode": "no_std",
-      "cold_build_ms": 7896.439916000003,
+      "cold_build_ms": 6998.457041,
       "warm_build_ms": [
-        54.94445800000176,
-        43.66291700000147,
-        45.49750000000131
+        44.4175839999989,
+        39.93920799999978,
+        40.65599999999904
       ],
-      "transform_ms": 50.71808400000009,
+      "transform_ms": 46.26800000000003,
       "files": [
         {
           "file": "core/app.wasm",
@@ -270,34 +450,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          0.9561057128877337,
-          0.9220886230458802,
-          0.7048339843755969,
-          0.8196311035177928,
-          0.8432617187494884,
-          0.6459553222661896,
-          0.841390136717024,
-          0.6369831542976101,
-          0.6179912109374186,
-          0.7905678710926622,
-          0.6483154296859084
+          0.6663410644538459,
+          0.7591857910149713,
+          0.5903217773433056,
+          0.5721232910165241,
+          0.7887368164070097,
+          0.5771789550781392,
+          0.573181152343949,
+          0.7356872558599292,
+          0.5646667480476708,
+          0.5658059082023215,
+          0.7350666503906922
         ],
-        "median": 0.7905678710926622,
-        "min": 0.6179912109374186,
-        "max": 0.9561057128877337
+        "median": 0.5903217773433056,
+        "min": 0.5646667480476708,
+        "max": 0.7887368164070097
       }
     },
     {
       "id": "core-no_std",
       "backend": "core",
       "mode": "no_std",
-      "cold_build_ms": 7219.85325,
+      "cold_build_ms": 6652.012500000001,
       "warm_build_ms": [
-        43.68866600000183,
-        40.46887500000594,
-        43.81837500000256
+        42.42020799999955,
+        40.10137500000201,
+        39.6385420000006
       ],
-      "transform_ms": 157.51783300000534,
+      "transform_ms": 149.3402500000011,
       "files": [
         {
           "file": "core/app.wasm",
@@ -340,34 +520,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.416849609373827,
-          1.3390095214838027,
-          1.2546184082040668,
-          1.2938537597655397,
-          1.2138161621066956,
-          1.194112304688133,
-          1.225362304687394,
-          1.277659179688584,
-          1.2988994140599175,
-          1.25029516601316,
-          1.2739970703101733
+          1.3934631347645166,
+          1.3136799316413317,
+          1.227884765626186,
+          1.271779296875053,
+          1.1943459472654183,
+          1.2216186523428263,
+          1.1971943359387893,
+          1.2047932128922412,
+          1.2467041015611358,
+          1.2258503417967859,
+          1.24372338867218
         ],
-        "median": 1.2739970703101733,
-        "min": 1.194112304688133,
-        "max": 1.416849609373827
+        "median": 1.227884765626186,
+        "min": 1.1943459472654183,
+        "max": 1.3934631347645166
       }
     },
     {
       "id": "bounded-std",
       "backend": "bounded",
       "mode": "std",
-      "cold_build_ms": 7337.867292000003,
+      "cold_build_ms": 7535.100167000004,
       "warm_build_ms": [
-        55.241541999996116,
-        46.35137499999837,
-        42.41895800000202
+        55.97716600000422,
+        42.05629200000112,
+        41.38008300000365
       ],
-      "transform_ms": 68.15008400000079,
+      "transform_ms": 65.01116699999693,
       "files": [
         {
           "file": "core/app.wasm",
@@ -379,17 +559,114 @@
         },
         {
           "file": "host.mjs",
-          "bytes": 2881,
-          "raw": 2881,
-          "gzip": 1294,
-          "brotli": 1170,
-          "sha256": "ff3c39129a3dc354aa59f132abcda86bab682a17dddafd71b9fc0980c7641680"
+          "bytes": 2700,
+          "raw": 2700,
+          "gzip": 1245,
+          "brotli": 1148,
+          "sha256": "25f79abbbc59179dc96c90fd463490cca1434e339edbda445372254e5384153c"
         }
       ],
       "wasm_bytes": 1842,
-      "js_bytes": 2881,
-      "total_bytes": 4723,
-      "gzip_bytes": 2326,
+      "js_bytes": 2700,
+      "total_bytes": 4542,
+      "gzip_bytes": 2277,
+      "property_mangling": {
+        "pattern": "_$",
+        "mapping": {
+          "close_": "c",
+          "gate_": "h",
+          "notified_": "t",
+          "open_": "i",
+          "park_": "f",
+          "ready_": "r",
+          "reject_": "n",
+          "resolve_": "a",
+          "retire_": "u",
+          "signal_": "s",
+          "stats_": "l",
+          "value_": "o",
+          "waiter_": "e"
+        },
+        "same_wasm": true
+      },
+      "unmangled": {
+        "file": "host-unmangled.mjs",
+        "sha256": "7b06858e0144fa22f080738406bd7dcad80d08a60edc6314315fbd9ae9684a9f",
+        "js_bytes": 2919,
+        "total_bytes": 4761,
+        "gzip_bytes": 2336,
+        "js_sizes": {
+          "raw": 2919,
+          "gzip": 1304,
+          "brotli": 1191
+        },
+        "common": {
+          "all_passed": true,
+          "tasks": 3507,
+          "host_requests": 7014,
+          "controlled_io": [
+            [
+              7,
+              9
+            ],
+            [
+              16,
+              1
+            ]
+          ],
+          "actual_suspensions": 2
+        },
+        "probes": {
+          "all_passed": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": null,
+          "fixed_capacity": 16,
+          "overflow_before_io": true,
+          "coded_borrow_failure": true,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "heap_probes": {
+          "all_passed": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": true,
+          "fixed_capacity": 16,
+          "overflow_before_io": true,
+          "coded_borrow_failure": true,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.3209228515620453,
+            1.302337646485796,
+            1.1200561523434516,
+            1.4174907226554012,
+            1.348653076171047,
+            1.1138916015625,
+            1.6016948242185691,
+            1.1302592773443365,
+            1.4265136718751847,
+            1.1832072753907852,
+            1.1855671386715727
+          ],
+          "median": 1.302337646485796,
+          "min": 1.1138916015625,
+          "max": 1.6016948242185691
+        }
+      },
       "probes_wasm_bytes": 8476,
       "fixed_capacity": 16,
       "allocator": "trap on alloc/free; no general heap allocator",
@@ -445,34 +722,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.4033100585955083,
-          1.3481342773431493,
-          1.2195839843762712,
-          1.311838867184889,
-          1.1787922363275527,
-          1.2904765625023629,
-          1.2886149902371358,
-          1.1695659179693507,
-          1.2804462890620982,
-          1.2807412109374638,
-          1.1975605468776962
+          1.2294208984382493,
+          1.1849873046880788,
+          1.253682373047127,
+          1.2090861816407283,
+          1.2386677246087885,
+          1.306111572265678,
+          1.4113259277355183,
+          1.2364196777348013,
+          1.3353474121089448,
+          1.3224182128901418,
+          1.6415507812492791
         ],
-        "median": 1.2807412109374638,
-        "min": 1.1695659179693507,
-        "max": 1.4033100585955083
+        "median": 1.253682373047127,
+        "min": 1.1849873046880788,
+        "max": 1.6415507812492791
       }
     },
     {
       "id": "adapter-std",
       "backend": "adapter",
       "mode": "std",
-      "cold_build_ms": 7695.679541999998,
+      "cold_build_ms": 7152.637499999997,
       "warm_build_ms": [
-        46.909458000001905,
-        43.196374999999534,
-        50.00970800000505
+        45.97791699999652,
+        41.11912499999744,
+        41.65375000000495
       ],
-      "transform_ms": 86.750208999998,
+      "transform_ms": 87.7566250000018,
       "files": [
         {
           "file": "core/app.wasm",
@@ -484,17 +761,99 @@
         },
         {
           "file": "host.mjs",
-          "bytes": 2881,
-          "raw": 2881,
-          "gzip": 1294,
-          "brotli": 1170,
-          "sha256": "ff3c39129a3dc354aa59f132abcda86bab682a17dddafd71b9fc0980c7641680"
+          "bytes": 2700,
+          "raw": 2700,
+          "gzip": 1245,
+          "brotli": 1148,
+          "sha256": "25f79abbbc59179dc96c90fd463490cca1434e339edbda445372254e5384153c"
         }
       ],
       "wasm_bytes": 7528,
-      "js_bytes": 2881,
-      "total_bytes": 10409,
-      "gzip_bytes": 5248,
+      "js_bytes": 2700,
+      "total_bytes": 10228,
+      "gzip_bytes": 5199,
+      "property_mangling": {
+        "pattern": "_$",
+        "mapping": {
+          "close_": "c",
+          "gate_": "h",
+          "notified_": "t",
+          "open_": "i",
+          "park_": "f",
+          "ready_": "r",
+          "reject_": "n",
+          "resolve_": "a",
+          "retire_": "u",
+          "signal_": "s",
+          "stats_": "l",
+          "value_": "o",
+          "waiter_": "e"
+        },
+        "same_wasm": true
+      },
+      "unmangled": {
+        "file": "host-unmangled.mjs",
+        "sha256": "7b06858e0144fa22f080738406bd7dcad80d08a60edc6314315fbd9ae9684a9f",
+        "js_bytes": 2919,
+        "total_bytes": 10447,
+        "gzip_bytes": 5258,
+        "js_sizes": {
+          "raw": 2919,
+          "gzip": 1304,
+          "brotli": 1191
+        },
+        "common": {
+          "all_passed": true,
+          "tasks": 3507,
+          "host_requests": 7014,
+          "controlled_io": [
+            [
+              7,
+              9
+            ],
+            [
+              16,
+              1
+            ]
+          ],
+          "actual_suspensions": 2
+        },
+        "probes": {
+          "all_passed": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": true,
+          "fixed_capacity": null,
+          "overflow_before_io": null,
+          "coded_borrow_failure": null,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.2495524902345068,
+            1.211212158203523,
+            1.2530722656247661,
+            1.8729145507805356,
+            1.2888793945311505,
+            1.1171875000002274,
+            1.2667644042974047,
+            1.111826660157078,
+            1.074391601562752,
+            1.1413879394535087,
+            1.049062011720281
+          ],
+          "median": 1.211212158203523,
+          "min": 1.049062011720281,
+          "max": 1.8729145507805356
+        }
+      },
       "probes_wasm_bytes": 14934,
       "common": {
         "all_passed": true,
@@ -531,34 +890,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.3989665527347483,
-          1.1297912597640902,
-          1.2579040527320728,
-          1.2187602539057707,
-          1.091400146485455,
-          1.1758117675775281,
-          1.0748901367207964,
-          1.1395366210926738,
-          1.130910400387819,
-          1.0486450195337227,
-          1.1406455078137867
+          1.3825786132812823,
+          1.5393779296886123,
+          1.1533508300782813,
+          1.1393127441401418,
+          1.2364399414064309,
+          1.0981140136721024,
+          1.069376464844396,
+          1.0982360839850713,
+          1.2735493164068856,
+          1.2415161132803831,
+          1.0588479003903473
         ],
-        "median": 1.1395366210926738,
-        "min": 1.0486450195337227,
-        "max": 1.3989665527347483
+        "median": 1.1533508300782813,
+        "min": 1.0588479003903473,
+        "max": 1.5393779296886123
       }
     },
     {
       "id": "jspi-std",
       "backend": "jspi",
       "mode": "std",
-      "cold_build_ms": 7327.281665999995,
+      "cold_build_ms": 7292.858374999996,
       "warm_build_ms": [
-        61.104207999997016,
-        45.48700000000099,
-        50.446374999999534
+        44.91712499999994,
+        40.570499999994354,
+        39.64812499999971
       ],
-      "transform_ms": 87.98750000000291,
+      "transform_ms": 82.27091599999403,
       "files": [
         {
           "file": "core/app.wasm",
@@ -601,34 +960,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          0.6054892578113424,
-          0.6747333984371551,
-          0.5556130371076051,
-          0.530751464843604,
-          0.6733093261708234,
-          0.5292053222660797,
-          0.5251364746108322,
-          0.7675578613302037,
-          0.5174052734382428,
-          0.5522155761710223,
-          0.5715432128923226
+          0.6020812988278834,
+          0.5650024414070032,
+          0.5923156738276703,
+          0.5356040039057319,
+          0.7032165527345313,
+          0.5458576660153369,
+          0.5388386230471554,
+          0.5212607421878346,
+          0.5434670410160436,
+          0.5390014648440911,
+          0.8155517578138927
         ],
-        "median": 0.5556130371076051,
-        "min": 0.5174052734382428,
-        "max": 0.7675578613302037
+        "median": 0.5458576660153369,
+        "min": 0.5212607421878346,
+        "max": 0.8155517578138927
       }
     },
     {
       "id": "core-std",
       "backend": "core",
       "mode": "std",
-      "cold_build_ms": 6647.789125000003,
+      "cold_build_ms": 6671.358542000002,
       "warm_build_ms": [
-        43.284917000011774,
-        40.818874999997206,
-        39.35954199999105
+        48.60299999999552,
+        41.326458000003186,
+        41.07383399999526
       ],
-      "transform_ms": 182.96216700000514,
+      "transform_ms": 188.65333400000236,
       "files": [
         {
           "file": "core/app.wasm",
@@ -671,21 +1030,21 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.5182902832009404,
-          1.618560791015966,
-          1.2730205078099743,
-          1.2791340332007906,
-          1.2961425781234936,
-          1.2409667968746874,
-          1.2899169921851694,
-          1.2725322265616512,
-          1.302276611326647,
-          1.2271218261723504,
-          1.2361652832026948
+          1.3776550292980971,
+          1.2323608398432384,
+          1.1620585937492933,
+          1.1431884765631395,
+          1.174031494139527,
+          1.1256611328125388,
+          1.2687175292960262,
+          1.405792236328196,
+          1.2961120605474719,
+          1.24576831054668,
+          1.2303569335951892
         ],
-        "median": 1.2791340332007906,
-        "min": 1.2271218261723504,
-        "max": 1.618560791015966
+        "median": 1.2323608398432384,
+        "min": 1.1256611328125388,
+        "max": 1.405792236328196
       }
     }
   ],
@@ -727,11 +1086,14 @@
     "experiments/jspi-future/adapter/src/bounded_tests.rs": "f5171076173a448b537d625e6c30862dd33fe7212e0e07f7f9c9ec9855e7a185",
     "experiments/jspi-future/adapter/src/lib.rs": "dbde1b343dac04ada2bff3655014c4ac3a3b87e5d87c26a9e14b7cf154db1068",
     "experiments/jspi-future/adapter/src/tests.rs": "181f0fb436b38e7560ea6ceaf15e5a1d1f294082e349d8fe1264551da22ae5ba",
-    "experiments/jspi-future/gates.mjs": "68fa0a7c2e7103fafcf4c64d47d507db6b2cdda25a21a5282617d94d9ff00a58",
-    "experiments/jspi-future/gates.test.mjs": "02ff95452bebfcc86f5c4a0e66ce920199649c94cf541c4b0c80fa0cbf2a8e52",
-    "experiments/jspi-future/host.mjs": "90afa84cd55e842b69fe8186c2a2ecd16b034354567d541d71edecb452e46fa3",
+    "experiments/jspi-future/bundle.mjs": "e6cc977c57143ed7285afc2f30fe6dc2225f9ad0d22077d1b1aabbc161470e2b",
+    "experiments/jspi-future/bundle.test.mjs": "34efb601e1ca069ae981d96ec69b509742a8654f1e32c54ef424552e65c10a66",
+    "experiments/jspi-future/gates.mjs": "db34db098920d0923fa4d861cdcf14322f841d175d7d40cb7e87b01705c688e1",
+    "experiments/jspi-future/gates.test.mjs": "084a6f10c705972791caa187450b1d2c1ca96a6df15f5ddbc5348700816f6a6a",
+    "experiments/jspi-future/host.mjs": "3bd5c5d432acb7b154dcb91fda51ad68fa10f8bcd07d4e0398ab68a79a8b4d87",
     "experiments/jspi-future/src/lib.rs": "027fedf8a6d58332d54f64d4c2ba0d6734f943e1b97e6cefd14ca2927412cc1e",
-    "experiments/jspi-future/verify.mjs": "21b79b439e59fa6cc6e480133df4e5ba3bd87330adcd5d6ce73f2d5bba8f7fc6",
+    "experiments/jspi-future/timing.test.mjs": "336e3b03da447fe5ef5cd285c17917c1b1b2d7f8580bd946eda28b44e555f48c",
+    "experiments/jspi-future/verify.mjs": "2d7661c47d5518d4818c689d0d6bcf954dd03147c31e77fc12ca6cbdaca9296f",
     "experiments/jspi-future/wit/app.wit": "e3f47dc6fbaab64dd93cbcd1517484147edd896e3606701a72894d2abff201ee",
     "experiments/wit/core/Cargo.lock": "9eba3d4fd9d665bb701a9baaf677e32c420f5eba45804c50dca40eba0dab6f15",
     "experiments/wit/core/Cargo.toml": "053615cc95fd8e7f6e9e05a62ee6977b1fab9f734f36a04a974ce97bfb3d8317",
@@ -751,8 +1113,8 @@
     "src/jspi.mjs": "3ed7f11117df199cbbea3873cd99769ec658ebf3c98c931e0951b769c2a71b8c",
     "tests/support/async-contract.mjs": "6ec8416a13d55b8623d2a69e34a16275668664cc5e9906ddaabb0d82856ddfce",
     "tests/support/metrics.mjs": "8e00d852b079470d4b2554dae8d21efb8b5a1493ae3b8cc78387c3389006d5de",
-    "tests/support/wit-contract.mjs": "b82b47cf1ff2a9149914d19e0e27eceb90bea4ecfedf51b4b70c27c3fd726ee7",
-    "tools/experiment-jspi-future.mjs": "fd9498dc3ceeb6db4be9e9c8c915d39057a65075dd4be3c79c09a2d07d68b8b2",
+    "tests/support/wit-contract.mjs": "e9e8db4af3aadea1b423dafac9e32ba54480e92c8694c3dc052e5aea76d20589",
+    "tools/experiment-jspi-future.mjs": "902b2d777749875d19dcff89e8237b59819842302f9d89ecdb19ad2c147a3cf4",
     "tools/wasm-opt-contract.mjs": "d0a3bce52aaa74fd71e22d1d0509c479b81f95fd49f347dd71ae2707899a5cba"
   }
 }

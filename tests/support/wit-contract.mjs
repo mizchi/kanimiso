@@ -73,7 +73,7 @@ export async function verifyWit(factory, batches) {
     actual_suspensions: 2,
   };
 }
-export async function timeWit(factory, clock, rounds = 11) {
+async function prepareTimer(factory, clock) {
   const run = await factory((a, b) => Promise.resolve((a + b) | 0));
   const batch = async () => {
     const result = await Promise.all(
@@ -82,19 +82,37 @@ export async function timeWit(factory, clock, rounds = 11) {
     if (!result.every((v) => v === 1)) throw Error("benchmark result mismatch");
   };
   for (let i = 0; i < 8; i++) await batch();
-  const samples = [];
-  for (let i = 0; i < rounds; i++) {
+  return async () => {
     const t = clock();
     for (let j = 0; j < 8; j++) await batch();
-    samples.push(((clock() - t) * 1000) / 4096);
-  }
+    return ((clock() - t) * 1000) / 4096;
+  };
+}
+function summarize(samples) {
   const sorted = samples.toSorted((a, b) => a - b);
   return {
     unit: "microseconds/task (two host awaits)",
     tasks_per_sample: 4096,
     samples,
-    median: sorted[Math.floor(rounds / 2)],
+    median: sorted[Math.floor(samples.length / 2)],
     min: sorted[0],
     max: sorted.at(-1),
   };
+}
+export async function timeWit(factory, clock, rounds = 11) {
+  const measure = await prepareTimer(factory, clock);
+  const samples = [];
+  for (let i = 0; i < rounds; i++) samples.push(await measure());
+  return summarize(samples);
+}
+export async function timeWitPair(factories, clock, rounds = 11) {
+  if (factories.length !== 2) throw Error("two factories required");
+  const timers = [];
+  for (const factory of factories)
+    timers.push(await prepareTimer(factory, clock));
+  const samples = [[], []];
+  for (let i = 0; i < rounds; i++)
+    for (const index of i % 2 ? [1, 0] : [0, 1])
+      samples[index].push(await timers[index]());
+  return samples.map(summarize);
 }

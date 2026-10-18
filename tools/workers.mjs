@@ -25,7 +25,7 @@ writeFileSync(
               `\nimport future_${m} from "../jspi-future-experiment/adapter-${m}/core/app.wasm";\nimport probes_${m} from "../jspi-future-experiment/adapter-${m}/probes/app.wasm";\nimport bounded_${m} from "../jspi-future-experiment/bounded-${m}/core/app.wasm";\nimport boundedProbes_${m} from "../jspi-future-experiment/bounded-${m}/probes/app.wasm";\nimport heapProbes_${m} from "../jspi-future-experiment/bounded-${m}/heap-probes/app.wasm";`,
           )
           .join("\n") +
-        `\nimport {instantiate as instantiateFuture} from "../../experiments/jspi-future/host.mjs";\nimport {verifyDriver} from "../../experiments/jspi-future/verify.mjs";\nconst futureModules={no_std:future_no_std,std:future_std},futureProbes={no_std:probes_no_std,std:probes_std};const boundedModules={no_std:bounded_no_std,std:bounded_std},boundedProbes={no_std:boundedProbes_no_std,std:boundedProbes_std},heapProbes={no_std:heapProbes_no_std,std:heapProbes_std};\n`
+        `\nimport {instantiate as instantiateFuture} from "../jspi-future-experiment/bounded-no_std/host.mjs";\nimport {verifyDriver} from "../../experiments/jspi-future/verify.mjs";\nconst futureModules={no_std:future_no_std,std:future_std},futureProbes={no_std:probes_no_std,std:probes_std};const boundedModules={no_std:bounded_no_std,std:bounded_std},boundedProbes={no_std:boundedProbes_no_std,std:boundedProbes_std},heapProbes={no_std:heapProbes_no_std,std:heapProbes_std};\n`
       : "") +
     `
 import {createHost as release} from "../../dist/release.mjs";

@@ -10,49 +10,49 @@ export class Gates {
   constructor(limit = 0x7fffffff) {
     this.#limit = limit;
   }
-  open() {
+  open_() {
     if (this.#dead) throw this.#fatal;
     if (this.#next === this.#limit) throw Error("gate IDs exhausted");
     const id = ++this.#next;
-    this.#gates.set(id, { notified: false, waiter: null });
+    this.#gates.set(id, { notified_: false, waiter_: null });
     return id;
   }
-  signal(id) {
+  signal_(id) {
     const gate = this.#gates.get(id);
     if (!gate) return;
-    if (gate.waiter) {
-      const { resolve } = gate.waiter;
-      gate.waiter = null;
+    if (gate.waiter_) {
+      const { resolve_: resolve } = gate.waiter_;
+      gate.waiter_ = null;
       resolve();
-    } else gate.notified = true;
+    } else gate.notified_ = true;
   }
-  park(id) {
+  park_(id) {
     if (this.#dead) throw this.#fatal;
     const gate = this.#gates.get(id);
     if (!gate) throw Error("unknown gate");
-    if (gate.waiter) throw Error("already parked");
+    if (gate.waiter_) throw Error("already parked");
     this.#parks++;
-    if (gate.notified) {
-      gate.notified = false;
+    if (gate.notified_) {
+      gate.notified_ = false;
       return Promise.resolve();
     }
     return new Promise((resolve, reject) => {
-      gate.waiter = { resolve, reject };
+      gate.waiter_ = { resolve_: resolve, reject_: reject };
     });
   }
-  close(id) {
+  close_(id) {
     const gate = this.#gates.get(id);
     this.#gates.delete(id);
-    gate?.waiter?.reject(Error("gate closed"));
+    gate?.waiter_?.reject_(Error("gate closed"));
   }
-  retire(reason) {
+  retire_(reason) {
     if (this.#dead) return;
     this.#dead = true;
     this.#fatal = reason;
-    for (const gate of this.#gates.values()) gate.waiter?.reject(reason);
+    for (const gate of this.#gates.values()) gate.waiter_?.reject_(reason);
     this.#gates.clear();
   }
-  stats() {
+  stats_() {
     return { gates: this.#gates.size, parks: this.#parks, dead: this.#dead };
   }
 }

@@ -13,6 +13,16 @@ export async function verifyDriver(
   let host = await instantiate(bytes, {
     bindings: { add: async (a, b) => (a + b) | 0 },
   });
+  check(
+    JSON.stringify(Object.keys(host).sort()) === '["call","promise","stats"]',
+    "public host API was renamed",
+  );
+  check(host.call === host.promise, "public promise alias changed");
+  check(
+    JSON.stringify(Object.keys(host.stats()).sort()) ===
+      '["completion_queues","dead","drops","gates","jobs","parks","polls","queued"]',
+    "public diagnostics were renamed",
+  );
   for (const count of [0, 1, 64, 1024])
     check((await host.call("self-wake", count)) === count, "self wake lost");
   check(host.stats().parks === 1089, "unexpected self-wake polls");
