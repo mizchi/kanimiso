@@ -11,6 +11,7 @@ import { verifyStorage } from "../tests/support/storage.mjs";
 import { verifyLocal } from "../tests/support/regressions.mjs";
 import { verifyFailures } from "../tests/support/failures.mjs";
 import { fuzz } from "../tests/support/fuzz.mjs";
+import { verifyScheduling } from "../tests/support/scheduling.mjs";
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const entries = [];
 let expected;
@@ -45,6 +46,17 @@ for (const variant of ["release", "debug"])
       storage,
       capacity,
       fuzz: randomized,
+      scheduling: await verifyScheduling(
+        async (add) => {
+          const { api } = await instantiate(
+            minimal,
+            { deferredAdd: add },
+            createHost,
+          );
+          return (...args) => api.start(...args);
+        },
+        { serialized: false },
+      ),
       sizes: {
         wasm: minimal.length,
         host: readFileSync(`dist/${variant}.mjs`).length,

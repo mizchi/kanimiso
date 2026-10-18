@@ -1,6 +1,6 @@
 # JSPI で Rust Future を駆動する実験
 
-**未採用。製品 CLI / runtime の API・既定は変更しない。** Safari 27+ / JSPI 対応 V8 を前提とした試作。
+**アダプターは未採用。製品 CLI の既定は直接 JSPI、既存 executor は `--future` で選ぶ。** 本実験の driver は製品 API にまだ含めない。[採用方針](../../docs/jspi-adoption.md)を参照。Safari 27+ / JSPI 対応 V8 を前提とした試作。
 
 ```sh
 just experiment-jspi-future  # 同じ二段 await のサイズ・時間計測

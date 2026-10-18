@@ -20,6 +20,7 @@ import {
   timeWitPair,
 } from "../tests/support/wit-contract.mjs";
 import { artifactSizes } from "../tests/support/metrics.mjs";
+import { verifyScheduling } from "../tests/support/scheduling.mjs";
 import { verifyDriver } from "../experiments/jspi-future/verify.mjs";
 import {
   bundleHost,
@@ -104,7 +105,7 @@ for (const mode of ["no_std", "std"])
       `${dir}/core`,
       "--binaryen",
       binaryen,
-      ...(backend === "core" ? [] : ["--jspi"]),
+      ...(backend === "core" ? ["--future"] : ["--jspi"]),
     ]);
     let loader, unmangled, mangleCache, debugLoader;
     if (backend === "adapter" || backend === "bounded") {
@@ -251,7 +252,12 @@ for (const profile of profiles) {
     };
   };
   const verify = async (host, debug = false) => {
-    const result = { common: await verifyWit(host.factory, cases) };
+    const result = {
+      common: await verifyWit(host.factory, cases),
+      scheduling: await verifyScheduling(host.factory, {
+        serialized: profile.backend !== "core",
+      }),
+    };
     if (experimental)
       result.probes = await verifyDriver(
         host.instantiate,
@@ -330,6 +336,7 @@ const inputPaths = [
   "tests/support/wit-contract.mjs",
   "tests/support/async-contract.mjs",
   "tests/support/metrics.mjs",
+  "tests/support/scheduling.mjs",
   ...["core", "jspi"].flatMap((b) => paths(`experiments/wit/${b}`)),
   "src/jspi.mjs",
   "src/host.mjs",
@@ -424,7 +431,7 @@ if (checking) {
     .join("\n");
   writeFileSync(
     "docs/jspi-future-measurements.md",
-    `# JSPI Future アダプター測定\n\n${report.created_at} / ${report.engine}\n\n未採用の実験。同じ二段 await と共通3,507ケース、同じ二回の host I/O・制御された二段待機を全構成で確認。std/no_std、同じ最適化条件。bounded だけは heap allocator を除去する。\n\n| 構成 | Wasm B | JS B | 合計 B | gzip B | μs/task 中央値 |\n|---|---:|---:|---:|---:|---:|\n${rows}\n\n## Debug / Release\n\n上表の bounded / adapter は release JS。Wasm は両版とも同一の Rust release 最適化済みバイト列。release はエラーコードのみ、debug はコードと説明文・stats()・カウンターを含む。ホスト由来の reject 理由と Wasm trap は両版とも同じオブジェクトを返す。\n\n| 構成 | release JS B | debug JS B | 合計 B（release / debug） | gzip B | μs/task 中央値（release / debug） |\n|---|---:|---:|---:|---:|---:|\n${debugRows}\n\n各版を暖機後、交互順で11サンプル測定。両版で同じ動作 probes を実行し、debug のみ内部カウンター・解放状態も検査する。Drop は両版で WIT の dropped callback を外から数える。\n\n## JS property mangling の比較\n\n同じソースの minify のみ / 内部 property mangling 有効を、同一 Wasm と全共通ケース・probes で比較した。末尾の underscore の private フィールド・補助メソッドだけを一つの bundle 内で短縮する。WIT import、公開 call / promise / stats と診断キー、標準 API は短縮しない。\n\n| 構成 | minify のみ JS B | mangle JS B | 合計 B | gzip B | μs/task 中央値（無効 → 有効） |\n|---|---:|---:|---:|---:|---:|\n${manglingRows}\n\ngzip は配信ファイルを個別に圧縮した合計。両 host を各4,096 task 暖機してから、11サンプルを交互順で測る。property 名による速度の優劣は単一測定だけでは断定しない。今回の release JS の property mangling 無効版は${profiles.find((p) => p.unmangled).unmangled.js_bytes.toLocaleString("en-US")} B。\n\nbounded は ID Waker と stack 上の16件固定登録表を使い、alloc/free が呼ばれると trap する sentinel を置く。std/no_std の Wasm バイトは${report.bounded_std_matches_no_std ? "一致" : "不一致"}。JF1 は容量超過、JF2 は借用競合の fatal コード（error.code、release の error.message も同じコード）。adapter は従来の safe Arc Waker + Vec と JSPI park を使う。jspi は同期 import で直接待機し、core は既存の spawn_local / Rust Future 構成。アプリを含むサイズで、ランタイムの固定費ではない。probe exports は除外し、全配信対象の Wasm と minify 済み JS を計上。\n\nbounded / adapter / direct は同一 instance を直列化する。既存版と cancel / fatal / 並行性の契約は同一ではなく、速度は JS Promise と host 境界を含む。Safari 27 実ブラウザーは未検証。\n\nprobe では自己 wake、futures-util の join / select、逆順完了、loser の Drop、古い完了通知、1 KiB Future を32回、reject/trap の first-fatal を確認。bounded は16件の登録・解放と17件目の I/O 開始前の JF1 を検証。動的確保する FuturesUnordered は、同じ固定 driver に allocator を追加した heap-probes で別途通す（最小サイズには含めない）。設計と限界は [実験の説明](../experiments/jspi-future/README.md)、各サンプル・ビルド時間・SHA-256 は [JSON](jspi-future-experiment.json)。\n`,
+    `# JSPI Future アダプター測定\n\n${report.created_at} / ${report.engine}\n\nFuture アダプターは未採用の実験。現在の CLI は直接 JSPI が既定、従来 Future は \`--future\`。[採用方針](jspi-adoption.md)を参照。同じ二段 await と共通3,507ケース、同じ二回の host I/O・制御された二段待機を全構成で確認。std/no_std、同じ最適化条件。bounded だけは heap allocator を除去する。\n\n| 構成 | Wasm B | JS B | 合計 B | gzip B | μs/task 中央値 |\n|---|---:|---:|---:|---:|---:|\n${rows}\n\n## Debug / Release\n\n上表の bounded / adapter は release JS。Wasm は両版とも同一の Rust release 最適化済みバイト列。release はエラーコードのみ、debug はコードと説明文・stats()・カウンターを含む。ホスト由来の reject 理由と Wasm trap は両版とも同じオブジェクトを返す。\n\n| 構成 | release JS B | debug JS B | 合計 B（release / debug） | gzip B | μs/task 中央値（release / debug） |\n|---|---:|---:|---:|---:|---:|\n${debugRows}\n\n各版を暖機後、交互順で11サンプル測定。両版で同じ動作 probes を実行し、debug のみ内部カウンター・解放状態も検査する。Drop は両版で WIT の dropped callback を外から数える。\n\n## JS property mangling の比較\n\n同じソースの minify のみ / 内部 property mangling 有効を、同一 Wasm と全共通ケース・probes で比較した。末尾の underscore の private フィールド・補助メソッドだけを一つの bundle 内で短縮する。WIT import、公開 call / promise / stats と診断キー、標準 API は短縮しない。\n\n| 構成 | minify のみ JS B | mangle JS B | 合計 B | gzip B | μs/task 中央値（無効 → 有効） |\n|---|---:|---:|---:|---:|---:|\n${manglingRows}\n\ngzip は配信ファイルを個別に圧縮した合計。両 host を各4,096 task 暖機してから、11サンプルを交互順で測る。property 名による速度の優劣は単一測定だけでは断定しない。今回の release JS の property mangling 無効版は${profiles.find((p) => p.unmangled).unmangled.js_bytes.toLocaleString("en-US")} B。\n\nbounded は ID Waker と stack 上の16件固定登録表を使い、alloc/free が呼ばれると trap する sentinel を置く。std/no_std の Wasm バイトは${report.bounded_std_matches_no_std ? "一致" : "不一致"}。JF1 は容量超過、JF2 は借用競合の fatal コード（error.code、release の error.message も同じコード）。adapter は従来の safe Arc Waker + Vec と JSPI park を使う。jspi は同期 import で直接待機し、core は既存の spawn_local / Rust Future 構成。アプリを含むサイズで、ランタイムの固定費ではない。probe exports は除外し、全配信対象の Wasm と minify 済み JS を計上。\n\nbounded / adapter / direct は同一 instance を直列化する。既存版と cancel / fatal / 並行性の契約は同一ではなく、速度は JS Promise と host 境界を含む。Safari 27 実ブラウザーは未検証。\n\nprobe では自己 wake、futures-util の join / select、逆順完了、loser の Drop、古い完了通知、1 KiB Future を32回、reject/trap の first-fatal を確認。bounded は16件の登録・解放と17件目の I/O 開始前の JF1 を検証。動的確保する FuturesUnordered は、同じ固定 driver に allocator を追加した heap-probes で別途通す（最小サイズには含めない）。設計と限界は [実験の説明](../experiments/jspi-future/README.md)、各サンプル・ビルド時間・SHA-256 は [JSON](jspi-future-experiment.json)。\n`,
   );
   console.log("Wrote docs/jspi-future-{experiment.json,measurements.md}");
 }

@@ -1,4 +1,5 @@
 import { verifyWit } from "./wit-contract.mjs";
+import { verifyScheduling } from "./scheduling.mjs";
 const check = (ok, message) => {
   if (!ok) throw Error(message);
 };
@@ -13,6 +14,15 @@ export async function verifyJspi(instantiate, modules, cases) {
       const h = await instantiate(new Uint8Array(bytes), { bindings: { add } });
       return (...a) => h.promise("run", ...a);
     }, cases);
+    const scheduling = await verifyScheduling(
+      async (add) => {
+        const h = await instantiate(new Uint8Array(bytes), {
+          bindings: { add },
+        });
+        return (...a) => h.promise("run", ...a);
+      },
+      { serialized: true },
+    );
     const pending = [];
     let active = 0,
       peak = 0;
@@ -76,6 +86,7 @@ export async function verifyJspi(instantiate, modules, cases) {
     entries.push({
       mode,
       common,
+      scheduling,
       rust_stack_spill_tasks: 16,
       peak_active_imports: peak,
       all_passed: true,

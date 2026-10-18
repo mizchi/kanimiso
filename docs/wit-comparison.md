@@ -2,6 +2,8 @@
 
 2026-10-18T16:41:28.064Z
 
+この表は測定時点のスナップショット。現在の CLI は JSPI が既定、従来 Future は `--future`。移行と削除条件は [採用方針](jspi-adoption.md)を参照。
+
 実験環境の前提は **Safari 27+ / JSPI 対応 V8**。[WebKit 公式](https://webkit.org/blog/18325/webkit-features-for-safari-27-0/#webassembly)で Safari 27 の JSPI 対応を確認した。旧 system JSC の未対応を最新 Safari の非対応とは扱わない。Safari 27 実ブラウザーはこの測定では未検証。
 
 同じ [二段 await](../experiments/wit/shared/compute.rs) をコンパイルし、全構成で符号付き i32 の共通 3,507 ケース、全 host I/O、外から解決する二回の待機を通した。JSPI の Rust デモは同期 import 内でエンジンが待機し、同じ Future の poll は Ready を返す。任意の Pending Future の executor ではない。

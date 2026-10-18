@@ -51,6 +51,7 @@ for (const mode of ["no_std", "std"])
     run(process.execPath, [
       "tools/build-wasm.mjs",
       raw,
+      "--future",
       "--wit",
       wit,
       "--output",

@@ -11,7 +11,7 @@ const args = process.argv.slice(2),
   };
 if (!args[0] || !option("--wit") || !option("--output"))
   throw Error(
-    "usage: node tools/build-wasm.mjs raw.wasm --wit path --output app.wasm [--probes]",
+    "usage: node tools/build-wasm.mjs raw.wasm --wit path --output app.wasm [--probes] [--future | --jspi]",
   );
 const run = (bin, argv) =>
   execFileSync(bin, argv, { stdio: "pipe", maxBuffer: 32 * 1024 * 1024 });
@@ -28,7 +28,7 @@ try {
     "--binaryen",
     resolve(".cache/toolchains/binaryen-version_133/bin"),
     ...(args.includes("--probes") ? ["--probes"] : []),
-    ...(args.includes("--jspi") ? ["--jspi"] : []),
+    ...args.filter((arg) => arg === "--jspi" || arg === "--future"),
   ]);
   mkdirSync(dirname(resolve(option("--output"))), { recursive: true });
   copyFileSync(`${temp}/app.wasm`, resolve(option("--output")));

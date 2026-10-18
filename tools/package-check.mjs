@@ -13,6 +13,7 @@ import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { rustEnvironment } from "./rust-toolchain.mjs";
 import { verifyWit } from "../tests/support/wit-contract.mjs";
+import { verifyScheduling } from "../tests/support/scheduling.mjs";
 import { asyncCases } from "../tests/support/async-contract.mjs";
 const root = resolve("."),
   temp = mkdtempSync(join(tmpdir(), "taraba-package-"));
@@ -92,7 +93,12 @@ try {
   for (const profile of ["core", "jspi"]) {
     const jspi = profile === "jspi",
       name = `consumer-${profile}`;
-    run(cli, ["new", name, "--no-std", ...(jspi ? ["--jspi"] : [])], temp, env);
+    run(
+      cli,
+      ["new", name, "--no-std", ...(jspi ? [] : ["--future"])],
+      temp,
+      env,
+    );
     const project = `${temp}/${name}`,
       manifest = `${project}/Cargo.toml`;
     let toml = readFileSync(manifest, "utf8");
@@ -130,7 +136,6 @@ try {
                 "wit",
                 "--out-dir",
                 `${temp}/invalid-jspi`,
-                "--jspi",
               ],
               project,
               env,
@@ -148,7 +153,7 @@ try {
             "wit",
             "--out-dir",
             out,
-            ...(jspi ? ["--jspi"] : []),
+            ...(jspi ? [] : ["--future"]),
             ...(debug ? ["--debug"] : []),
           ],
           project,
@@ -157,6 +162,20 @@ try {
         const { instantiate } = await import(
           pathToFileURL(`${out}/taraba.mjs`)
         );
+        if (jspi && !debug && mode === "no_std") {
+          const explicit = `${temp}/explicit-jspi`;
+          run(
+            cli,
+            ["build", raw, "--wit", "wit", "--out-dir", explicit, "--jspi"],
+            project,
+            env,
+          );
+          for (const file of ["app.wasm", "taraba.mjs", "taraba.d.mts"])
+            assert.deepEqual(
+              readFileSync(`${explicit}/${file}`),
+              readFileSync(`${out}/${file}`),
+            );
+        }
         const module = new WebAssembly.Module(readFileSync(`${out}/app.wasm`));
         assert.ok(
           WebAssembly.Module.exports(module).every(
@@ -173,6 +192,10 @@ try {
           host = await instantiate(module, { bindings: { add } });
           return (...a) => host.promise("run", ...a);
         }, cases);
+        assert.equal(
+          JSON.parse(readFileSync(`${out}/build.json`)).profile,
+          jspi ? "wit-core-jspi" : "wit-core-externref",
+        );
         const stats = host.stats();
         assert.equal(stats.dead, false);
         if (jspi) assert.equal(stats.queued, 0);
@@ -204,6 +227,13 @@ try {
           mode,
           debug,
           ...verified,
+          scheduling: await verifyScheduling(
+            async (add) => {
+              const h = await instantiate(module, { bindings: { add } });
+              return (...args) => h.promise("run", ...args);
+            },
+            { serialized: jspi },
+          ),
           wasm_bytes: readFileSync(`${out}/app.wasm`).length,
           js_bytes: readFileSync(`${out}/taraba.mjs`).length,
           rejection_identity_steps: 2,

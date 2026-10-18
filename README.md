@@ -6,14 +6,14 @@ Formerly named `kanimiso`. The crates, CLI, generated files, and WIT namespaces 
 
 A small Rust/Wasm runtime for JavaScript hosts. This experimental project targets **Safari 27+ and JSPI-capable V8**. Safari 27 support is documented in [WebKit’s announcement](https://webkit.org/blog/18325/webkit-features-for-safari-27-0/#webassembly).
 
-**WIT** defines application contracts and official **wit-bindgen** generates Rust types, Guest traits, and imports/exports. Two Core Wasm configurations are available:
+**WIT** defines application contracts and official **wit-bindgen** generates Rust types, Guest traits, and imports/exports. JSPI is the default execution backend; Future support is opt-in:
 
-- **JSPI scalar** (`--jspi`): native Promises suspend and resume synchronous WIT calls through the engine. This small configuration has no Rust executor or task pool.
-- **Future** (without the option): the existing `spawn_local`, Rust Future, Promise awaiting, and cancellation runtime, supporting `std` and `no_std + alloc`. JS objects stay in the host.
+- **JSPI scalar** (default; `--jspi` is an explicit alias): native Promises suspend and resume synchronous WIT calls through the engine. This small configuration has no Rust executor or task pool.
+- **Future** (`--future`): the existing `spawn_local`, Rust Future, Promise awaiting, and cancellation runtime, supporting `std` and `no_std + alloc`. JS objects stay in the host.
 
 Their Core lowering is distinct from the Component Model Canonical ABI. See the [measurements](docs/wit-comparison.md), including standard Component native async, and the [engine baseline](docs/engine-baseline.md).
 
-A separate [experimental adapter](experiments/jspi-future/README.md) drives Rust Futures through JSPI. It has not been adopted and is not part of the product API.
+A separate [experimental adapter](experiments/jspi-future/README.md) drives Rust Futures through JSPI. The intended extension is optional Future support on top of JSPI. This adapter is still experimental and is not part of the product API. The existing Future backend remains available until concurrency, cancellation/Drop, and concurrent memory/performance gates pass; see the [adoption decision](docs/jspi-adoption.md).
 
 ## Install and use
 
@@ -23,10 +23,10 @@ The first crates.io releases of `taraba`, `taraba-allocator`, and `taraba-cli` a
 rustup target add wasm32-unknown-unknown
 cargo install taraba-cli --version 0.1.0 --locked
 # Install Binaryen 133: wasm-opt, wasm-as, wasm-merge, wasm-metadce on PATH
-taraba new hello --no-std --jspi
+taraba new hello --no-std
 cd hello
 cargo build --release --target wasm32-unknown-unknown
-taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg --jspi
+taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg
 ```
 
 The native CLI embeds ready-to-use JS and the intrusive pool WAT. Consumers do not need a repository checkout, Node, or esbuild to generate the host. Binaryen is an external prerequisite. Use `TARABA_BINARYEN=/path/to/bin` or `--binaryen /path/to/bin` instead of PATH if desired.
@@ -39,7 +39,7 @@ cargo add taraba-allocator@0.1.0 --no-default-features
 cargo add wit-bindgen@=0.58.0 --no-default-features --features macros
 ```
 
-Omit `--no-std` to generate a std application. Omit `--jspi` to generate the Future configuration. The application selects its global allocator. `taraba-allocator` is the MPL-2.0 fork derived from `wee_alloc`, renamed from the experimental `wee-port`. Disable size classes for the smallest configuration.
+Omit `--no-std` to generate a std application. Use `--future` on both `new` and `build` for the existing Future configuration. Existing Future build commands must add this flag; the WIT contract is never used to silently select a backend. `--jspi` remains accepted and cannot be combined with `--future`. The application selects its global allocator. `taraba-allocator` is the MPL-2.0 fork derived from `wee_alloc`, renamed from the experimental `wee-port`. Disable size classes for the smallest configuration.
 
 Deploy `pkg/app.wasm` with its matching `pkg/taraba.mjs`. In a browser, fetch the Wasm as an ArrayBuffer. In Node.js:
 
@@ -67,13 +67,13 @@ world app {
 
 Rust calls synchronous functions. `WebAssembly.Suspending` waits for the Promise returned by `bindings.add`, and `WebAssembly.promising` exposes guest exports as Promises. Supported boundaries are s32/u32/f64 and functions without results. Resources, strings, lists, records, and native WIT async are outside this small profile.
 
-Guest entry is serialized per instance to protect LLVM's linear-memory stack across suspension. Bindings must not await re-entry into the same instance. This profile does not provide cancellation or an executor for arbitrary Rust Futures. A host rejection or Wasm trap permanently closes the instance with the first reason and rejects queued calls with that same reason. Rust Drop is not assumed to run when a JS exception exits Wasm.
+Guest entry, including I/O waits, is serialized per instance: a slow call blocks later calls on that instance. This protects LLVM's linear-memory stack across suspension. Bindings must not await re-entry into the same instance. This profile does not provide cancellation or an executor for arbitrary Rust Futures. A host rejection or Wasm trap permanently closes the instance with the first reason and rejects queued calls with that same reason. Rust Drop is not assumed to run when a JS exception exits Wasm.
 
 Missing JSPI fails with `RT15`; no compatibility fallback is used. Both `host.call` and `host.promise` return Promises. The emitted `taraba.d.mts` describes this profile's API.
 
 ## Future WIT and ownership
 
-Use `taraba new hello --no-std` and `taraba build ... --wit wit` for the existing Future profile. Its WIT imports `resource promise` and defines `add: func(a:s32,b:s32)->promise` and `run: func(a:s32,b:s32)->promise`.
+Use `taraba new hello --no-std --future` and `taraba build ... --wit wit --future` for the optional existing Future profile. It can advance independent tasks while another task waits for I/O. Its WIT imports `resource promise` and defines `add: func(a:s32,b:s32)->promise` and `run: func(a:s32,b:s32)->promise`.
 
 The Future profile supports s32, u32, f64, and own/borrow handles to imported resources whose objects live in JS. Borrow is supported only for import arguments. Unsupported string/list/record types, exported resources, and native WIT async fail the build. Core resources require a non-undefined JS value; a `promise` import must return a Promise. A synchronous boundary returning that resource connects to Rust async internally. Provide application imports through `bindings`; duplicate function names across imported interfaces are rejected.
 

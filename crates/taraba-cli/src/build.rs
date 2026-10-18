@@ -1,3 +1,4 @@
+use crate::ExecutionProfile;
 use std::{
     error::Error,
     fs,
@@ -13,7 +14,7 @@ pub struct BuildOptions {
     pub binaryen: Option<PathBuf>,
     pub debug: bool,
     pub probes: bool,
-    pub jspi: bool,
+    pub profile: ExecutionProfile,
 }
 const FEATURES: &[&str] = &[
     "mutable-globals",
@@ -45,6 +46,7 @@ fn text(p: &Path) -> String {
     p.to_string_lossy().into_owned()
 }
 pub fn build(o: &BuildOptions) -> Result<()> {
+    let jspi = o.profile == ExecutionProfile::Jspi;
     let binaryen = o
         .binaryen
         .clone()
@@ -55,7 +57,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
             .map(|p| p.join(name))
             .unwrap_or_else(|| PathBuf::from(name))
     };
-    let tools: &[&str] = if o.jspi {
+    let tools: &[&str] = if jspi {
         &["wasm-opt"]
     } else {
         &["wasm-opt", "wasm-as", "wasm-merge", "wasm-metadce"]
@@ -74,7 +76,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
         }
     }
     let abi = crate::wit::parse(&o.wit, o.world.as_deref())?;
-    if o.jspi {
+    if jspi {
         use crate::abi::Abi;
         if o.probes
             || abi
@@ -98,7 +100,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
     let path = |name: &str| temp.path().join(name);
     fs::write(path("core.wasm"), &core)?;
     let features: Vec<String> = FEATURES.iter().map(|f| format!("--enable-{f}")).collect();
-    if o.jspi {
+    if jspi {
         // JSPI owns suspension stacks; this profile has no intrusive task pool.
         fs::write(path("linked.wasm"), &core)?;
     } else {
@@ -182,7 +184,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
     {
         return Err("unexpected import after Core linking".into());
     }
-    if o.jspi && finished.imports.iter().any(|i| i.module != "app") {
+    if jspi && finished.imports.iter().any(|i| i.module != "app") {
         return Err(
             "JSPI profile requires a synchronous scalar guest without taraba task/runtime imports"
                 .into(),
@@ -193,7 +195,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
     if dest.exists() && fs::canonicalize(&dest)? == fs::canonicalize(&o.input)? {
         return Err("output must not overwrite input".into());
     }
-    let js = if o.jspi {
+    let js = if jspi {
         if o.debug {
             include_bytes!("../assets/taraba-jspi-debug.mjs").as_slice()
         } else {
@@ -208,7 +210,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
     fs::write(o.output.join("taraba.mjs"), js)?;
     fs::write(
         o.output.join("taraba.d.mts"),
-        if o.jspi {
+        if jspi {
             include_bytes!("../assets/taraba-jspi.d.mts").as_slice()
         } else {
             include_bytes!("../assets/taraba.d.mts").as_slice()
@@ -218,7 +220,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
         o.output.join("error-codes.json"),
         include_bytes!("../assets/error-codes.json"),
     )?;
-    let info = serde_json::json!({"builder":env!("CARGO_PKG_VERSION"),"profile":if o.jspi {"wit-core-jspi"}else{"wit-core-externref"},"engine_baseline":"Safari 27+ / JSPI-capable V8","binaryen":133,"wasm_bytes":bytes.len(),"js_bytes":js.len(),"debug":o.debug,"assets":serde_json::from_str::<serde_json::Value>(include_str!("../assets/provenance.json"))?});
+    let info = serde_json::json!({"builder":env!("CARGO_PKG_VERSION"),"profile":if jspi {"wit-core-jspi"}else{"wit-core-externref"},"engine_baseline":"Safari 27+ / JSPI-capable V8","binaryen":133,"wasm_bytes":bytes.len(),"js_bytes":js.len(),"debug":o.debug,"assets":serde_json::from_str::<serde_json::Value>(include_str!("../assets/provenance.json"))?});
     fs::write(
         o.output.join("build.json"),
         serde_json::to_vec_pretty(&info)?,

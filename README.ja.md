@@ -6,14 +6,14 @@
 
 JavaScript ホスト向けの小さな Rust/Wasm ランタイムです。実験環境の前提は **Safari 27 以降、JSPI 対応 V8** です。Safari 27 の JSPI 対応は [WebKit の公式発表](https://webkit.org/blog/18325/webkit-features-for-safari-27-0/#webassembly)で確認しています。
 
-公開インターフェースは **WIT**、Rust の型・Guest・import/export は公式 **wit-bindgen** で生成します。Core Wasm の実行構成は二つあります。
+公開インターフェースは **WIT**、Rust の型・Guest・import/export は公式 **wit-bindgen** で生成します。実行基盤は JSPI を既定とし、Future 対応は明示的に選択します。
 
-- **JSPI scalar** (`--jspi`): 同期 WIT 関数の I/O を native Promise に接続し、エンジンで Wasm を suspend / resume します。Rust executor・task pool を持たない省サイズ構成です。
-- **Future** (オプションなし): `spawn_local`、Rust Future、JS Promise の await、キャンセルを提供する既存構成です。`std` / `no_std + alloc` に対応し、JS オブジェクトはホスト側に保持します。
+- **JSPI scalar** (既定。`--jspi` でも明示可能): 同期 WIT 関数の I/O を native Promise に接続し、エンジンで Wasm を suspend / resume します。Rust executor・task pool を持たない省サイズ構成です。
+- **Future** (`--future`): `spawn_local`、Rust Future、JS Promise の await、キャンセルを提供する既存構成です。`std` / `no_std + alloc` に対応し、JS オブジェクトはホスト側に保持します。
 
 両者の Core lowering は Component Model の Canonical ABI とは異なります。標準 Component native async を含む比較は [測定結果](docs/wit-comparison.md)、エンジンの前提は [engine-baseline.md](docs/engine-baseline.md) にあります。
 
-JSPI で Rust Future を駆動する別の[アダプター実験](experiments/jspi-future/README.md)もあります。未採用で、製品 API には含めていません。
+JSPI で Rust Future を駆動する別の[アダプター実験](experiments/jspi-future/README.md)もあります。将来は JSPI 上の追加機能として Future 対応を提供する方針です。このアダプターは引き続き実験扱いで、製品 API には含めません。並行実行・キャンセルと Drop・同時実行時のメモリと速度の検証を終えるまでは既存 Future バックエンドも維持します。[採用方針](docs/jspi-adoption.md)を参照してください。
 
 ## インストールと利用
 
@@ -23,10 +23,10 @@ JSPI で Rust Future を駆動する別の[アダプター実験](experiments/js
 rustup target add wasm32-unknown-unknown
 cargo install taraba-cli --version 0.1.0 --locked
 # Binaryen 133 の wasm-opt / wasm-as / wasm-merge / wasm-metadce を PATH に置く
-taraba new hello --no-std --jspi
+taraba new hello --no-std
 cd hello
 cargo build --release --target wasm32-unknown-unknown
-taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg --jspi
+taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg
 ```
 
 CLI はビルド済み JS と intrusive pool の WAT を内包します。利用者によるこのリポジトリの checkout や Node/esbuild でのホスト生成は不要です。Binaryen は外部ツールです。PATH の代わりに `TARABA_BINARYEN=/path/to/bin` または `--binaryen /path/to/bin` を指定できます。
@@ -39,7 +39,7 @@ cargo add taraba-allocator@0.1.0 --no-default-features
 cargo add wit-bindgen@=0.58.0 --no-default-features --features macros
 ```
 
-`--no-std` を付けない `new` は std 構成です。`--jspi` を省くと Future 構成を生成します。JS 用 allocator はアプリ側で選択します。`taraba-allocator` は `wee_alloc` 由来の MPL-2.0 の fork で、以前の実験名 `wee-port` から改名しています。最小構成は size classes を無効にします。
+`--no-std` を付けない `new` は std 構成です。既存 Future 構成は `new` と `build` の両方で `--future` を指定します。従来の Future 用 build コマンドにも、このフラグを追加してください。WIT から実行系を暗黙に切り替えることはありません。`--jspi` も引き続き指定でき、`--future` との併用はエラーにします。JS 用 allocator はアプリ側で選択します。`taraba-allocator` は `wee_alloc` 由来の MPL-2.0 の fork で、以前の実験名 `wee-port` から改名しています。最小構成は size classes を無効にします。
 
 生成された `pkg/app.wasm` と `pkg/taraba.mjs` を一緒に配信します。ブラウザーでは Wasm を fetch して ArrayBuffer にし、Node.js では次のように使えます。
 
@@ -67,13 +67,13 @@ world app {
 
 Rust からは同期関数として呼びます。JS の `bindings.add` が返した Promise を `WebAssembly.Suspending` が待機し、エクスポートは `WebAssembly.promising` で Promise に変換します。s32 / u32 / f64 と戻り値なしの関数が対象です。resource、string、list、record、WIT native async はこの省サイズ構成では未対応です。
 
-同じインスタンスの呼び出しは直列化します。これは LLVM が線形メモリーに置くスタックを、待機中の再入で壊さないためです。binding から同じインスタンスを await する再入、キャンセル、任意の Rust Future を poll する executor は提供しません。ホストの reject / Wasm trap は最初の理由を保って instance を閉じ、キュー中の呼び出しも同じ理由で reject します。JS 例外で Rust の Drop が実行されるとは仮定しません。
+同じインスタンスの呼び出しは I/O 待機も含めて直列化し、遅い呼び出しが後続を待たせます。これは LLVM が線形メモリーに置くスタックを、待機中の再入で壊さないためです。binding から同じインスタンスを await する再入、キャンセル、任意の Rust Future を poll する executor は提供しません。ホストの reject / Wasm trap は最初の理由を保って instance を閉じ、キュー中の呼び出しも同じ理由で reject します。JS 例外で Rust の Drop が実行されるとは仮定しません。
 
 JSPI のないエンジンでは `RT15` で失敗し、互換フォールバックは行いません。アプリ呼び出しは `host.call` / `host.promise` のどちらも Promise を返します。`taraba.d.mts` はこの構成専用の型を含みます。
 
 ## Future 構成の WIT と所有権
 
-`taraba new hello --no-std` と `taraba build ... --wit wit` で従来の Future 構成を使います。WIT は `resource promise` を import し、`add: func(a:s32,b:s32)->promise` と `run: func(a:s32,b:s32)->promise` を定義します。
+`taraba new hello --no-std --future` と `taraba build ... --wit wit --future` で従来の Future 構成を使います。一つのタスクが I/O を待つ間も、独立した別のタスクを進められます。WIT は `resource promise` を import し、`add: func(a:s32,b:s32)->promise` と `run: func(a:s32,b:s32)->promise` を定義します。
 
 Future 構成は s32 / u32 / f64 と、JS に実体を置く imported resource の own / borrow を扱います。borrow は import 引数のみです。string、list、record、exported resource、WIT native async は未対応としてビルドを失敗させます。resource は `undefined` 以外の JS 参照を表し（`promise` は Promise を返す契約）、WIT の `promise` resource を返す同期境界の内側で Rust async を動かします。アプリ import は `bindings` に渡し、同名の関数を複数 interface から import する構成は拒否します。
 

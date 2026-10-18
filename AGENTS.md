@@ -8,5 +8,6 @@
 - Kani は native 64-bit の限定された部品・モデルの検証。JS/V8/WebKit、Wasm コード生成、intrusive WAT 全体の証明として扱わない。
 - `crates/taraba-allocator` の MPL-2.0 と来歴を維持する。
 - 実験環境の前提は Safari 27+ / JSPI 対応 V8。古い system JSC の未対応を最新 Safari の非対応と扱わない。Safari 実ブラウザーを実行していなければ未検証と明記する。
+- CLI の new/build は JSPI が既定。既存 Future fixture / consumer は `--future` を明示し、WIT から暗黙に実行系を推測しない。JSPI Future アダプターは実験扱いを維持し、削除条件は `docs/jspi-adoption.md` に従う。
 - JSPI scalar profile は同一 instance の guest entry を直列化し、host reject / Wasm trap で instance を閉じる。既存の Future/cancel 契約と同一視しない。
 - npm/crates.io 公開は別の明示的な依頼があるまで行わない。

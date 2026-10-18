@@ -119,7 +119,7 @@ for (const mode of ["no_std", "std"])
         dir,
         "--binaryen",
         binaryen,
-        ...(backend === "jspi" ? ["--jspi"] : []),
+        ...(backend === "jspi" ? ["--jspi"] : ["--future"]),
       ]);
     else {
       const t = performance.now();
@@ -346,9 +346,10 @@ report.inputs = Object.fromEntries(
 );
 report.decision = {
   engine_baseline: "Safari 27+ / JSPI-capable V8; JSPI is available by design",
-  small_profile: "Direct scalar WIT/Core JSPI (--jspi)",
+  small_profile:
+    "Direct scalar WIT/Core JSPI (default; --jspi is an explicit alias)",
   future_profile:
-    "Existing Core Future runtime for spawn_local/cancel and concurrent Rust Futures",
+    "Optional --future Core runtime for spawn_local/cancel and concurrent Rust Futures; retained pending JSPI adoption gates",
   component_profiles:
     "Both synchronous WIT + JSPI and native WIT async + jco are retained for comparison",
   contracts:
@@ -389,7 +390,7 @@ jspi は直接 Core JSPI、core は従来の Future 構成、component-sync は�
 
 速度は JSPI / Promise / host I/O / scheduler 込み。WIT native async の jco scheduler は setTimeout（10 ms）を使う経路を含むため、値を Wasm 命令自体や Component Model 全体の速度差とは解釈しない。
 
-採用方針: JSPI を実行環境の前提として、スカラー I/O は省サイズの **--jspi** を用意する。これは guest entry の直列化と reject / trap 時の first-fatal を契約とする。spawn_local / cancel / 一般的な Rust Future を使う場合は従来構成を選ぶ。JS オブジェクト同一性、reject、cancel、fatal の契約の同等性は共通計算テストの範囲に含めない。Core lowering は Component Model Canonical ABI とは異なる。
+採用方針: JSPI を既定の実行基盤とし（**--jspi** でも明示可能）、既存 Future 構成は **--future** で選ぶ。これは guest entry の直列化と reject / trap 時の first-fatal を契約とする。spawn_local / cancel / 一般的な Rust Future を使う場合は **--future** を選ぶ。JSPI 上の Future アダプターは実験扱いを維持する。削除条件は [採用方針](jspi-adoption.md)を参照。JS オブジェクト同一性、reject、cancel、fatal の契約の同等性は共通計算テストの範囲に含めない。Core lowering は Component Model Canonical ABI とは異なる。
 
 実製品の JSPI 検証は \`just check\` と \`just package-check\`。release/debug × std/no_std で同じ入力と実 Rust stack spill、crate 外の consumer を確認する。測定再実行は \`just compare-wit\`。バージョン、全サンプル、各ファイルと入力のハッシュは [JSON](wit-comparison.json)。
 `,

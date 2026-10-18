@@ -25,6 +25,7 @@ test("WIT resource ownership supports matching import/export names and explicit 
     execFileSync(process.execPath, [
       "tools/build-wasm.mjs",
       `${dir}/raw.wasm`,
+      "--future",
       "--wit",
       `${dir}/app.wit`,
       "--output",
@@ -87,7 +88,7 @@ test("scalar WIT preserves the full u32 range and f64 values in both profiles", 
         `${dir}/app.wit`,
         "--output",
         output,
-        ...(jspi ? ["--jspi"] : []),
+        ...(jspi ? [] : ["--future"]),
       ]);
       const observed = [];
       const factory = jspi ? instantiateJspi : instantiate;

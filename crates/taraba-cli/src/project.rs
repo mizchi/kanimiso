@@ -1,5 +1,8 @@
 use std::{error::Error, fs, path::Path};
 pub fn new_project(path: &Path, no_std: bool) -> Result<(), Box<dyn Error>> {
+    new_jspi_project(path, no_std)
+}
+pub fn new_future_project(path: &Path, no_std: bool) -> Result<(), Box<dyn Error>> {
     scaffold(path, no_std, false)
 }
 pub fn new_jspi_project(path: &Path, no_std: bool) -> Result<(), Box<dyn Error>> {
@@ -84,7 +87,7 @@ codegen-units = 1
         path.display(),
         if no_std { "no_std" } else { "std" },
         name.replace('-', "_"),
-        if jspi { " --jspi" } else { "" }
+        if jspi { "" } else { " --future" }
     );
     Ok(())
 }

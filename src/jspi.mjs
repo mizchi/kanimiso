@@ -1,6 +1,6 @@
 import { runtimeError } from "./errors.mjs";
 
-// Experimental scalar WIT/Core profile. JSPI owns the suspended Wasm stack.
+// Default scalar WIT/Core profile. JSPI owns the suspended Wasm stack.
 // Serial entry also protects LLVM's shared linear-memory stack pointer.
 export async function instantiate(
   source,

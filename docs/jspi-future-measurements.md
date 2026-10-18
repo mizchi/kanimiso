@@ -2,7 +2,7 @@
 
 2026-10-18T16:48:35.781Z / Node v24.21.0 / V8 13.6.233.17-node.53
 
-未採用の実験。同じ二段 await と共通3,507ケース、同じ二回の host I/O・制御された二段待機を全構成で確認。std/no_std、同じ最適化条件。bounded だけは heap allocator を除去する。
+Future アダプターは未採用の実験。現在の CLI は直接 JSPI が既定、従来 Future は `--future`。[採用方針](jspi-adoption.md)を参照。同じ二段 await と共通3,507ケース、同じ二回の host I/O・制御された二段待機を全構成で確認。std/no_std、同じ最適化条件。bounded だけは heap allocator を除去する。
 
 | 構成 | Wasm B | JS B | 合計 B | gzip B | μs/task 中央値 |
 |---|---:|---:|---:|---:|---:|
