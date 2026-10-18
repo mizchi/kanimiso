@@ -1,0 +1,18 @@
+[package]
+name = "kanimiso-promise"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = []
+std = ["jsrt/std"]
+test-api = []
+probes = ["test-api"]
+
+[dependencies]
+jsrt = { package = "kanimiso", path = "../../crates/kanimiso", default-features = false }
+wee_port = { package = "wee-port", path = "../../crates/wee-port", default-features = false }

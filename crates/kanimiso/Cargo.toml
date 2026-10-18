@@ -1,0 +1,15 @@
+[package]
+name = "kanimiso"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Promise-first single-agent Rust/Wasm runtime"
+repository = "https://github.com/mizchi/kanimiso"
+publish = false
+
+[lib]
+doctest = false
+
+[features]
+default = []
+std = []

@@ -1,0 +1,19 @@
+[package]
+name = "wee-port"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MPL-2.0"
+publish = false
+
+[lib]
+doctest = false
+
+[features]
+default = ["size_classes"]
+size_classes = []
+extra_assertions = []
+instrumentation = []
+
+[dependencies]
+memory_units = "=0.4.0"

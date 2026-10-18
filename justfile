@@ -1,0 +1,65 @@
+default:
+    @just --list
+
+setup:
+    pnpm install --frozen-lockfile
+    rustup target add wasm32-unknown-unknown
+    node tools/install-binaryen.mjs
+
+build-host:
+    pnpm build
+
+build: build-host
+    node tools/build-examples.mjs
+
+test: build-host
+    pnpm test
+    cargo test --locked -p kanimiso --lib
+    cargo test --locked -p kanimiso --lib --features std
+    cargo test --locked -p kanimiso-bind
+    cargo test --locked -p wee-port --lib --features instrumentation,extra_assertions
+    cargo test --locked -p wee-port --lib --no-default-features --features instrumentation,extra_assertions
+
+check: build test
+    pnpm format:check
+    cargo fmt --all -- --check
+    cargo fmt --manifest-path verification/kani/models/Cargo.toml -- --check
+    rustfmt --edition 2021 --check verification/kani/harnesses/*.rs
+    node tools/check.mjs
+
+fmt:
+    pnpm format
+    cargo fmt --all
+    cargo fmt --manifest-path verification/kani/models/Cargo.toml
+    rustfmt --edition 2021 verification/kani/harnesses/*.rs
+
+stress seconds="60":
+    node tools/stress.mjs {{seconds}}
+
+miri:
+    cargo +nightly miri test --locked -p kanimiso --lib -- --test-threads=1
+    cargo +nightly miri test --locked -p kanimiso --lib --features std -- --test-threads=1
+    cargo +nightly miri test --locked -p wee-port --lib --no-default-features --features instrumentation -- --test-threads=1
+    cargo +nightly miri test --locked -p wee-port --lib --no-default-features --features instrumentation,extra_assertions test_merge_free_ -- --test-threads=1
+
+kani-setup:
+    cargo install --locked kani-verifier --version 0.67.0
+    cargo kani setup
+
+kani:
+    node tools/prepare-kani.mjs
+    cargo kani --manifest-path verification/kani/models/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
+    cargo kani --manifest-path .cache/kani/waker/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
+    cargo kani --manifest-path .cache/kani/allocator/Cargo.toml --lib --tests --exact --harness kani_proofs::checked_rounding_all_usize_values --harness kani_boundary_proofs::neighbor_tag_bits_preserve_every_aligned_u32_address --harness kani_boundary_proofs::valid_layouts_return_null_on_refill_oom_without_overflow --output-format terse -Z unstable-options --harness-timeout 60s
+
+workers:
+    node tools/workers.mjs
+
+modern:
+    node tools/modern.mjs
+
+kani-explore:
+    cargo kani --manifest-path .cache/kani/allocator/Cargo.toml --lib --tests --exact --harness kani_proofs::adjacent_frees_coalesce_in_both_orders --harness kani_proofs::two_live_allocations_preserve_payload_and_alignment --output-format terse -Z unstable-options --harness-timeout 60s
+
+report:
+    node tools/report-verification.mjs

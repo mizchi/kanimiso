@@ -1,0 +1,12 @@
+(module
+  (import "h" "run" (func $run (param i32) (result i32)))
+  (global $caught (mut i32) (i32.const 0))
+  (func (export "guard") (param i32) (result i32)
+    (block $handler (result exnref)
+      (try_table (result i32) (catch_all_ref $handler)
+        (call $run (local.get 0)))
+      return)
+    (global.set $caught (i32.add (global.get $caught) (i32.const 1)))
+    throw_ref)
+  (func (export "caught") (result i32) (global.get $caught))
+  (func (export "trap") (result i32) unreachable))

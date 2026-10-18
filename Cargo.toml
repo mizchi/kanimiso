@@ -1,0 +1,11 @@
+[workspace]
+resolver = "3"
+members = ["crates/kanimiso", "crates/wee-port", "examples/promise", "tools/bridge"]
+default-members = ["crates/kanimiso", "tools/bridge"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = false

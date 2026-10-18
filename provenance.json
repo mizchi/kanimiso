@@ -1,0 +1,292 @@
+{
+  "source_repository": "mizchi/wasm-battleground (local working tree)",
+  "source_head": "6a0ec42",
+  "note": "Extracted from working-tree experiments; many sources are not present in source_head. Source SHA-256 records the actual inputs. Destination files may have adaptations documented in README.",
+  "files": [
+    {
+      "source": "experiments/js-local-gc/runtime/src/lib.rs",
+      "destination": "crates/kanimiso/src/lib.rs",
+      "source_sha256": "33e41fbdf7b9cfe0963372abaf1307b0c607b218081dfa053825ddc1b6930f39"
+    },
+    {
+      "source": "experiments/js-local-gc/runtime/src/ffi.rs",
+      "destination": "crates/kanimiso/src/ffi.rs",
+      "source_sha256": "ef9cbf04f504ed01cd0375360c78678f6c72d6dfd559dbdeb38402af5ed569b7"
+    },
+    {
+      "source": "experiments/js-local-gc/runtime/src/storage.rs",
+      "destination": "crates/kanimiso/src/storage.rs",
+      "source_sha256": "a5d1d9e59f37bf22d2f0e169e77acaeb0688f66c149c5faf7d49e2b8c85a331d"
+    },
+    {
+      "source": "experiments/js-local-gc/runtime/src/task.rs",
+      "destination": "crates/kanimiso/src/task.rs",
+      "source_sha256": "be66e11dc64d8e5f1428c9a8d51d85ff16a89645c54c38a0ab8b5bdb9b552f69"
+    },
+    {
+      "source": "experiments/js-local/runtime/src/promise.rs",
+      "destination": "crates/kanimiso/src/promise.rs",
+      "source_sha256": "786501a2f38c24a3e16d27f2152b73627b4a74ab0aa7c8568fc0d59a402470be"
+    },
+    {
+      "source": "experiments/js-local/runtime/src/value.rs",
+      "destination": "crates/kanimiso/src/value.rs",
+      "source_sha256": "01e46db983e318cc0856ef0ff1e113abb4e8b529b3f2e53e017f20256669995c"
+    },
+    {
+      "source": "experiments/js-local/runtime/src/waker.rs",
+      "destination": "crates/kanimiso/src/waker.rs",
+      "source_sha256": "eac9c2b2f5a538918ac1cb0bfbad0934898c4c78b1b1fb84c893666029dc61b9"
+    },
+    {
+      "source": "experiments/js-local/runtime/build.rs",
+      "destination": "crates/kanimiso/build.rs",
+      "source_sha256": "1fcd2d553fab84267da595b7583da5d5b72e98f0af2eb51865c15e69670afc86"
+    },
+    {
+      "source": "experiments/allocator-port/wee-port/Cargo.toml",
+      "destination": "crates/wee-port/Cargo.toml",
+      "source_sha256": "0065c782b42ca9246efc2bde5f166bfa6442d0cd20b49d8b5ff46ee1fa9e548d"
+    },
+    {
+      "source": "experiments/allocator-port/wee-port/LICENSE",
+      "destination": "crates/wee-port/LICENSE",
+      "source_sha256": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
+    },
+    {
+      "source": "experiments/allocator-port/wee-port/build.rs",
+      "destination": "crates/wee-port/build.rs",
+      "source_sha256": "df53a44daa926f50702865aef2b559fd63bcc3d567640a82647b0b7d3c108b4b"
+    },
+    {
+      "source": "experiments/allocator-port/wee-port/src/const_init.rs",
+      "destination": "crates/wee-port/src/const_init.rs",
+      "source_sha256": "3990e2658a30f8674ad948ce6ca1a50a86c714417005df895d5e4892f863b867"
+    },
+    {
+      "source": "experiments/allocator-port/wee-port/src/imp_test.rs",
+      "destination": "crates/wee-port/src/imp_test.rs",
+      "source_sha256": "60e3ec7ccac4925e5aa33f4abeddb47d9e4210690c2689d97dd06028c2872910"
+    },
+    {
+      "source": "experiments/allocator-port/wee-port/src/neighbors.rs",
+      "destination": "crates/wee-port/src/neighbors.rs",
+      "source_sha256": "603c99ca0f8117b79a8f1c9ec53cdba73260b84032f239f6a9f00f7da94834f5"
+    },
+    {
+      "source": "experiments/allocator-port/wee-port/src/regression.rs",
+      "destination": "crates/wee-port/src/regression.rs",
+      "source_sha256": "a3ed87881832843c4f0d3536b6f818732008bda863f02344d984cb37a1737483"
+    },
+    {
+      "source": "experiments/allocator-port/wee-port/src/lib.rs",
+      "destination": "crates/wee-port/src/lib.rs",
+      "source_sha256": "a5a1bd29e99c68cd47386c1987a406348d4abd4e284ce7b4003a52c3b7acea0f"
+    },
+    {
+      "source": "experiments/allocator-port/wee-port/src/size_classes.rs",
+      "destination": "crates/wee-port/src/size_classes.rs",
+      "source_sha256": "5bd2c84867afde2dc9e4c39ba2013e4244b539efd80b1f93abf76ed1517f2a35"
+    },
+    {
+      "source": "experiments/allocator-port/wee-port/src/imp_wasm32.rs",
+      "destination": "crates/wee-port/src/imp_wasm32.rs",
+      "source_sha256": "da90a938821d1d2c838027815398082675b2ac42d70fe5752991e711e103912e"
+    },
+    {
+      "source": "experiments/allocator-port/wee-port/src/extra_assert.rs",
+      "destination": "crates/wee-port/src/extra_assert.rs",
+      "source_sha256": "69119bed3138136b5a62d6f0604c984bda753d834931941680a33038f892a6fc"
+    },
+    {
+      "source": "experiments/allocator-port/UPSTREAM.json",
+      "destination": "crates/wee-port/UPSTREAM.json",
+      "source_sha256": "5081b5bbda90142f2510345af6f9f63cfe950df6f0a48a3ae3e6be3e2c79f6eb"
+    },
+    {
+      "source": "experiments/js-local-gc/demo/src/lib.rs",
+      "destination": "examples/promise/src/lib.rs",
+      "source_sha256": "7b8ba2262828c4928a31347ea451d03293daf4a5647678e65a7fe73d7f394f78"
+    },
+    {
+      "source": "experiments/js-local-gc/demo/src/probes.rs",
+      "destination": "examples/promise/src/probes.rs",
+      "source_sha256": "f2f9349c272be858c740174d56c3d59b140f69db10795f1a47a9f3d8d435ed15"
+    },
+    {
+      "source": "experiments/promise-async/demo/src/workflow.rs",
+      "destination": "examples/promise/src/workflow.rs",
+      "source_sha256": "28936f57aaa7d16680b6bcd088d52613ca3ea07022b1cfc55823f5a3b5125797"
+    },
+    {
+      "source": "experiments/js-local-hardened/bridge/src/main.rs",
+      "destination": "tools/bridge/src/main.rs",
+      "source_sha256": "fb36b68741087cf1b104f2f4cf486268e34c99e1654076a5717e6e676140b15e"
+    },
+    {
+      "source": "experiments/js-local-hardened/bridge/Cargo.toml",
+      "destination": "tools/bridge/Cargo.toml",
+      "source_sha256": "462360b2bb4a51971a2eeeb30962fe62e4ca0a976e6d0baec4a43a3746576e83"
+    },
+    {
+      "source": "experiments/js-local-release/host.mjs",
+      "destination": "src/host.mjs",
+      "source_sha256": "9b0d970cff5920f7b3e50fb91d84ada2c50a951722c27f67babb55c4f9d51221"
+    },
+    {
+      "source": "experiments/js-local-release/errors.mjs",
+      "destination": "src/errors.mjs",
+      "source_sha256": "e6d1f993b7270652963f571af12fc938de58339e216a2ea67dc4161c875e1ec4"
+    },
+    {
+      "source": "experiments/js-local-release/error-codes.json",
+      "destination": "src/error-codes.json",
+      "source_sha256": "130951fafd2cb53763344cfc2fd3860569c40c532a5d9f8210b024e5c12946aa"
+    },
+    {
+      "source": "experiments/js-local-slots/intrusive.wat",
+      "destination": "src/intrusive.wat",
+      "source_sha256": "4bc6c4acfd532af79c6ba99b17df955f6cc65e6ea26f57ed99be5746c976748f"
+    },
+    {
+      "source": "bench/js-local-import-contract.mjs",
+      "destination": "tools/import-contract.mjs",
+      "source_sha256": "51b197ed59689a6317d538843626c7f184a3aa140c799472ea2b864f553f5b20"
+    },
+    {
+      "source": "tools/install-binaryen.mjs",
+      "destination": "tools/install-binaryen.mjs",
+      "source_sha256": "c312d4defb9e09b9470c8058013133b07bd3fcdc1f6f87c5194599d0f23d1ced"
+    },
+    {
+      "source": "bench/wasm-opt-contract.mjs",
+      "destination": "tools/wasm-opt-contract.mjs",
+      "source_sha256": "b692f946529320a8ac480bac9d9620677b24a8d822cba8b9510a1dfebfe454aa"
+    },
+    {
+      "source": "bench/metrics.mjs",
+      "destination": "tests/support/metrics.mjs",
+      "source_sha256": "8e00d852b079470d4b2554dae8d21efb8b5a1493ae3b8cc78387c3389006d5de"
+    },
+    {
+      "source": "bench/guest-async-contract.mjs",
+      "destination": "tests/support/async-contract.mjs",
+      "source_sha256": "6ec8416a13d55b8623d2a69e34a16275668664cc5e9906ddaabb0d82856ddfce"
+    },
+    {
+      "source": "experiments/js-local-hardened/regressions.mjs",
+      "destination": "tests/support/regressions.mjs",
+      "source_sha256": "ca7d33bbbcb2ea71b73909967211c65645647db340af80b0ad24bc5023ee9757"
+    },
+    {
+      "source": "experiments/js-local-hardened/failures.mjs",
+      "destination": "tests/support/failures.mjs",
+      "source_sha256": "eeea7168aae7c0df576d0f9938ee67a41aea8646b25bd45fc1db43e9ed5f4657"
+    },
+    {
+      "source": "experiments/js-local-hardened/fuzz.mjs",
+      "destination": "tests/support/fuzz.mjs",
+      "source_sha256": "38cfc00116b51d32d472dff6fffe054a0087af91229905a3982f9e494b615419"
+    },
+    {
+      "source": "experiments/js-local-hardened/adapter.mjs",
+      "destination": "tests/support/adapter.mjs",
+      "source_sha256": "699b40cd1e3c2e252743b82c7577025fdd6be48acf1c8d885d1a827c113e133e"
+    },
+    {
+      "source": "experiments/js-local-static/suite.mjs",
+      "destination": "tests/support/minimal.mjs",
+      "source_sha256": "e4167727e2aad7bad7ba08190db53f27259820b68494f0568985beede48f7097"
+    },
+    {
+      "source": "experiments/js-local-borrowed/suite.mjs",
+      "destination": "tests/support/storage.mjs",
+      "source_sha256": "c33797914158a6ad7db5e8d024f501b72f84d63e640db41c450d77d75f3bf7a9"
+    },
+    {
+      "source": "experiments/js-runtime-compare/suite.mjs",
+      "destination": "tests/support/common.mjs",
+      "source_sha256": "8cff22f953e741f6bde7e55726a3de58208ed6e5ec5a369c7a5eb62de994b91d"
+    },
+    {
+      "source": "experiments/promise-async/suite.mjs",
+      "destination": "tests/support/promises.mjs",
+      "source_sha256": "a1c11015aaf15d94c7c44282b8499aaef964d42850cc81f9950645ba01e6989a"
+    },
+    {
+      "source": "experiments/js-local-modern/suite.mjs",
+      "destination": "tests/support/modern.mjs",
+      "source_sha256": "0b5f2a2724d1dd0b890dafe00b5f39d0f587313c5af37318e7aedde13cc1a29c"
+    },
+    {
+      "source": "tests/js-local-release.test.mjs",
+      "destination": "tests/errors.test.mjs",
+      "source_sha256": "c27e90923f7ff892fbbf0e6a0b1644a13c4dfa39e8b38d356ae337fb5cce3475"
+    },
+    {
+      "source": "tests/js-local-hardened.test.mjs",
+      "destination": "tests/host.test.mjs",
+      "source_sha256": "f096db1572485bc54277215c657b9e692f813e9c60cd34e308cd4078c45f7644"
+    },
+    {
+      "source": "tests/js-local-imports.test.mjs",
+      "destination": "tests/imports.test.mjs",
+      "source_sha256": "0ac0d44b9cb07be990d3f2ad1db44d5637ea69973e969f28117395e2516f73fa"
+    },
+    {
+      "source": "tests/js-local-slots.test.mjs",
+      "destination": "tests/slots.test.mjs",
+      "source_sha256": "11480659cbeb4f45fbf8016ef8b3428adf31aed01d4d1650f3e0dc70a2f04e37"
+    },
+    {
+      "source": "experiments/js-local-modern/js-string.wat",
+      "destination": "tests/fixtures/js-string.wat",
+      "source_sha256": "8a40c3e9392cbec876c631346c3111853b3647eb1403b51d9e3e49558ef190af"
+    },
+    {
+      "source": "experiments/js-local-modern/exnref.wat",
+      "destination": "tests/fixtures/exnref.wat",
+      "source_sha256": "451d35b3e54f8767b7aeb331f95df655aab6d209730c5f7053817cc0f5ea20f4"
+    },
+    {
+      "source": "experiments/js-local-modern/funcref.wat",
+      "destination": "tests/fixtures/funcref.wat",
+      "source_sha256": "e42aee9a9ea7cea34808c984eebdcfb231c107f385d596bdc19edc0df4fd915f"
+    },
+    {
+      "source": "experiments/js-local-modern/gc.wat",
+      "destination": "tests/fixtures/gc.wat",
+      "source_sha256": "23d7551d701a1ac361285174bdb9b63286c9f4df3263573da7dbd1ef3ae3f428"
+    },
+    {
+      "source": "experiments/kani/harnesses/allocator.rs",
+      "destination": "verification/kani/harnesses/allocator.rs",
+      "source_sha256": "d56199158b5c74f65df93255e2d95fb1dbba3d6fb73a1ddee3be4e82f3e93c12"
+    },
+    {
+      "source": "experiments/kani/harnesses/backend.rs",
+      "destination": "verification/kani/harnesses/backend.rs",
+      "source_sha256": "b569a8e283656af9705a60613a02e1847a7f52739e8101f3f232bfa6ff3304bc"
+    },
+    {
+      "source": "experiments/kani/harnesses/waker.rs",
+      "destination": "verification/kani/harnesses/waker.rs",
+      "source_sha256": "f69b6609336312bcf13f05e1f5499b0fb1cc87072cf000a76065f752efde4e84"
+    },
+    {
+      "source": "experiments/kani/src/lib.rs",
+      "destination": "verification/kani/models/src/lib.rs",
+      "source_sha256": "a339b63e0f65c5f2bc65cb2a9b42df38436bced279174e0dc33da5af5054faae"
+    },
+    {
+      "source": "experiments/kani/Cargo.toml",
+      "destination": "verification/kani/models/Cargo.toml",
+      "source_sha256": "ecd455c7a501fad0564ab7e7403275f89205056d6ede91029f85787f4f2862ee"
+    },
+    {
+      "source": "tools/prepare-kani.mjs",
+      "destination": "tools/prepare-kani.mjs",
+      "source_sha256": "bec643e07b83b6b20a6c59071f1af8dc93e4e3613169a99eb1447583a5669c30"
+    }
+  ]
+}

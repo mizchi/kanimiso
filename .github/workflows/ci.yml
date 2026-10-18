@@ -1,0 +1,33 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: corepack prepare pnpm@12.11.2 --activate
+      - uses: extractions/setup-just@v4
+      - run: just setup
+      - run: just check
+      - run: just modern
+      - run: just stress 60
+      - run: just workers
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: verification
+          path: |
+            .cache/check.json
+            .cache/stress.json
+            .cache/workers.json
+            .cache/workers/log.txt
+          include-hidden-files: true

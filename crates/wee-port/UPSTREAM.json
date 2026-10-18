@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/bourumir-wyngs/wee_alloc_bw",
+  "revision": "9a9adc2106df80abd25501194275d7d51a1ba4c4",
+  "original_repository": "https://github.com/rustwasm/wee_alloc",
+  "license": "MPL-2.0",
+  "original_files_sha256": {
+    "wee_alloc/src/lib.rs": "a333d8729b5ea9dbe5234bf2ab254f5c93bc0087a49930395beee9dd0c018289",
+    "wee_alloc/src/neighbors.rs": "0a5ff097970ed17794eea868361b399c0a55406b978a7b767f76cadc2a69ee25",
+    "wee_alloc/src/size_classes.rs": "b39fe337d43daae92ad84a8306ab64242dd96f3ba19826b8ae98d5857bd49b9c",
+    "wee_alloc/src/extra_assert.rs": "58cf9a3d552b0c3fde30e316e2792eb1813d137277f0579bce87f5bb065c4847",
+    "wee_alloc/src/const_init.rs": "c74f6fd2344c15a2a74f00baa9a89fd5bc6b38786202139eef942da9c97014f4",
+    "wee_alloc/src/imp_wasm32.rs": "24e4d30f3c92d35afcb9b35ff623d8cdaf1211e9df44d2e060819094f76ec5e1"
+  }
+}

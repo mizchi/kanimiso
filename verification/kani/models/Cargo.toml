@@ -1,0 +1,13 @@
+[package]
+name = "jsrt-kani-models"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[features]
+red-control = []
+
+[workspace]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
