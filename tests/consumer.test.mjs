@@ -6,12 +6,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { instantiate } from "../dist/index.mjs";
 
-test("an application can bind its own ABI, including identical import/export names", async () => {
+test("WIT resource ownership supports matching import/export names and explicit drop", async () => {
   const dir = mkdtempSync(join(tmpdir(), "kanimiso-consumer-"));
   try {
     writeFileSync(
       `${dir}/raw.wat`,
-      '(module (import "app" "identity" (func $id (param i32) (result i32))) (memory (export "memory") 4 16) (func (export "identity") (param i32) (result i32) local.get 0 call $id))',
+      '(module (import "$root" "identity" (func $id (param i32) (result i32))) (import "test:consumer/js" "[resource-drop]value" (func $drop (param i32))) (memory (export "memory") 4 16) (func (export "identity") (param i32) (result i32) local.get 0 call $id) (func (export "discard") (param i32) local.get 0 call $drop))',
     );
     execFileSync(".cache/toolchains/binaryen-version_133/bin/wasm-as", [
       `${dir}/raw.wat`,
@@ -19,17 +19,14 @@ test("an application can bind its own ABI, including identical import/export nam
       `${dir}/raw.wasm`,
     ]);
     writeFileSync(
-      `${dir}/abi.json`,
-      JSON.stringify({
-        imports: { "app.identity": { params: ["own"], result: "own" } },
-        exports: { identity: { params: ["own"], result: "own" } },
-      }),
+      `${dir}/app.wit`,
+      `package test:consumer; interface js {resource value;} world app {import js; use js.{value}; import identity: func(v:value)->value; export identity: func(v:value)->value; export discard: func(v:value);}`,
     );
     execFileSync(process.execPath, [
       "tools/build-wasm.mjs",
       `${dir}/raw.wasm`,
-      "--abi",
-      `${dir}/abi.json`,
+      "--wit",
+      `${dir}/app.wit`,
       "--output",
       `${dir}/app.wasm`,
     ]);
@@ -47,6 +44,12 @@ test("an application can bind its own ABI, including identical import/export nam
         value = { hello: "world" };
       assert.equal(host.call("identity", value), value);
       assert.equal(host.stats().live_values, 0);
+      host.call("discard", value);
+      assert.equal(
+        host.stats().live_values,
+        0,
+        "WIT resource-drop must release the transferred JS root",
+      );
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });

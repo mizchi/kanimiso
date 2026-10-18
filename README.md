@@ -1,147 +1,92 @@
 # kanimiso
 
-**English** | [日本語](README.ja.md)
+English | [日本語](README.ja.md)
 
-A small Rust/Wasm runtime that uses JavaScript Promises to run local futures.
-Supports both `std` and `no_std`, without requiring `wasm-bindgen` or Tokio.
+A small Rust/Wasm async runtime for JavaScript hosts. It connects Rust Futures to native Promises, with `spawn_local`, Promise awaiting, and cancellation. Both `std` and `no_std + alloc` are supported; JavaScript objects stay in the host.
 
-The Rust crate is `kanimiso`; the JS package is `@mizchi/kanimiso`.
-This is an experimental project used from a Git checkout. It has not been published to npm or crates.io.
+**WIT** defines application contracts and official **wit-bindgen** generates Rust types, Guest traits, and imports/exports. The execution format is **Core Wasm + externref**. Its JS root ownership is a lightweight profile, distinct from the Component Model Canonical ABI. See the [measured comparison](docs/wit-comparison.md) against standard Component async using the same algorithm.
+
+## Install and use
+
+The first crates.io releases of `kanimiso`, `kanimiso-allocator`, and `kanimiso-cli` are being prepared. The following is the intended workflow after publication. Registry installation has not yet been verified; no registry publish has been performed.
 
 ```sh
-just setup
-just check
+rustup target add wasm32-unknown-unknown
+cargo install kanimiso-cli --version 0.1.0 --locked
+# Install Binaryen 133: wasm-opt, wasm-as, wasm-merge, wasm-metadce on PATH
+kanimiso new hello --no-std
+cd hello
+cargo build --release --target wasm32-unknown-unknown
+kanimiso build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg
 ```
 
-Requirements: Node.js 24+, pnpm 12.11.2, just, and Rust 1.98.0.
-`just setup` installs the Wasm target and Binaryen 133, verifying its SHA-256 checksum.
-The build is independent of the original wasm-battleground checkout, artifacts, and result files.
+The native CLI embeds ready-to-use JS and the intrusive pool WAT. Consumers do not need a repository checkout, Node, or esbuild to generate the host. Binaryen is an external prerequisite. Use `KANIMISO_BINARYEN=/path/to/bin` or `--binaryen /path/to/bin` instead of PATH if desired.
 
-## Usage
+`new` generates an independent Cargo application with registry version dependencies. Its example uses a 64 KiB stack and a 1 MiB memory limit, adjustable in `.cargo/config.toml`. For an existing application, add these dependencies and use the generated example's WIT bindings and `export_runtime!()`:
+
+```sh
+cargo add kanimiso@0.1.0 --no-default-features
+cargo add kanimiso-allocator@0.1.0 --no-default-features
+cargo add wit-bindgen@=0.58.0 --no-default-features --features macros
+```
+
+Omit `--no-std` to generate a std application. The application selects its global allocator. `kanimiso-allocator` is the MPL-2.0 fork derived from `wee_alloc`, renamed from the experimental `wee-port`. Disable size classes for the smallest configuration.
+
+Deploy `pkg/app.wasm` with its matching `pkg/kanimiso.mjs`. In a browser, fetch the Wasm as an ArrayBuffer. In Node.js:
 
 ```js
-import { readFile } from "node:fs/promises";
-import { instantiate } from "./dist/index.mjs";
+import { readFile } from 'node:fs/promises';
+import { instantiate } from './pkg/kanimiso.mjs';
 
-const runtime = await instantiate(
-  await readFile("dist/examples/no_std-minimal.wasm"),
-  { deferredAdd: (a, b) => Promise.resolve((a + b) | 0) },
-);
-console.log(await runtime.promise("start", 7, 9)); // 17 (two awaits)
+const host = await instantiate(await readFile('./pkg/app.wasm'), {
+  bindings: { add: async (a, b) => (a + b) | 0 },
+});
+console.log(await host.promise('run', 20, 21)); // 42: await add(20,21), await add(41,1)
 ```
 
-`deferredAdd` is an example I/O hook retained for compatibility with the original tests.
-Define application imports with `bindings: { fetchData: (...) => ... }` and import them
-from the Wasm `app` module. Call Wasm through the returned runtime's `call` or `promise` methods.
-Calling raw `instance.exports` directly bypasses the fatal-error guards.
-See [src/index.d.ts](src/index.d.ts) for JS types and [src/error-codes.json](src/error-codes.json) for error codes.
-`./dist/index-debug.mjs` adds descriptive messages to the same error codes.
+`--debug` emits JS with descriptive errors. Release JS uses short error codes; `pkg/error-codes.json` explains them offline. The output also includes type declarations and build metadata.
 
-```rust
-use kanimiso::{future_to_promise, JsPromise, spawn_local};
+## WIT scope and ownership
 
-fn launch(promise: JsPromise) -> JsPromise {
-    future_to_promise(async move {
-        let value = promise.await?;
-        Ok(value)
-    })
-}
-
-fn detached() {
-    let _handle = spawn_local(async { /* Rust future */ });
+```wit
+package example:app@0.1.0;
+interface js { resource promise; }
+world app {
+  import js;
+  use js.{promise};
+  import add: func(a: s32, b: s32) -> promise;
+  export run: func(a: s32, b: s32) -> promise;
 }
 ```
 
-Build the Rust application as a `cdylib` for `wasm32-unknown-unknown` and provide
-`rt_poll`, `rt_drop`, and `rt_settle`. See [examples/promise](examples/promise) for a complete implementation.
-A `no_std` application chooses its own panic handler and allocator.
-The included `wee-port` is an optional general-purpose allocator; tasks use a fixed storage region.
+The Core profile supports s32, u32, f64, and own/borrow handles to imported resources whose objects live in JS. Borrow is supported only for import arguments. Unsupported string/list/record types, exported resources, and native WIT async fail the build. Core resources require a non-undefined JS value; a `promise` import must return a Promise. A synchronous boundary returning that resource connects to Rust async internally. Provide application imports through `bindings`; duplicate function names across imported interfaces are rejected.
 
-## Building an application
+Converting generated resource handles to `JsPromise` is valid only within this Core profile. These are not canonical resource-table handles usable unchanged with Component hosts. Raw pointers, root IDs, and `rt_*` are private ABI. Invoke application exports through the host's guarded `call` / `promise` methods.
 
-Provide an ABI manifest that declares reference ownership at the application boundary.
-Application functions can use arbitrary names.
+## Verification and limits
 
-```json
-{
-  "imports": {
-    "app.fetchData": { "params": ["i32"], "result": "own" }
-  },
-  "exports": {
-    "run": { "params": ["i32"], "result": "own" }
-  }
-}
-```
+The target is one JS agent, non-shared wasm32 memory, `alloc`, and modern JS/Wasm engines. The fixed pool has 1,024 × 128 B slots and limits Future size/alignment. JS roots retain references without copying object data into linear memory. A fatal error stops the instance with the first error and clears JS roots; Rust Drop is never retried after a trap.
+
+Verification covers V8, the system JavaScriptCore shell, and local workerd. The JSC shell is supplied with queueMicrotask via a Promise job. Safari browser execution and Cloudflare production deployment remain unverified. Tests for js-string, exnref, typed funcref, and GC do not imply that the runtime uses all those features. Kani verifies selected native 64-bit models and components, not the JS engine or the complete Wasm runtime.
+
+Historical extraction results are in [verification.md](docs/verification.md) and [JSON](docs/verification.json); [provenance.json](provenance.json) records their origins. Hashes and sizes from before relocation are not presented as current measurements.
+
+## Contributing
 
 ```sh
-node tools/build-wasm.mjs target/wasm32-unknown-unknown/release/app.wasm \
-  --abi abi.json --output dist/app.wasm
+git clone https://github.com/mizchi/kanimiso.git
+cd kanimiso
+just setup
+just check
+just package-check  # unpack/install .crate archives; run an external std/no_std consumer
+just compare-wit
+just modern
+just stress 60
+just workers
+just miri
+just kani
 ```
 
-`i32` and `f64` are scalars. `own` transfers an owned JsValue/JsPromise root;
-`borrow` borrows a reference and is supported only for import parameters.
-An `own` value is a `u32` in the raw Rust ABI and an `externref` after conversion.
-The build fails if a declared signature does not match the Wasm signature.
-`rt_*` and `jsrt` are reserved; application imports use the separate `app` namespace.
-The tool does not infer `own` or `borrow` boundaries for undeclared functions.
+Requires Node.js 24+, pnpm, Rust, and just. The WIT comparison also requires `wasm-tools 1.245.1` (`cargo install wasm-tools --version 1.245.1 --locked`). Before first publication, `package-check` patches registry dependencies to unpacked `.crate` archives. This validates package contents and the consumer workflow, not installation from crates.io. It does not publish to crates.io or npm.
 
-The build pipeline converts the externref ABI, links the intrusive pool, removes helper exports,
-then runs `wasm-opt -Oz --flatten --rereloop -Oz --converge` and renames private imports.
-Use Wasm and JS built together; do not mix minifier import maps across versions.
-The binder handles explicit scalar (`i32` / `f64`) and reference boundaries; it is not a general Rust binding generator.
-
-## Runtime contract
-
-- `spawn_local` defers its first poll to a microtask and coalesces duplicate wakes.
-- Dropping a JoinHandle detaches the task. Explicit cancellation drops its Future and subscriptions.
-- A successful result is committed to its Promise only after Rust Drop completes.
-- A fatal import exception or Wasm trap preserves the first exception, rejects all tasks, and releases JS roots.
-  After a fatal error, the host does not retry Rust Drop or reuse the instance.
-- External rejection values retain object identity and are not wrapped in another Error.
-- Token IDs are never reused, preventing late Promise settlements or stale Wakers from reaching another task.
-- The runtime requires non-shared memory and a single JS agent. Do not share it between JS workers.
-
-Task storage is **128 KiB / 128 B × 1024 slots / alignment ≤ 64**.
-Exceeding either a slot's capacity, including the Future and its header, or the concurrent task limit causes a fatal OOM.
-This is a bounded executor. The examples use 256 KiB of initial linear memory with a 1 MiB maximum.
-The minimal `no_std` example does not link general-purpose allocator code.
-
-The targets are V8 and Safari. The runtime uses `Promise.withResolvers`, `externref`, and `queueMicrotask`.
-Run `just modern` to probe newer Wasm features. Testing in the Safari browser is still pending;
-checks in the macOS system JavaScriptCore shell are recorded separately.
-
-## Verification
-
-```sh
-just check       # Node unit tests, native Rust, real std/no_std Wasm, regressions, OOM, fuzz
-just stress 60   # At least 60 seconds; compare std/no_std with identical seeds
-just miri       # Waker, types, storage layout, general-purpose allocator
-just kani-setup # Optional: Kani 0.67.0
-just kani       # Bounded proofs of Waker/allocator components and an ID model
-just workers    # Local workerd; no deployment to Cloudflare production
-just modern     # Feature probes for js-string, exnref, typed funcref, and GC
-```
-
-Kani verifies selected components and models on native 64-bit targets. It does not prove
-the JS engine, intrusive WAT, Wasm code generation, or the entire runtime.
-Errors, Drop, reentrancy, stale Wakers, and OOM are also tested with real Wasm instances.
-Results are saved to `.cache/check.json`, `stress.json`, `workers.json`, and `modern.json`.
-See [docs/verification.md](docs/verification.md) for verification results at extraction time.
-
-## Layout and provenance
-
-- `crates/kanimiso`: Rust API, Promise Future, Waker, and fixed backing storage.
-- `src`: JS host, error codes, intrusive WAT allocator, and JS/TypeScript API.
-- `tools/bridge`: Manifest-driven externref ABI converter.
-- `examples/promise`: The same algorithm in std/no_std builds, with separately built probes.
-- `tests`: Unit tests and real-Wasm regression, failure, and differential fuzz tests.
-- `verification/kani`: Component proof harnesses and the ID model.
-- `crates/wee-port`: General-purpose wasm32 allocator, licensed under MPL-2.0.
-
-Extracted from the working tree of wasm-battleground. The original comparison experiments and
-measurement history remain in that repository. `provenance.json` records SHA-256 hashes of the source files.
-Changes made during extraction include removing external path dependencies, naming the public packages,
-adding ABI manifests and guarded application bindings, and adding the package loader and verification tasks.
-Original measurements are not reused as the sizes of the extracted runtime.
-
-The runtime is MIT-licensed; `crates/wee-port` remains MPL-2.0. See [THIRD_PARTY.md](THIRD_PARTY.md).
+Runtime, CLI, and JS: MIT. Allocator: MPL-2.0. See [THIRD_PARTY.md](THIRD_PARTY.md).

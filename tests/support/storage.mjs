@@ -120,7 +120,7 @@ export async function verifyStorage(bytes, factory, backend) {
   const reservedBytes = host.call("storage_reserved"),
     memory = api.memory.buffer.byteLength;
   // A captured Future bigger than one pool slot is fatal there, valid in arena.
-  const big = host.promise("self_wake", 0x40000000);
+  const big = host.promise("self-wake", 0x40000000);
   if (backend === "pool")
     await assert.rejects(big, (e) => e.code === "ERR_WASM_OOM");
   else {

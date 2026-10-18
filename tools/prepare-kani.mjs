@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 const hash = (file) =>
   createHash("sha256").update(readFileSync(file)).digest("hex");
 export function prepareKani(root = ".cache/kani") {
-  const allocator = "crates/wee-port",
+  const allocator = "crates/kanimiso-allocator",
     harnesses = "verification/kani/harnesses";
   const inputs = [
     "tools/prepare-kani.mjs",
@@ -45,7 +45,7 @@ export function prepareKani(root = ".cache/kani") {
   copyFileSync(`${allocator}/LICENSE`, `${root}/allocator/LICENSE`);
   writeFileSync(
     `${root}/allocator/Cargo.toml`,
-    `[package]\nname="wee-port-kani"\nversion="0.0.0"\nedition="2021"\nlicense="MPL-2.0"\n[workspace]\n[features]\ndefault=[]\nsize_classes=[]\ninstrumentation=[]\nextra_assertions=[]\n[dependencies]\nmemory_units="=0.4.0"\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
+    `[package]\nname="kanimiso-allocator-kani"\nversion="0.0.0"\nedition="2021"\nlicense="MPL-2.0"\n[workspace]\n[features]\ndefault=[]\nsize_classes=[]\ninstrumentation=[]\nextra_assertions=[]\n[dependencies]\nmemory_units="=0.4.0"\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
   );
   const original = readFileSync("crates/kanimiso/src/waker.rs", "utf8");
   const needle = '#[cfg(target_arch = "wasm32")]';

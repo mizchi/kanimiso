@@ -1,0 +1,23 @@
+[package]
+name = "kanimiso-cli"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Build Rust/Wasm applications and matching JS glue for kanimiso"
+repository = "https://github.com/mizchi/kanimiso"
+readme = "README.md"
+include = ["src/**", "assets/**", "Cargo.toml", "Cargo.lock", "README.md", "LICENSE"]
+default-run = "kanimiso"
+
+[[bin]]
+name = "kanimiso"
+path = "src/main.rs"
+
+[dependencies]
+walrus = "=0.27.2"
+serde_json = "=1.0.150"
+tempfile = "=3.27.0"
+wit-parser = "=0.251.0"
+
+[dev-dependencies]
+wat = "=1.252.0"

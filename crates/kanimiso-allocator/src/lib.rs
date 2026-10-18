@@ -6,9 +6,9 @@
 #[cfg(test)]
 extern crate std;
 #[cfg(all(not(target_arch = "wasm32"), not(test)))]
-compile_error!("wee-port supports wasm32 only; native backend is test-only");
+compile_error!("kanimiso-allocator supports wasm32 only; native backend is test-only");
 #[cfg(target_feature = "atomics")]
-compile_error!("wee-port supports non-shared single-thread Wasm only");
+compile_error!("kanimiso-allocator supports non-shared single-thread Wasm only");
 #[macro_use]
 mod extra_assert;
 mod const_init;
@@ -1245,3 +1245,7 @@ mod tests {
 
 #[cfg(test)]
 mod regression;
+
+/// Small single-agent allocator for non-shared wasm32 memory.
+/// Derived from wee_alloc; the implementation remains MPL-2.0.
+pub type Allocator = WeeAlloc<'static>;

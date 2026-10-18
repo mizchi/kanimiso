@@ -107,10 +107,10 @@ export async function fuzz(
         rec.finish = rec.rejected ? reject : resolve;
       });
       input.catch(() => {}); // The caller owns input rejection even if cancelled before polling.
-      promise = host.promise("await_value", input);
+      promise = host.promise("await-value", input);
     } else if (kind === 1) {
       rec.value = 42;
-      promise = host.promise("self_wake", random(5));
+      promise = host.promise("self-wake", random(5));
     } else if (kind === 2) {
       const a = random(0xffffffff) | 0,
         b = random(0xffffffff) | 0;
@@ -118,7 +118,7 @@ export async function fuzz(
       promise = host.promise("start", a, b);
     } else {
       rec.value = undefined;
-      promise = host.promise("spawn_empty");
+      promise = host.promise("spawn-empty");
     }
     Object.assign(rec, allocation);
     assert.ok(!byPointer.has(rec.ptr), "live Task memory cannot overlap");
@@ -230,7 +230,7 @@ export async function fuzz(
       check(true);
       const before = polls;
       resolve(records.at(-2));
-      await assert.rejects(host.promise("spawn_empty"), (e) => e === terminal);
+      await assert.rejects(host.promise("spawn-empty"), (e) => e === terminal);
       await flush();
       assert.equal(polls, before);
       assert.equal(

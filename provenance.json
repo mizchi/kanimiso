@@ -288,5 +288,9 @@
       "destination": "tools/prepare-kani.mjs",
       "source_sha256": "bec643e07b83b6b20a6c59071f1af8dc93e4e3613169a99eb1447583a5669c30"
     }
-  ]
+  ],
+  "relocations_after_extraction": {
+    "crates/wee-port": "crates/kanimiso-allocator",
+    "tools/bridge": "crates/kanimiso-cli"
+  }
 }

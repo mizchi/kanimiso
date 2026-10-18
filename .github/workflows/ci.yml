@@ -18,6 +18,7 @@ jobs:
       - uses: extractions/setup-just@v4
       - run: just setup
       - run: just check
+      - run: just package-check
       - run: just modern
       - run: just stress 60
       - run: just workers
@@ -28,6 +29,8 @@ jobs:
           path: |
             .cache/check.json
             .cache/stress.json
+            .cache/package-check.json
+            .cache/package-check-error.log
             .cache/workers.json
             .cache/workers/log.txt
           include-hidden-files: true

@@ -5,7 +5,12 @@ edition = "2024"
 license = "MIT"
 description = "Promise-first single-agent Rust/Wasm runtime"
 repository = "https://github.com/mizchi/kanimiso"
-publish = false
+readme = "README.md"
+include = ["src/**", "build.rs", "Cargo.toml", "README.md", "LICENSE"]
+
+[package.metadata.docs.rs]
+default-target = "wasm32-unknown-unknown"
+targets = ["wasm32-unknown-unknown"]
 
 [lib]
 doctest = false

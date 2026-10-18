@@ -17,8 +17,8 @@ export function workerService(modules, createHost) {
           memory: e.memory,
           add: e.add,
           start: e.start,
-          awaitValue: e.await_value,
-          spawnEmpty: e.spawn_empty,
+          awaitValue: e["await-value"],
+          spawnEmpty: e["spawn-empty"],
           diagnostics: () => host.stats(),
         });
         return Response.json({

@@ -41,9 +41,9 @@ export async function verifyFailures(bytes, factory) {
         } catch {}
       }
     });
-    const held = host.promise("await_value", new Promise(() => {}));
+    const held = host.promise("await-value", new Promise(() => {}));
     const heldCheck = assert.rejects(held, (e) => e === fatal);
-    const p = host.promise("self_wake", mode === "completion" ? 0 : 100);
+    const p = host.promise("self-wake", mode === "completion" ? 0 : 100);
     [, id] = host.activeTasks();
     const check = assert.rejects(
       p,
@@ -53,7 +53,7 @@ export async function verifyFailures(bytes, factory) {
     );
     let otherCheck;
     if (mode === "other" || mode === "caught-nested") {
-      const q = host.promise("self_wake", 0x80000000);
+      const q = host.promise("self-wake", 0x80000000);
       other = host.activeTasks().at(-1);
       otherCheck = assert.rejects(q, { name: "AbortError" });
     }
@@ -66,7 +66,7 @@ export async function verifyFailures(bytes, factory) {
     closed(host);
     assert.equal(drops, 1, "never retry a trapping destructor");
     const before = polls;
-    await assert.rejects(host.promise("spawn_empty"), (e) => e === fatal);
+    await assert.rejects(host.promise("spawn-empty"), (e) => e === fatal);
     assert.equal(host.cancel(id), false);
     await tick();
     assert.equal(polls, before);
@@ -74,7 +74,7 @@ export async function verifyFailures(bytes, factory) {
   }
   {
     const { host } = await instantiate(bytes, {}, factory);
-    const pending = host.promise("await_value", new Promise(() => {}));
+    const pending = host.promise("await-value", new Promise(() => {}));
     let reason;
     const pendingCheck = pending.catch((e) => {
       reason = e;
@@ -85,7 +85,7 @@ export async function verifyFailures(bytes, factory) {
     while (host.call("mem_reserve", 4096)) assert.ok(++blocks < 1024);
     while (host.call("mem_reserve", 1)) assert.ok(++cells < 10000);
     let error;
-    await assert.rejects(host.promise("spawn_empty"), (e) => {
+    await assert.rejects(host.promise("spawn-empty"), (e) => {
       error = e;
       return (
         e.name === "WasmOutOfMemoryError" &&
@@ -99,9 +99,9 @@ export async function verifyFailures(bytes, factory) {
     closed(host);
     results.push({ case: "Task allocation OOM", blocks, cells, passed: true });
   }
-  for (const method of ["oom_sync", "oom_poll"]) {
+  for (const method of ["oom_sync", "oom-poll"]) {
     const { host } = await instantiate(bytes, {}, factory);
-    const pending = host.promise("await_value", new Promise(() => {}));
+    const pending = host.promise("await-value", new Promise(() => {}));
     let reason, error;
     const check = pending.catch((e) => {
       reason = e;
@@ -113,19 +113,19 @@ export async function verifyFailures(bytes, factory) {
     await check;
     assert.equal(reason, error);
     closed(host);
-    await assert.rejects(host.promise("spawn_empty"), (e) => e === error);
+    await assert.rejects(host.promise("spawn-empty"), (e) => e === error);
     results.push({ case: method, passed: true });
   }
   {
     const { host } = await instantiate(bytes, { maxValues: 1 }, factory);
     let reason;
-    const p = host.promise("await_value", new Promise(() => {}));
+    const p = host.promise("await-value", new Promise(() => {}));
     await assert.rejects(p, (e) => {
       reason = e;
       return e.code === "ERR_WASM_OOM";
     });
     closed(host);
-    await assert.rejects(host.promise("spawn_empty"), (e) => e === reason);
+    await assert.rejects(host.promise("spawn-empty"), (e) => e === reason);
     results.push({ case: "externref root OOM", passed: true });
   }
   return { all_passed: true, cases: results };

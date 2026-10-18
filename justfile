@@ -16,9 +16,9 @@ test: build-host
     pnpm test
     cargo test --locked -p kanimiso --lib
     cargo test --locked -p kanimiso --lib --features std
-    cargo test --locked -p kanimiso-bind
-    cargo test --locked -p wee-port --lib --features instrumentation,extra_assertions
-    cargo test --locked -p wee-port --lib --no-default-features --features instrumentation,extra_assertions
+    cargo test --locked -p kanimiso-cli
+    cargo test --locked -p kanimiso-allocator --lib --features instrumentation,extra_assertions
+    cargo test --locked -p kanimiso-allocator --lib --no-default-features --features instrumentation,extra_assertions
 
 check: build test
     pnpm format:check
@@ -39,8 +39,8 @@ stress seconds="60":
 miri:
     cargo +nightly miri test --locked -p kanimiso --lib -- --test-threads=1
     cargo +nightly miri test --locked -p kanimiso --lib --features std -- --test-threads=1
-    cargo +nightly miri test --locked -p wee-port --lib --no-default-features --features instrumentation -- --test-threads=1
-    cargo +nightly miri test --locked -p wee-port --lib --no-default-features --features instrumentation,extra_assertions test_merge_free_ -- --test-threads=1
+    cargo +nightly miri test --locked -p kanimiso-allocator --lib --no-default-features --features instrumentation -- --test-threads=1
+    cargo +nightly miri test --locked -p kanimiso-allocator --lib --no-default-features --features instrumentation,extra_assertions test_merge_free_ -- --test-threads=1
 
 kani-setup:
     cargo install --locked kani-verifier --version 0.67.0
@@ -63,3 +63,12 @@ kani-explore:
 
 report:
     node tools/report-verification.mjs
+
+package-check: build-host
+    node tools/package-check.mjs
+
+compare-wit: build-host
+    cargo fetch --locked --manifest-path experiments/wit/core/Cargo.toml
+    cargo fetch --locked --manifest-path experiments/wit/component/Cargo.toml
+    cargo build --locked --release -p kanimiso-cli
+    node tools/compare-wit.mjs

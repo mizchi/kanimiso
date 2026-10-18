@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #[global_allocator]
-static ALLOCATOR: wee_port::WeeAlloc = wee_port::WeeAlloc::INIT;
+static ALLOCATOR: kanimiso_allocator::Allocator = kanimiso_allocator::Allocator::INIT;
 #[cfg(not(feature = "std"))]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
@@ -26,12 +26,12 @@ mod custom {
         future_to_promise(super::workflow::compute(a, b)).into_abi()
     }
     #[cfg(feature = "test-api")]
-    #[unsafe(no_mangle)]
+    #[unsafe(export_name = "await-value")]
     pub unsafe extern "C" fn await_value(p: u32) -> u32 {
         future_to_promise(super::workflow::forward(unsafe { JsPromise::from_abi(p) })).into_abi()
     }
     #[cfg(feature = "test-api")]
-    #[unsafe(no_mangle)]
+    #[unsafe(export_name = "spawn-empty")]
     pub extern "C" fn spawn_empty() -> u32 {
         spawn_local(async {}).into_promise().into_abi()
     }

@@ -1,144 +1,92 @@
 # kanimiso
 
-[English](README.md) | **日本語**
+[English](README.md) | 日本語
 
-JavaScript の Promise を利用する、小さな Rust/Wasm 向け single-agent runtime。
-`std` / `no_std` の両方に対応し、`wasm-bindgen` や Tokio を必要としない。
+JavaScript ホスト向けの小さな Rust/Wasm 非同期ランタイムです。Rust の Future を native Promise に接続し、`spawn_local`、Promise の await、キャンセルを提供します。`std` / `no_std + alloc` に対応し、JS オブジェクトの実体はホスト側に保持します。
 
-Rust crate は `kanimiso`、JS パッケージ名は `@mizchi/kanimiso`。
-現在は Git checkout から使う実験版で、npm / crates.io には公開していない。
+公開インターフェースは **WIT**、Rust の型・Guest・import/export は公式 **wit-bindgen** で生成します。実行形式は **Core Wasm + externref** です。この軽量プロファイルの JS root 管理は Component Model の Canonical ABI とは異なります。標準 Component async との同一アルゴリズムによる実測は [比較結果](docs/wit-comparison.md) にあります。
+
+## インストールと利用
+
+`kanimiso`、`kanimiso-allocator`、`kanimiso-cli` の初回 crates.io 公開を準備中です。以下は公開後の利用手順です。まだレジストリからのインストール成功は保証していません。公開自体は実施していません。
 
 ```sh
-just setup
-just check
+rustup target add wasm32-unknown-unknown
+cargo install kanimiso-cli --version 0.1.0 --locked
+# Binaryen 133 の wasm-opt / wasm-as / wasm-merge / wasm-metadce を PATH に置く
+kanimiso new hello --no-std
+cd hello
+cargo build --release --target wasm32-unknown-unknown
+kanimiso build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg
 ```
 
-必要環境: Node.js 24+、pnpm 12.11.2、just、Rust 1.98.0。
-`just setup` が Wasm target と SHA-256 を照合した Binaryen 133 を用意する。
-元の wasm-battleground の checkout、ビルド成果物、結果 JSON は不要。
+CLI はビルド済み JS と intrusive pool の WAT を内包します。利用者によるこのリポジトリの checkout や Node/esbuild でのホスト生成は不要です。Binaryen は外部ツールです。PATH の代わりに `KANIMISO_BINARYEN=/path/to/bin` または `--binaryen /path/to/bin` を指定できます。
 
-## 使い方
+`new` はレジストリのバージョン依存を使う独立した Cargo プロジェクトを生成します。生成例の stack は 64 KiB、memory 上限は 1 MiB で、`.cargo/config.toml` から変更できます。既存のプロジェクトでは次の依存を追加し、生成例と同じ WIT / `export_runtime!()` を利用します。
+
+```sh
+cargo add kanimiso@0.1.0 --no-default-features
+cargo add kanimiso-allocator@0.1.0 --no-default-features
+cargo add wit-bindgen@=0.58.0 --no-default-features --features macros
+```
+
+`--no-std` を付けない `new` は std 構成です。JS 用 allocator はアプリ側で選択します。`kanimiso-allocator` は `wee_alloc` 由来の MPL-2.0 の fork で、以前の実験名 `wee-port` から改名しています。最小構成は size classes を無効にします。
+
+生成された `pkg/app.wasm` と `pkg/kanimiso.mjs` を一緒に配信します。ブラウザーでは Wasm を fetch して ArrayBuffer にし、Node.js では次のように使えます。
 
 ```js
-import { readFile } from "node:fs/promises";
-import { instantiate } from "./dist/index.mjs";
+import { readFile } from 'node:fs/promises';
+import { instantiate } from './pkg/kanimiso.mjs';
 
-const runtime = await instantiate(
-  await readFile("dist/examples/no_std-minimal.wasm"),
-  { deferredAdd: (a, b) => Promise.resolve((a + b) | 0) },
-);
-console.log(await runtime.promise("start", 7, 9)); // 17（2段の await）
+const host = await instantiate(await readFile('./pkg/app.wasm'), {
+  bindings: { add: async (a, b) => (a + b) | 0 },
+});
+console.log(await host.promise('run', 20, 21)); // 42: await add(20,21), await add(41,1)
 ```
 
-`deferredAdd` は移植元テストとの互換用サンプル I/O。アプリ独自の import は
-`bindings: { fetchData: (...) => ... }` のように指定し、Wasm の `app` モジュールから参照する。
-返された runtime の `call` / `promise` を通して Wasm を呼ぶ。
-生の `instance.exports` を直接呼ぶと fatal guard の契約を迂回する。
-JS の型は [src/index.d.ts](src/index.d.ts)、エラーコードは [src/error-codes.json](src/error-codes.json)。
-`./dist/index-debug.mjs` では同じコードに説明メッセージが付く。
+`--debug` は説明付きエラーを含む JS を出力します。release は短いエラーコードを使い、`pkg/error-codes.json` で説明を確認できます。型宣言とビルド情報も pkg に出力します。
 
-```rust
-use kanimiso::{future_to_promise, JsPromise, spawn_local};
+## WIT の範囲と所有権
 
-fn launch(promise: JsPromise) -> JsPromise {
-    future_to_promise(async move {
-        let value = promise.await?;
-        Ok(value)
-    })
-}
-
-fn detached() {
-    let _handle = spawn_local(async { /* Rust の Future */ });
+```wit
+package example:app@0.1.0;
+interface js { resource promise; }
+world app {
+  import js;
+  use js.{promise};
+  import add: func(a: s32, b: s32) -> promise;
+  export run: func(a: s32, b: s32) -> promise;
 }
 ```
 
-Rust のアプリは `wasm32-unknown-unknown` 向け cdylib とし、
-`rt_poll` / `rt_drop` / `rt_settle` を提供する。[examples/promise](examples/promise) に完全な実装がある。
-`no_std` ではアプリが panic handler と allocator を選ぶ。
-同梱の `wee-port` は任意の汎用 allocator。タスク自身は固定領域から確保する。
+Core プロファイルは s32 / u32 / f64 と、JS に実体を置く imported resource の own / borrow を扱います。borrow は import 引数のみです。string、list、record、exported resource、WIT native async は未対応としてビルドを失敗させます。resource は `undefined` 以外の JS 参照を表し（`promise` は Promise を返す契約）、WIT の `promise` resource を返す同期境界の内側で Rust async を動かします。アプリ import は `bindings` に渡し、同名の関数を複数 interface から import する構成は拒否します。
 
-## アプリのビルド
+生成された resource の handle と `JsPromise` の間の変換は、この Core プロファイル内でのみ有効です。別の Component host にそのまま渡せる canonical resource handle ではありません。raw ポインター・root ID・`rt_*` は非公開 ABI です。アプリ関数は host の `call` / `promise` 経由で呼び出してください。
 
-アプリの参照境界を明示した ABI manifest を渡す。任意の関数名を利用できる。
+## 検証と制約
 
-```json
-{
-  "imports": {
-    "app.fetchData": { "params": ["i32"], "result": "own" }
-  },
-  "exports": {
-    "run": { "params": ["i32"], "result": "own" }
-  }
-}
-```
+single-agent、非共有 wasm32 memory、`alloc`、現代の JS/Wasm エンジンを対象にします。固定 pool は 128 B × 1,024 slots、Future の大きさ・alignment に上限があります。大きな Future に対応する汎用 executor ではありません。JS roots は参照保持だけを行い、JS オブジェクトを線形メモリーへコピーしません。fatal 時は最初のエラーで停止し、JS roots を解放します。壊れた Rust Drop は再試行しません。
+
+V8 と system JavaScriptCore shell、および local workerd で検証します。JSC shell の queueMicrotask は Promise job で補います。Safari 実ブラウザーと Cloudflare 本番への deploy は未検証です。js-string / exnref / typed funcref / GC の機能検証と、通常ランタイムがそれら全てを使うことは別です。Kani は native 64-bit の限定されたモデル・部品の検証で、JS・エンジン・Wasm 全体の証明ではありません。
+
+抽出時点の過去の結果は [verification.md](docs/verification.md) と [JSON](docs/verification.json)、来歴は [provenance.json](provenance.json) にあります。パス変更前のハッシュやサイズは現在の測定値として流用しません。
+
+## 開発者向け
 
 ```sh
-node tools/build-wasm.mjs target/wasm32-unknown-unknown/release/app.wasm \
-  --abi abi.json --output dist/app.wasm
+git clone https://github.com/mizchi/kanimiso.git
+cd kanimiso
+just setup
+just check
+just package-check  # .crate を展開・インストールし、repo 外の利用アプリを std/no_std で実行
+just compare-wit
+just modern
+just stress 60
+just workers
+just miri
+just kani
 ```
 
-`i32` / `f64` は scalar、`own` は所有する JsValue/JsPromise root の受け渡し、
-`borrow` は import の引数だけで使える借用。`own` の生 Rust 型は `u32`、変換後は `externref`。
-manifest と実際の Wasm signature が違う場合はビルドを失敗させる。
-`rt_*` と `jsrt` は予約済み。アプリの import は `app` namespace に分離する。
-`own` / `borrow` を使う未宣言の関数を自動推測しない。
+Node.js 24+、pnpm、Rust、just が必要です。WIT 比較には `wasm-tools 1.245.1`（`cargo install wasm-tools --version 1.245.1 --locked`）も必要です。`package-check` は未公開の依存を展開した .crate へ patch して検証します。レジストリ経由のインストール確認とは区別しています。実際の crates.io / npm への publish は行いません。
 
-ビルドツールは externref ABI 変換 → intrusive pool 結合 → 不要 export 除去 →
-`wasm-opt -Oz --flatten --rereloop -Oz --converge` → private import 名変換を行う。
-Wasm と JS は同時にビルドした組み合わせを使う。minifier の import map を別バージョンと混ぜない。
-この版の binder は `i32` / `f64` と参照の明示的な境界のみを扱い、一般的な Rust binding generator ではない。
-
-## 実行契約
-
-- `spawn_local` の最初の poll は microtask まで遅延し、重複 wake をまとめる。
-- JoinHandle の Drop は detach。明示的な cancel で Future と購読を破棄する。
-- 成功結果は Rust Drop の完了後に Promise へ確定する。
-- 致命的な import 例外・Wasm trap では最初の例外を保持し、全タスクを reject、JS roots を解放する。
-  fatal 後に Rust の Drop を再実行せず、instance を再利用しない。
-- 外部の reject 値はオブジェクト同一性を維持し、別の Error で包まない。
-- token ID を再利用せず、遅延した Promise 解決や古い Waker が別タスクに届くことを防ぐ。
-- 非共有メモリー、single-agent のみ。JS の worker 間で runtime を共有しない。
-
-タスク領域は **128 KiB / 128 B × 1024 slots / alignment ≤ 64**。
-Future 本体・header 等を合わせて slot を超える場合や同時タスク上限は fatal OOM となる。
-これは汎用の無制限 executor ではない。線形メモリーの初期値はサンプルで 256 KiB、最大 1 MiB。
-`no_std` 最小サンプルには汎用 allocator のコードがリンクされない。
-
-対象は V8 / Safari。`Promise.withResolvers`、`externref`、`queueMicrotask` を使う。
-新しい Wasm 機能は `just modern` で動作を確認する。Safari 実ブラウザーの検証は未完了で、
-macOS の system JavaScriptCore shell での確認とは区別する。
-
-## 検証
-
-```sh
-just check       # Node unit、native Rust、実際の std/no_std Wasm、回帰・OOM・fuzz
-just stress 60   # 60秒以上、同一 seed の std/no_std を差分比較
-just miri       # Waker・型・storage layout・汎用 allocator
-just kani-setup # optional: Kani 0.67.0
-just kani       # Waker / allocator 実装の限定された proof と ID モデル
-just workers    # local workerd。Cloudflare 本番へは deploy しない
-just modern     # js-string / exnref / typed funcref / GC の機能プローブ
-```
-
-Kani は native 64-bit の限定された部品・モデルの検証であり、JS engine や intrusive WAT、
-Wasm コード生成、runtime 全体の形式証明ではない。
-エラー・Drop・再入・stale Waker・OOM は実際の Wasm を使うテストでも確認する。
-結果は `.cache/check.json` / `stress.json` / `workers.json` / `modern.json` へ保存する。
-抽出時の確認結果は [docs/verification.md](docs/verification.md)。
-
-## 構成と来歴
-
-- `crates/kanimiso`: Rust API、Promise Future、Waker、固定 backing storage。
-- `src`: JS host、エラーコード、intrusive WAT allocator、JS / TypeScript API。
-- `tools/bridge`: ABI manifest を使う externref 変換器。
-- `examples/promise`: std/no_std の同一アルゴリズムと別ビルドの probe。
-- `tests`: unit と実 Wasm の回帰・失敗・差分 fuzz。
-- `verification/kani`: 部品の proof harness と ID モデル。
-- `crates/wee-port`: wasm32 向け汎用 allocator。MPL-2.0。
-
-wasm-battleground の作業ツリーから抽出した。元の比較実験・計測履歴は元リポジトリに残す。
-`provenance.json` は抽出元ファイルの SHA-256 を記録する。
-抽出後の変更はローカル依存の解消、公開名、ABI manifest、guarded application bindings、
-パッケージ loader と検証タスクの追加。元の測定値を抽出後のサイズとして流用しない。
-
-本体は MIT、`crates/wee-port` は MPL-2.0。[THIRD_PARTY.md](THIRD_PARTY.md) を参照。
+ライセンスは runtime / CLI / JS が MIT、allocator が MPL-2.0。[THIRD_PARTY.md](THIRD_PARTY.md) を参照してください。

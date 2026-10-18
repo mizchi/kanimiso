@@ -47,7 +47,7 @@ impl Drop for Probe {
         }
     }
 }
-#[unsafe(no_mangle)]
+#[unsafe(export_name = "self-wake")]
 pub extern "C" fn self_wake(rounds: u32) -> u32 {
     if rounds & 0x4000_0000 != 0 {
         let bytes = core::hint::black_box([42u8; 512]);
@@ -93,7 +93,7 @@ fn exhaust() {
 pub extern "C" fn oom_sync() {
     exhaust();
 }
-#[unsafe(no_mangle)]
+#[unsafe(export_name = "oom-poll")]
 pub extern "C" fn oom_poll() -> u32 {
     future_to_promise(async {
         exhaust();

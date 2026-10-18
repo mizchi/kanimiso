@@ -15,4 +15,4 @@ probes = ["test-api"]
 
 [dependencies]
 jsrt = { package = "kanimiso", path = "../../crates/kanimiso", default-features = false }
-wee_port = { package = "wee-port", path = "../../crates/wee-port", default-features = false }
+kanimiso-allocator = { version = "0.1.0", path = "../../crates/kanimiso-allocator", default-features = false }

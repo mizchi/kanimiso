@@ -29,8 +29,8 @@ export async function instantiate(
       memory: instance.exports.memory,
       add: (...args) => host.call("add", ...args),
       start: (...args) => host.promise("start", ...args),
-      awaitValue: (p) => host.promise("await_value", p),
-      spawnEmpty: () => host.promise("spawn_empty"),
+      awaitValue: (p) => host.promise("await-value", p),
+      spawnEmpty: () => host.promise("spawn-empty"),
       diagnostics: () => host.stats(),
     },
   };

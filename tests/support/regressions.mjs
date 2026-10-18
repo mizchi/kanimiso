@@ -55,13 +55,13 @@ export async function verifyLocal(bytes, glue) {
   };
   {
     const { host, e, events, pointers } = await make();
-    assert.equal(await e.self_wake(3), 42);
+    assert.equal(await e["self-wake"](3), 42);
     assert.equal(events.filter((x) => x === 0).length, 4);
     assert.equal(events.filter((x) => x === 1).length, 1);
     assert.equal(host.stats().polls, 4, "duplicate self-wakes coalesce");
     const oldKey = host.stats().issued_ids;
     // Identical Future layout forces the same allocator class; its address is reused.
-    const next = e.self_wake(0x80000001);
+    const next = e["self-wake"](0x80000001);
     assert.equal(
       pointers[0],
       pointers[1],
@@ -83,7 +83,7 @@ export async function verifyLocal(bytes, glue) {
   {
     const { host, e, events } = await make();
     let key;
-    const pending = e.self_wake(100),
+    const pending = e["self-wake"](100),
       rejected = assert.rejects(pending, { name: "AbortError" });
     [key] = host.activeTasks();
     // A task cancelled before its first poll still drops its Future once.
@@ -98,7 +98,7 @@ export async function verifyLocal(bytes, glue) {
   {
     const x = await make();
     const { host, e, events } = x;
-    const task = e.self_wake(100),
+    const task = e["self-wake"](100),
       rejected = assert.rejects(task, { name: "AbortError" });
     const [key] = host.activeTasks();
     x.onEvent((event) => {
@@ -125,8 +125,8 @@ export async function verifyLocal(bytes, glue) {
   {
     const x = await make(),
       { host, e, events } = x;
-    const first = e.self_wake(0),
-      second = e.self_wake(0x80000000);
+    const first = e["self-wake"](0),
+      second = e["self-wake"](0x80000000);
     const rejected = assert.rejects(second, { name: "AbortError" });
     const [, other] = host.activeTasks();
     x.onEvent((event) => {
@@ -150,13 +150,13 @@ export async function verifyLocal(bytes, glue) {
     const input = new Promise((resolve, reject) => {
       finish = rejectedValue ? reject : resolve;
     });
-    const task = e.await_value(input),
+    const task = e["await-value"](input),
       cancelled = assert.rejects(task, { name: "AbortError" });
     await flush(() => host.stats().live_waits === 1);
     const [old] = host.activeTasks();
     assert.equal(host.cancel(old), true);
     await cancelled;
-    const newTask = e.spawn_empty();
+    const newTask = e["spawn-empty"]();
     finish({ obsolete: true });
     assert.equal(await newTask, undefined);
     await Promise.resolve();
@@ -170,17 +170,17 @@ export async function verifyLocal(bytes, glue) {
       8,
       "all three IDs pass through signed Wasm i32",
     );
-    await assert.rejects(e.await_value(Promise.resolve(1)), RangeError);
+    await assert.rejects(e["await-value"](Promise.resolve(1)), RangeError);
     clean(host);
     cases++;
   }
   {
     const { host, e } = await make({ tokens: { first: 0xffffffff } });
     await assert.rejects(
-      e.await_value(Promise.reject("consumed even on exhaustion")),
+      e["await-value"](Promise.reject("consumed even on exhaustion")),
       RangeError,
     );
-    await assert.rejects(e.spawn_empty(), RangeError);
+    await assert.rejects(e["spawn-empty"](), RangeError);
     clean(host);
     cases++;
   }

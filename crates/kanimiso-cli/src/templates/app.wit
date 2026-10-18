@@ -1,0 +1,8 @@
+package kanimiso:app@0.1.0;
+interface js { resource promise; }
+world app {
+    import js;
+    use js.{promise};
+    import add: func(a: s32, b: s32) -> promise;
+    export run: func(a: s32, b: s32) -> promise;
+}

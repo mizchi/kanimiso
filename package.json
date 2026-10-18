@@ -1,5 +1,5 @@
 {
-  "name": "@mizchi/kanimiso",
+  "name": "kanimiso-development",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,29 +13,6 @@
     "node": ">=24"
   },
   "packageManager": "pnpm@12.11.2",
-  "exports": {
-    ".": {
-      "types": "./src/index.d.ts",
-      "import": "./dist/index.mjs"
-    },
-    "./debug": {
-      "types": "./src/index.d.ts",
-      "import": "./dist/index-debug.mjs"
-    },
-    "./errors": "./src/error-codes.json"
-  },
-  "bin": {
-    "kanimiso-build": "./tools/build-wasm.mjs"
-  },
-  "files": [
-    "dist",
-    "src/index.d.ts",
-    "src/error-codes.json",
-    "src/intrusive.wat",
-    "tools",
-    "LICENSE",
-    "README.md"
-  ],
   "scripts": {
     "build": "node tools/build-host.mjs",
     "test": "node --test tests/*.test.mjs",
@@ -43,6 +20,7 @@
     "format:check": "prettier --check src tools/*.mjs tests/*.mjs tests/support/*.mjs package.json pnpm-workspace.yaml"
   },
   "devDependencies": {
+    "@bytecodealliance/jco": "1.39.0",
     "esbuild": "0.28.2",
     "prettier": "3.9.10",
     "wrangler": "4.151.1"

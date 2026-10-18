@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["crates/kanimiso", "crates/wee-port", "examples/promise", "tools/bridge"]
-default-members = ["crates/kanimiso", "tools/bridge"]
+members = ["crates/kanimiso", "crates/kanimiso-allocator", "examples/promise", "crates/kanimiso-cli"]
+default-members = ["crates/kanimiso", "crates/kanimiso-cli"]
 
 [profile.release]
 opt-level = "z"

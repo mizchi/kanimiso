@@ -35,24 +35,24 @@ for (const mode of ["no_std", "std"])
       },
     );
     const raw = "target/wasm32-unknown-unknown/release/kanimiso_promise.wasm";
-    const schema = JSON.parse(readFileSync("examples/promise/abi.json"));
-    if (surface !== "minimal")
-      Object.assign(schema.exports, {
-        await_value: { params: ["own"], result: "own" },
-        spawn_empty: { params: [], result: "own" },
-      });
-    if (surface === "probes")
-      Object.assign(schema.exports, {
-        self_wake: { params: ["i32"], result: "own" },
-        oom_poll: { params: [], result: "own" },
-      });
-    const abi = `dist/examples/${mode}-${surface}.abi.json`;
-    writeFileSync(abi, JSON.stringify(schema, null, 2) + "\n");
+    const extra =
+      surface === "minimal"
+        ? ""
+        : "export await-value: func(p: value) -> value; export spawn-empty: func() -> value;";
+    const probes =
+      surface === "probes"
+        ? "export self-wake: func(rounds: u32) -> value; export oom-poll: func() -> value;"
+        : "";
+    const wit = `dist/examples/${mode}-${surface}.wit`;
+    writeFileSync(
+      wit,
+      `package kanimiso:fixtures; interface js {resource value;} world app {import js; use js.{value}; export start: func(a:s32,b:s32)->value; ${extra} ${probes}}`,
+    );
     run(process.execPath, [
       "tools/build-wasm.mjs",
       raw,
-      "--abi",
-      abi,
+      "--wit",
+      wit,
       "--output",
       `dist/examples/${mode}-${surface}.wasm`,
       ...(surface === "probes" ? ["--probes"] : []),

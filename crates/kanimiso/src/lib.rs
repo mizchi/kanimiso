@@ -38,3 +38,31 @@ pub mod abi {
         unsafe { crate::promise::settle(pointer, value, rejected) }
     }
 }
+
+/// Export the host-managed runtime ABI once from a wasm32 cdylib.
+///
+/// All three exports are private to the matching kanimiso JS host. Applications
+/// must call user exports through its guarded `call` / `promise` methods.
+#[macro_export]
+macro_rules! export_runtime {
+    () => {
+        /// # Safety
+        /// Called only by the matching host with a live, exclusively polled task.
+        #[unsafe(no_mangle)]
+        pub unsafe extern "C" fn rt_poll(pointer: u32) -> i32 {
+            unsafe { $crate::abi::poll(pointer) }
+        }
+        /// # Safety
+        /// Called only by the matching host after poll has returned, once per task.
+        #[unsafe(no_mangle)]
+        pub unsafe extern "C" fn rt_drop(pointer: u32) {
+            unsafe { $crate::abi::drop_task(pointer) }
+        }
+        /// # Safety
+        /// Called only with a live pinned subscription and one transferred root.
+        #[unsafe(no_mangle)]
+        pub unsafe extern "C" fn rt_settle(pointer: u32, value: u32, rejected: i32) {
+            unsafe { $crate::abi::settle(pointer, value, rejected) }
+        }
+    };
+}

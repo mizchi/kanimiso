@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { stripUsedCounter } from "./import-contract.mjs";
 import esbuild from "esbuild";
 import { importNames, mangleProps } from "./import-contract.mjs";
 mkdirSync("dist", { recursive: true });
@@ -54,3 +56,57 @@ for (const debug of [false, true]) {
     b.outputFiles[0].contents,
   );
 }
+
+// The crates.io CLI embeds these ready-to-use assets. Consumers need neither
+// this repository nor Node/esbuild to generate matching JS and Wasm.
+const assetsRoot = "crates/kanimiso-cli/assets";
+mkdirSync(assetsRoot, { recursive: true });
+const assets = {
+  "kanimiso.mjs": readFileSync("dist/index.mjs"),
+  "kanimiso-debug.mjs": readFileSync("dist/index-debug.mjs"),
+  "kanimiso.d.mts": readFileSync("src/index.d.ts"),
+  "error-codes.json": readFileSync("src/error-codes.json"),
+  "private-imports.json": readFileSync("dist/private-imports.json"),
+  "intrusive.wat": Buffer.from(
+    stripUsedCounter(readFileSync("src/intrusive.wat", "utf8")).replace(
+      '(import "app" "memory"',
+      '(import "kanimiso:core" "memory"',
+    ),
+  ),
+  "intrusive-probes.wat": Buffer.from(
+    readFileSync("src/intrusive.wat", "utf8").replace(
+      '(import "app" "memory"',
+      '(import "kanimiso:core" "memory"',
+    ),
+  ),
+};
+const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
+for (const [name, bytes] of Object.entries(assets))
+  writeFileSync(`${assetsRoot}/${name}`, bytes);
+const inputs = [
+  "src/host.mjs",
+  "src/errors.mjs",
+  "src/error-codes.json",
+  "src/index.mjs",
+  "src/index.d.ts",
+  "src/intrusive.wat",
+  "tools/build-host.mjs",
+  "tools/import-contract.mjs",
+  "package.json",
+  "pnpm-lock.yaml",
+];
+writeFileSync(
+  `${assetsRoot}/provenance.json`,
+  JSON.stringify(
+    {
+      version: "0.1.0",
+      esbuild: esbuild.version,
+      inputs: Object.fromEntries(inputs.map((f) => [f, sha(readFileSync(f))])),
+      assets: Object.fromEntries(
+        Object.entries(assets).map(([f, b]) => [f, sha(b)]),
+      ),
+    },
+    null,
+    2,
+  ) + "\n",
+);
