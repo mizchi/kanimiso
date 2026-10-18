@@ -99,12 +99,12 @@ version = "0.0.0"
 dependencies = [
  "futures-util",
  "jspi-future-driver",
- "kanimiso-allocator",
+ "taraba-allocator",
  "wit-bindgen",
 ]
 
 [[package]]
-name = "kanimiso-allocator"
+name = "taraba-allocator"
 version = "0.1.0"
 dependencies = [
  "memory_units",

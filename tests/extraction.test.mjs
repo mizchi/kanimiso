@@ -16,7 +16,7 @@ test("every Cargo member and source dependency is within the extracted repositor
       if (dep.path) assert.ok(!relative(root, dep.path).startsWith(".."));
   }
   for (const file of [
-    "crates/kanimiso/src/lib.rs",
+    "crates/taraba/src/lib.rs",
     "examples/promise/src/lib.rs",
   ]) {
     assert.doesNotMatch(readFileSync(file, "utf8"), /#\[path\s*=/);

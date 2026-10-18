@@ -1,4 +1,4 @@
-package kanimiso:jspi-future-experiment;
+package taraba:jspi-future-experiment;
 world app {
   import fail: func(code: s32);
   import open: func() -> s32;

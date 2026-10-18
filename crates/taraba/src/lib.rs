@@ -41,7 +41,7 @@ pub mod abi {
 
 /// Export the host-managed runtime ABI once from a wasm32 cdylib.
 ///
-/// All three exports are private to the matching kanimiso JS host. Applications
+/// All three exports are private to the matching taraba JS host. Applications
 /// must call user exports through its guarded `call` / `promise` methods.
 #[macro_export]
 macro_rules! export_runtime {

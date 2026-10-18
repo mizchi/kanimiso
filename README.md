@@ -1,6 +1,8 @@
-# kanimiso
+# taraba
 
 English | [日本語](README.ja.md)
+
+Formerly named `kanimiso`. The crates, CLI, generated files, and WIT namespaces now use `taraba`.
 
 A small Rust/Wasm runtime for JavaScript hosts. This experimental project targets **Safari 27+ and JSPI-capable V8**. Safari 27 support is documented in [WebKit’s announcement](https://webkit.org/blog/18325/webkit-features-for-safari-27-0/#webassembly).
 
@@ -15,35 +17,35 @@ A separate [experimental adapter](experiments/jspi-future/README.md) drives Rust
 
 ## Install and use
 
-The first crates.io releases of `kanimiso`, `kanimiso-allocator`, and `kanimiso-cli` are being prepared. The following is the intended workflow after publication. Registry installation has not yet been verified; no registry publish has been performed.
+The first crates.io releases of `taraba`, `taraba-allocator`, and `taraba-cli` are being prepared. The following is the intended workflow after publication. Registry installation has not yet been verified; no registry publish has been performed.
 
 ```sh
 rustup target add wasm32-unknown-unknown
-cargo install kanimiso-cli --version 0.1.0 --locked
+cargo install taraba-cli --version 0.1.0 --locked
 # Install Binaryen 133: wasm-opt, wasm-as, wasm-merge, wasm-metadce on PATH
-kanimiso new hello --no-std --jspi
+taraba new hello --no-std --jspi
 cd hello
 cargo build --release --target wasm32-unknown-unknown
-kanimiso build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg --jspi
+taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg --jspi
 ```
 
-The native CLI embeds ready-to-use JS and the intrusive pool WAT. Consumers do not need a repository checkout, Node, or esbuild to generate the host. Binaryen is an external prerequisite. Use `KANIMISO_BINARYEN=/path/to/bin` or `--binaryen /path/to/bin` instead of PATH if desired.
+The native CLI embeds ready-to-use JS and the intrusive pool WAT. Consumers do not need a repository checkout, Node, or esbuild to generate the host. Binaryen is an external prerequisite. Use `TARABA_BINARYEN=/path/to/bin` or `--binaryen /path/to/bin` instead of PATH if desired.
 
 `new` generates an independent Cargo application with registry version dependencies. Its example uses a 64 KiB stack and a 1 MiB memory limit, adjustable in `.cargo/config.toml`. The JSPI example depends only on wit-bindgen and the allocator. For the Future configuration in an existing application, add these dependencies and use `export_runtime!()`:
 
 ```sh
-cargo add kanimiso@0.1.0 --no-default-features
-cargo add kanimiso-allocator@0.1.0 --no-default-features
+cargo add taraba@0.1.0 --no-default-features
+cargo add taraba-allocator@0.1.0 --no-default-features
 cargo add wit-bindgen@=0.58.0 --no-default-features --features macros
 ```
 
-Omit `--no-std` to generate a std application. Omit `--jspi` to generate the Future configuration. The application selects its global allocator. `kanimiso-allocator` is the MPL-2.0 fork derived from `wee_alloc`, renamed from the experimental `wee-port`. Disable size classes for the smallest configuration.
+Omit `--no-std` to generate a std application. Omit `--jspi` to generate the Future configuration. The application selects its global allocator. `taraba-allocator` is the MPL-2.0 fork derived from `wee_alloc`, renamed from the experimental `wee-port`. Disable size classes for the smallest configuration.
 
-Deploy `pkg/app.wasm` with its matching `pkg/kanimiso.mjs`. In a browser, fetch the Wasm as an ArrayBuffer. In Node.js:
+Deploy `pkg/app.wasm` with its matching `pkg/taraba.mjs`. In a browser, fetch the Wasm as an ArrayBuffer. In Node.js:
 
 ```js
 import { readFile } from 'node:fs/promises';
-import { instantiate } from './pkg/kanimiso.mjs';
+import { instantiate } from './pkg/taraba.mjs';
 
 const host = await instantiate(await readFile('./pkg/app.wasm'), {
   bindings: { add: async (a, b) => (a + b) | 0 },
@@ -67,11 +69,11 @@ Rust calls synchronous functions. `WebAssembly.Suspending` waits for the Promise
 
 Guest entry is serialized per instance to protect LLVM's linear-memory stack across suspension. Bindings must not await re-entry into the same instance. This profile does not provide cancellation or an executor for arbitrary Rust Futures. A host rejection or Wasm trap permanently closes the instance with the first reason and rejects queued calls with that same reason. Rust Drop is not assumed to run when a JS exception exits Wasm.
 
-Missing JSPI fails with `RT15`; no compatibility fallback is used. Both `host.call` and `host.promise` return Promises. The emitted `kanimiso.d.mts` describes this profile's API.
+Missing JSPI fails with `RT15`; no compatibility fallback is used. Both `host.call` and `host.promise` return Promises. The emitted `taraba.d.mts` describes this profile's API.
 
 ## Future WIT and ownership
 
-Use `kanimiso new hello --no-std` and `kanimiso build ... --wit wit` for the existing Future profile. Its WIT imports `resource promise` and defines `add: func(a:s32,b:s32)->promise` and `run: func(a:s32,b:s32)->promise`.
+Use `taraba new hello --no-std` and `taraba build ... --wit wit` for the existing Future profile. Its WIT imports `resource promise` and defines `add: func(a:s32,b:s32)->promise` and `run: func(a:s32,b:s32)->promise`.
 
 The Future profile supports s32, u32, f64, and own/borrow handles to imported resources whose objects live in JS. Borrow is supported only for import arguments. Unsupported string/list/record types, exported resources, and native WIT async fail the build. Core resources require a non-undefined JS value; a `promise` import must return a Promise. A synchronous boundary returning that resource connects to Rust async internally. Provide application imports through `bindings`; duplicate function names across imported interfaces are rejected.
 
@@ -88,8 +90,8 @@ Historical extraction results are in [verification.md](docs/verification.md) and
 ## Contributing
 
 ```sh
-git clone https://github.com/mizchi/kanimiso.git
-cd kanimiso
+git clone https://github.com/mizchi/taraba.git
+cd taraba
 just setup
 just check
 just package-check  # unpack/install .crate archives; run an external std/no_std consumer

@@ -8,14 +8,14 @@ import { rustEnvironment } from "../tools/rust-toolchain.mjs";
 
 test("external package consumers keep the toolchain with the installed Wasm target", () => {
   const root = resolve("."),
-    temp = mkdtempSync(join(tmpdir(), "kanimiso-toolchain-"));
+    temp = mkdtempSync(join(tmpdir(), "taraba-toolchain-"));
   const base = { ...process.env };
   delete base.RUSTUP_TOOLCHAIN;
   try {
     // An external directory must not silently choose a different toolchain.
     writeFileSync(
       join(temp, "rust-toolchain.toml"),
-      '[toolchain]\nchannel = "kanimiso-regression-unavailable"\n',
+      '[toolchain]\nchannel = "taraba-regression-unavailable"\n',
     );
     const expected = execFileSync("rustc", ["--version"], {
       cwd: root,

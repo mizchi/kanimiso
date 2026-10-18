@@ -69,7 +69,7 @@ export default {async fetch(request) {
 writeFileSync(
   `${dir}/wrangler.json`,
   JSON.stringify({
-    name: "kanimiso-smoke",
+    name: "taraba-smoke",
     main: "entry.mjs",
     compatibility_date: "2026-10-12",
     compatibility_flags: ["nodejs_compat"],

@@ -8,12 +8,18 @@ test("runtime, allocator, and native CLI are distributable crates", () => {
       encoding: "utf8",
     }),
   );
-  for (const name of ["kanimiso", "kanimiso-allocator", "kanimiso-cli"]) {
+  for (const name of ["taraba", "taraba-allocator", "taraba-cli"]) {
     const pkg = metadata.packages.find((p) => p.name === name);
     assert.ok(pkg, `missing ${name}`);
     assert.notDeepEqual(pkg.publish, [], `${name} must be publishable`);
     assert.equal(pkg.version, "0.1.0");
     assert.ok(pkg.license, `${name} must declare a license`);
+    assert.equal(pkg.repository, "https://github.com/mizchi/taraba");
   }
+  const cli = metadata.packages.find((p) => p.name === "taraba-cli");
+  assert.deepEqual(
+    cli.targets.filter((t) => t.kind.includes("bin")).map((t) => t.name),
+    ["taraba"],
+  );
   assert.ok(!metadata.packages.some((p) => p.name === "wee-port"));
 });

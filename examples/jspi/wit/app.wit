@@ -1,4 +1,4 @@
-package kanimiso:app@0.1.0;
+package taraba:app@0.1.0;
 world app {
     import add: func(a:s32,b:s32)->s32;
     export run: func(a:s32,b:s32)->s32;

@@ -1,16 +1,16 @@
 [package]
-name = "kanimiso-cli"
+name = "taraba-cli"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
-description = "Build Rust/Wasm applications and matching JS glue for kanimiso"
-repository = "https://github.com/mizchi/kanimiso"
+description = "Build Rust/Wasm applications and matching JS glue for taraba"
+repository = "https://github.com/mizchi/taraba"
 readme = "README.md"
 include = ["src/**", "assets/**", "Cargo.toml", "Cargo.lock", "README.md", "LICENSE"]
-default-run = "kanimiso"
+default-run = "taraba"
 
 [[bin]]
-name = "kanimiso"
+name = "taraba"
 path = "src/main.rs"
 
 [dependencies]

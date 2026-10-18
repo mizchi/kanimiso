@@ -18,7 +18,7 @@ const { instantiate } = await import(
   "data:text/javascript;base64," +
     Buffer.from(built.outputFiles[0].text).toString("base64")
 );
-const dir = mkdtempSync(join(tmpdir(), "kanimiso-jspi-"));
+const dir = mkdtempSync(join(tmpdir(), "taraba-jspi-"));
 const wasm = (wat) => {
   writeFileSync(`${dir}/raw.wat`, wat);
   execFileSync(".cache/toolchains/binaryen-version_133/bin/wasm-as", [

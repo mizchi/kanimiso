@@ -1,4 +1,4 @@
-# kanimiso
+# taraba
 
 A small Promise-first executor for Rust on non-shared, single-agent wasm32.
 Provides `spawn_local`, `future_to_promise`, `JsPromise`, and `JsValue` for JavaScript hosts.
@@ -6,17 +6,17 @@ Provides `spawn_local`, `future_to_promise`, `JsPromise`, and `JsValue` for Java
 The crate is being prepared for its first crates.io release. After publication:
 
 ```sh
-cargo add kanimiso@0.1.0
+cargo add taraba@0.1.0
 rustup target add wasm32-unknown-unknown
 ```
 
 The library supports `no_std` by default. Enable `std` when needed.
 A no_std application chooses its own panic handler and general allocator;
-`kanimiso-allocator` is an optional MPL-2.0 allocator.
+`taraba-allocator` is an optional MPL-2.0 allocator.
 
-The matching JS glue and application build tooling are distributed with `kanimiso-cli`.
-See the [English README](https://github.com/mizchi/kanimiso#readme) or
-[日本語 README](https://github.com/mizchi/kanimiso/blob/main/README.ja.md) for integration details.
+The matching JS glue and application build tooling are distributed with `taraba-cli`.
+See the [English README](https://github.com/mizchi/taraba#readme) or
+[日本語 README](https://github.com/mizchi/taraba/blob/main/README.ja.md) for integration details.
 
 Task storage is fixed at 128 B × 1024 slots (alignment ≤64), including each Future and header.
 Larger Futures or an exhausted task pool cause a fatal OOM. Dropping a JoinHandle detaches;

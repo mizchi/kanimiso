@@ -76,27 +76,27 @@ for (const debug of [false, true]) {
 
 // The crates.io CLI embeds these ready-to-use assets. Consumers need neither
 // this repository nor Node/esbuild to generate matching JS and Wasm.
-const assetsRoot = "crates/kanimiso-cli/assets";
+const assetsRoot = "crates/taraba-cli/assets";
 mkdirSync(assetsRoot, { recursive: true });
 const assets = {
-  "kanimiso.mjs": readFileSync("dist/index.mjs"),
-  "kanimiso-debug.mjs": readFileSync("dist/index-debug.mjs"),
-  "kanimiso-jspi.mjs": readFileSync("dist/jspi.mjs"),
-  "kanimiso-jspi-debug.mjs": readFileSync("dist/jspi-debug.mjs"),
-  "kanimiso-jspi.d.mts": readFileSync("src/jspi.d.ts"),
-  "kanimiso.d.mts": readFileSync("src/index.d.ts"),
+  "taraba.mjs": readFileSync("dist/index.mjs"),
+  "taraba-debug.mjs": readFileSync("dist/index-debug.mjs"),
+  "taraba-jspi.mjs": readFileSync("dist/jspi.mjs"),
+  "taraba-jspi-debug.mjs": readFileSync("dist/jspi-debug.mjs"),
+  "taraba-jspi.d.mts": readFileSync("src/jspi.d.ts"),
+  "taraba.d.mts": readFileSync("src/index.d.ts"),
   "error-codes.json": readFileSync("src/error-codes.json"),
   "private-imports.json": readFileSync("dist/private-imports.json"),
   "intrusive.wat": Buffer.from(
     stripUsedCounter(readFileSync("src/intrusive.wat", "utf8")).replace(
       '(import "app" "memory"',
-      '(import "kanimiso:core" "memory"',
+      '(import "taraba:core" "memory"',
     ),
   ),
   "intrusive-probes.wat": Buffer.from(
     readFileSync("src/intrusive.wat", "utf8").replace(
       '(import "app" "memory"',
-      '(import "kanimiso:core" "memory"',
+      '(import "taraba:core" "memory"',
     ),
   ),
 };

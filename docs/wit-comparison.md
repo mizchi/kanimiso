@@ -1,6 +1,6 @@
 # WIT / JSPI 比較実験
 
-2026-10-18T13:50:19.059Z
+2026-10-18T16:41:28.064Z
 
 実験環境の前提は **Safari 27+ / JSPI 対応 V8**。[WebKit 公式](https://webkit.org/blog/18325/webkit-features-for-safari-27-0/#webassembly)で Safari 27 の JSPI 対応を確認した。旧 system JSC の未対応を最新 Safari の非対応とは扱わない。Safari 27 実ブラウザーはこの測定では未検証。
 
@@ -8,14 +8,14 @@
 
 | 構成 | Wasm B | JS B | 合計 B | gzip 合計 B | cold build | V8 μs/task 中央値 | system JSC |
 |---|---:|---:|---:|---:|---:|---:|---|
-| jspi-no_std | 248 | 1,324 | 1,572 | 835 | 13.07 s | 0.729 | 旧 JSC: 前提外 |
-| core-no_std | 1,744 | 3,874 | 5,618 | 2,989 | 6.79 s | 1.273 | 通過 |
-| component-sync-no_std | 1,797 | 48,735 | 50,532 | 14,864 | 6.99 s | 16.542 | 旧 JSC: 前提外 |
-| component-no_std | 14,272 | 66,778 | 81,050 | 25,657 | 7.20 s | 2407.065 | 旧 JSC: 前提外 |
-| jspi-std | 5,623 | 1,324 | 6,947 | 3,628 | 7.60 s | 0.616 | 旧 JSC: 前提外 |
-| core-std | 7,214 | 3,874 | 11,088 | 5,838 | 7.00 s | 1.113 | 通過 |
-| component-sync-std | 5,847 | 48,735 | 54,582 | 17,005 | 6.82 s | 15.414 | 旧 JSC: 前提外 |
-| component-std | 25,946 | 66,778 | 92,724 | 30,974 | 7.63 s | 2403.247 | 旧 JSC: 前提外 |
+| jspi-no_std | 248 | 1,324 | 1,572 | 835 | 6.60 s | 0.725 | 旧 JSC: 前提外 |
+| core-no_std | 1,744 | 3,874 | 5,618 | 2,989 | 7.20 s | 1.157 | 通過 |
+| component-sync-no_std | 1,795 | 48,725 | 50,520 | 14,856 | 6.16 s | 15.869 | 旧 JSC: 前提外 |
+| component-no_std | 14,272 | 66,778 | 81,050 | 25,657 | 6.84 s | 2384.283 | 旧 JSC: 前提外 |
+| jspi-std | 5,619 | 1,324 | 6,943 | 3,632 | 6.48 s | 1.436 | 旧 JSC: 前提外 |
+| core-std | 7,210 | 3,874 | 11,084 | 5,830 | 6.98 s | 2.041 | 通過 |
+| component-sync-std | 5,841 | 48,725 | 54,566 | 16,990 | 6.65 s | 15.780 | 旧 JSC: 前提外 |
+| component-std | 25,942 | 66,778 | 92,720 | 30,967 | 6.88 s | 2384.538 | 旧 JSC: 前提外 |
 
 jspi は直接 Core JSPI、core は従来の Future 構成、component-sync は同期 WIT + jco JSPI、component は WIT native async + jco JSPI。サイズは実際に配信する全 Wasm と loader を含む JS の合計。Component container を展開後ファイルと二重計上せず、型宣言は除外。圧縮はファイルごとに適用。
 

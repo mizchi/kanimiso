@@ -5,42 +5,42 @@
   "files": [
     {
       "source": "experiments/js-local-gc/runtime/src/lib.rs",
-      "destination": "crates/kanimiso/src/lib.rs",
+      "destination": "crates/taraba/src/lib.rs",
       "source_sha256": "33e41fbdf7b9cfe0963372abaf1307b0c607b218081dfa053825ddc1b6930f39"
     },
     {
       "source": "experiments/js-local-gc/runtime/src/ffi.rs",
-      "destination": "crates/kanimiso/src/ffi.rs",
+      "destination": "crates/taraba/src/ffi.rs",
       "source_sha256": "ef9cbf04f504ed01cd0375360c78678f6c72d6dfd559dbdeb38402af5ed569b7"
     },
     {
       "source": "experiments/js-local-gc/runtime/src/storage.rs",
-      "destination": "crates/kanimiso/src/storage.rs",
+      "destination": "crates/taraba/src/storage.rs",
       "source_sha256": "a5d1d9e59f37bf22d2f0e169e77acaeb0688f66c149c5faf7d49e2b8c85a331d"
     },
     {
       "source": "experiments/js-local-gc/runtime/src/task.rs",
-      "destination": "crates/kanimiso/src/task.rs",
+      "destination": "crates/taraba/src/task.rs",
       "source_sha256": "be66e11dc64d8e5f1428c9a8d51d85ff16a89645c54c38a0ab8b5bdb9b552f69"
     },
     {
       "source": "experiments/js-local/runtime/src/promise.rs",
-      "destination": "crates/kanimiso/src/promise.rs",
+      "destination": "crates/taraba/src/promise.rs",
       "source_sha256": "786501a2f38c24a3e16d27f2152b73627b4a74ab0aa7c8568fc0d59a402470be"
     },
     {
       "source": "experiments/js-local/runtime/src/value.rs",
-      "destination": "crates/kanimiso/src/value.rs",
+      "destination": "crates/taraba/src/value.rs",
       "source_sha256": "01e46db983e318cc0856ef0ff1e113abb4e8b529b3f2e53e017f20256669995c"
     },
     {
       "source": "experiments/js-local/runtime/src/waker.rs",
-      "destination": "crates/kanimiso/src/waker.rs",
+      "destination": "crates/taraba/src/waker.rs",
       "source_sha256": "eac9c2b2f5a538918ac1cb0bfbad0934898c4c78b1b1fb84c893666029dc61b9"
     },
     {
       "source": "experiments/js-local/runtime/build.rs",
-      "destination": "crates/kanimiso/build.rs",
+      "destination": "crates/taraba/build.rs",
       "source_sha256": "1fcd2d553fab84267da595b7583da5d5b72e98f0af2eb51865c15e69670afc86"
     },
     {
@@ -290,7 +290,7 @@
     }
   ],
   "relocations_after_extraction": {
-    "crates/wee-port": "crates/kanimiso-allocator",
-    "tools/bridge": "crates/kanimiso-cli"
+    "crates/wee-port": "crates/taraba-allocator",
+    "tools/bridge": "crates/taraba-cli"
   }
 }

@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { instantiate } from "../dist/index.mjs";
 
 test("WIT resource ownership supports matching import/export names and explicit drop", async () => {
-  const dir = mkdtempSync(join(tmpdir(), "kanimiso-consumer-"));
+  const dir = mkdtempSync(join(tmpdir(), "taraba-consumer-"));
   try {
     writeFileSync(
       `${dir}/raw.wat`,
@@ -58,7 +58,7 @@ test("WIT resource ownership supports matching import/export names and explicit 
 
 test("scalar WIT preserves the full u32 range and f64 values in both profiles", async () => {
   const { instantiate: instantiateJspi } = await import("../dist/jspi.mjs");
-  const dir = mkdtempSync(join(tmpdir(), "kanimiso-scalars-"));
+  const dir = mkdtempSync(join(tmpdir(), "taraba-scalars-"));
   try {
     writeFileSync(
       `${dir}/raw.wat`,

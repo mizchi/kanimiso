@@ -4,7 +4,7 @@ use core::{
     task::{Context, Poll, Waker},
 };
 #[global_allocator]
-static ALLOCATOR: kanimiso_allocator::Allocator = kanimiso_allocator::Allocator::INIT;
+static ALLOCATOR: taraba_allocator::Allocator = taraba_allocator::Allocator::INIT;
 #[cfg(not(feature = "std"))]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {

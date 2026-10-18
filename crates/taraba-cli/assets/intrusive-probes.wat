@@ -1,7 +1,7 @@
 ;; Freed Future bytes hold their next pointer only after successful Rust Drop.
 ;; Trusted private ABI: one instance/base; matching, unique frees only.
 (module
-  (import "kanimiso:core" "memory" (memory 4 16))
+  (import "taraba:core" "memory" (memory 4 16))
   (global $next (mut i32) (i32.const 0))
   (global $head (mut i32) (i32.const 0))
   (global $used (mut i32) (i32.const 0))

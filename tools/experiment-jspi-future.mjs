@@ -93,7 +93,7 @@ for (const mode of ["no_std", "std"])
         ? "experiments/jspi-future/wit"
         : `experiments/wit/${backend}/wit`;
     const start = performance.now();
-    run("./target/release/kanimiso", [
+    run("./target/release/taraba", [
       "build",
       raw,
       "--wit",
@@ -115,7 +115,7 @@ for (const mode of ["no_std", "std"])
       writeFileSync(`${dir}/host-unmangled.mjs`, unmangled);
       debugLoader = (await bundleHost({ debug: true })).bytes;
       writeFileSync(`${dir}/host-debug.mjs`, debugLoader);
-    } else loader = readFileSync(`${dir}/core/kanimiso.mjs`);
+    } else loader = readFileSync(`${dir}/core/taraba.mjs`);
     writeFileSync(`${dir}/host.mjs`, loader);
     const transform = performance.now() - start;
     const files = ["core/app.wasm", "host.mjs"].map((file) => {
@@ -174,7 +174,7 @@ for (const mode of ["no_std", "std"])
         [...args, "--features", mode === "std" ? "std,probes" : "probes"],
         env,
       );
-      run("./target/release/kanimiso", [
+      run("./target/release/taraba", [
         "build",
         raw,
         "--wit",
@@ -211,7 +211,7 @@ for (const mode of ["no_std", "std"])
 
       if (backend === "bounded") {
         run("cargo", [...args, "--features", "probes,heap-probes"], env);
-        run("./target/release/kanimiso", [
+        run("./target/release/taraba", [
           "build",
           raw,
           "--wit",
@@ -336,10 +336,10 @@ const inputPaths = [
   "src/index.mjs",
   "src/errors.mjs",
   "src/error-codes.json",
-  "crates/kanimiso-cli/assets/provenance.json",
-  ...paths("crates/kanimiso/src"),
-  ...paths("crates/kanimiso-cli/src"),
-  ...paths("crates/kanimiso-allocator/src"),
+  "crates/taraba-cli/assets/provenance.json",
+  ...paths("crates/taraba/src"),
+  ...paths("crates/taraba-cli/src"),
+  ...paths("crates/taraba-allocator/src"),
   "Cargo.lock",
   "Cargo.toml",
   "package.json",
@@ -362,6 +362,8 @@ const report = {
     esbuild: esbuild.version,
   },
   method: {
+    naming:
+      "taraba namespace after rename; differences from former-name snapshots may include symbol/path changes, not algorithm optimizations",
     algorithm: "experiments/wit/shared/compute.rs",
     flags,
     binaryen: 133,

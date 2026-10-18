@@ -15,7 +15,7 @@ import { rustEnvironment } from "./rust-toolchain.mjs";
 import { verifyWit } from "../tests/support/wit-contract.mjs";
 import { asyncCases } from "../tests/support/async-contract.mjs";
 const root = resolve("."),
-  temp = mkdtempSync(join(tmpdir(), "kanimiso-package-"));
+  temp = mkdtempSync(join(tmpdir(), "taraba-package-"));
 const rustEnv = rustEnvironment(root);
 const run = (bin, args, cwd = root, env = rustEnv) =>
   execFileSync(bin, args, {
@@ -35,7 +35,7 @@ const result = {
 };
 try {
   run("cargo", ["fetch", "--locked"]);
-  for (const name of ["kanimiso", "kanimiso-allocator", "kanimiso-cli"]) {
+  for (const name of ["taraba", "taraba-allocator", "taraba-cli"]) {
     const args = [
       "package",
       "--locked",
@@ -43,9 +43,7 @@ try {
       "--allow-dirty",
       "-p",
       name,
-      ...(name === "kanimiso-cli"
-        ? []
-        : ["--target", "wasm32-unknown-unknown"]),
+      ...(name === "taraba-cli" ? [] : ["--target", "wasm32-unknown-unknown"]),
     ];
     run("cargo", args);
     const archive = resolve(`target/package/${name}-0.1.0.crate`);
@@ -71,9 +69,9 @@ try {
     // reuse an older binary with the same package version. Key it by archive bytes.
     CARGO_TARGET_DIR: resolve(
       ".cache/package-install-target",
-      result.packages.find((p) => p.name === "kanimiso-cli").sha256,
+      result.packages.find((p) => p.name === "taraba-cli").sha256,
     ),
-    KANIMISO_BINARYEN: resolve(".cache/toolchains/binaryen-version_133/bin"),
+    TARABA_BINARYEN: resolve(".cache/toolchains/binaryen-version_133/bin"),
   };
   run(
     "cargo",
@@ -82,14 +80,14 @@ try {
       "--locked",
       "--offline",
       "--path",
-      `${temp}/kanimiso-cli-0.1.0`,
+      `${temp}/taraba-cli-0.1.0`,
       "--root",
       install,
     ],
     temp,
     env,
   );
-  const cli = `${install}/bin/kanimiso`;
+  const cli = `${install}/bin/taraba`;
   assert.match(run(cli, ["--version"], temp, env).toString(), /0\.1\.0/);
   for (const profile of ["core", "jspi"]) {
     const jspi = profile === "jspi",
@@ -99,9 +97,9 @@ try {
       manifest = `${project}/Cargo.toml`;
     let toml = readFileSync(manifest, "utf8");
     assert.ok(!toml.includes("path ="));
-    toml += `\n[patch.crates-io]\nkanimiso-allocator = {path = ${JSON.stringify(`${temp}/kanimiso-allocator-0.1.0`)}}\n`;
+    toml += `\n[patch.crates-io]\ntaraba-allocator = {path = ${JSON.stringify(`${temp}/taraba-allocator-0.1.0`)}}\n`;
     if (!jspi)
-      toml += `kanimiso = {path = ${JSON.stringify(`${temp}/kanimiso-0.1.0`)}}\n`;
+      toml += `taraba = {path = ${JSON.stringify(`${temp}/taraba-0.1.0`)}}\n`;
     writeFileSync(manifest, toml);
     run("cargo", ["fetch", "--manifest-path", manifest], project, env);
     for (const mode of ["no_std", "std"]) {
@@ -157,7 +155,7 @@ try {
           env,
         );
         const { instantiate } = await import(
-          pathToFileURL(`${out}/kanimiso.mjs`)
+          pathToFileURL(`${out}/taraba.mjs`)
         );
         const module = new WebAssembly.Module(readFileSync(`${out}/app.wasm`));
         assert.ok(
@@ -207,7 +205,7 @@ try {
           debug,
           ...verified,
           wasm_bytes: readFileSync(`${out}/app.wasm`).length,
-          js_bytes: readFileSync(`${out}/kanimiso.mjs`).length,
+          js_bytes: readFileSync(`${out}/taraba.mjs`).length,
           rejection_identity_steps: 2,
         });
       }

@@ -1,6 +1,8 @@
-# kanimiso
+# taraba
 
 [English](README.md) | 日本語
+
+旧名は `kanimiso` です。crate・CLI・生成ファイル・WIT の名前空間を `taraba` に統一しました。
 
 JavaScript ホスト向けの小さな Rust/Wasm ランタイムです。実験環境の前提は **Safari 27 以降、JSPI 対応 V8** です。Safari 27 の JSPI 対応は [WebKit の公式発表](https://webkit.org/blog/18325/webkit-features-for-safari-27-0/#webassembly)で確認しています。
 
@@ -15,35 +17,35 @@ JSPI で Rust Future を駆動する別の[アダプター実験](experiments/js
 
 ## インストールと利用
 
-`kanimiso`、`kanimiso-allocator`、`kanimiso-cli` の初回 crates.io 公開を準備中です。以下は公開後の利用手順です。まだレジストリからのインストール成功は保証していません。公開自体は実施していません。
+`taraba`、`taraba-allocator`、`taraba-cli` の初回 crates.io 公開を準備中です。以下は公開後の利用手順です。まだレジストリからのインストール成功は保証していません。公開自体は実施していません。
 
 ```sh
 rustup target add wasm32-unknown-unknown
-cargo install kanimiso-cli --version 0.1.0 --locked
+cargo install taraba-cli --version 0.1.0 --locked
 # Binaryen 133 の wasm-opt / wasm-as / wasm-merge / wasm-metadce を PATH に置く
-kanimiso new hello --no-std --jspi
+taraba new hello --no-std --jspi
 cd hello
 cargo build --release --target wasm32-unknown-unknown
-kanimiso build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg --jspi
+taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg --jspi
 ```
 
-CLI はビルド済み JS と intrusive pool の WAT を内包します。利用者によるこのリポジトリの checkout や Node/esbuild でのホスト生成は不要です。Binaryen は外部ツールです。PATH の代わりに `KANIMISO_BINARYEN=/path/to/bin` または `--binaryen /path/to/bin` を指定できます。
+CLI はビルド済み JS と intrusive pool の WAT を内包します。利用者によるこのリポジトリの checkout や Node/esbuild でのホスト生成は不要です。Binaryen は外部ツールです。PATH の代わりに `TARABA_BINARYEN=/path/to/bin` または `--binaryen /path/to/bin` を指定できます。
 
 `new` はレジストリのバージョン依存を使う独立した Cargo プロジェクトを生成します。生成例の stack は 64 KiB、memory 上限は 1 MiB で、`.cargo/config.toml` から変更できます。JSPI の生成例は `wit-bindgen` と allocator のみを依存に持ちます。既存の Future 構成を使うプロジェクトでは次の依存と `export_runtime!()` を利用します。
 
 ```sh
-cargo add kanimiso@0.1.0 --no-default-features
-cargo add kanimiso-allocator@0.1.0 --no-default-features
+cargo add taraba@0.1.0 --no-default-features
+cargo add taraba-allocator@0.1.0 --no-default-features
 cargo add wit-bindgen@=0.58.0 --no-default-features --features macros
 ```
 
-`--no-std` を付けない `new` は std 構成です。`--jspi` を省くと Future 構成を生成します。JS 用 allocator はアプリ側で選択します。`kanimiso-allocator` は `wee_alloc` 由来の MPL-2.0 の fork で、以前の実験名 `wee-port` から改名しています。最小構成は size classes を無効にします。
+`--no-std` を付けない `new` は std 構成です。`--jspi` を省くと Future 構成を生成します。JS 用 allocator はアプリ側で選択します。`taraba-allocator` は `wee_alloc` 由来の MPL-2.0 の fork で、以前の実験名 `wee-port` から改名しています。最小構成は size classes を無効にします。
 
-生成された `pkg/app.wasm` と `pkg/kanimiso.mjs` を一緒に配信します。ブラウザーでは Wasm を fetch して ArrayBuffer にし、Node.js では次のように使えます。
+生成された `pkg/app.wasm` と `pkg/taraba.mjs` を一緒に配信します。ブラウザーでは Wasm を fetch して ArrayBuffer にし、Node.js では次のように使えます。
 
 ```js
 import { readFile } from 'node:fs/promises';
-import { instantiate } from './pkg/kanimiso.mjs';
+import { instantiate } from './pkg/taraba.mjs';
 
 const host = await instantiate(await readFile('./pkg/app.wasm'), {
   bindings: { add: async (a, b) => (a + b) | 0 },
@@ -67,11 +69,11 @@ Rust からは同期関数として呼びます。JS の `bindings.add` が返�
 
 同じインスタンスの呼び出しは直列化します。これは LLVM が線形メモリーに置くスタックを、待機中の再入で壊さないためです。binding から同じインスタンスを await する再入、キャンセル、任意の Rust Future を poll する executor は提供しません。ホストの reject / Wasm trap は最初の理由を保って instance を閉じ、キュー中の呼び出しも同じ理由で reject します。JS 例外で Rust の Drop が実行されるとは仮定しません。
 
-JSPI のないエンジンでは `RT15` で失敗し、互換フォールバックは行いません。アプリ呼び出しは `host.call` / `host.promise` のどちらも Promise を返します。`kanimiso.d.mts` はこの構成専用の型を含みます。
+JSPI のないエンジンでは `RT15` で失敗し、互換フォールバックは行いません。アプリ呼び出しは `host.call` / `host.promise` のどちらも Promise を返します。`taraba.d.mts` はこの構成専用の型を含みます。
 
 ## Future 構成の WIT と所有権
 
-`kanimiso new hello --no-std` と `kanimiso build ... --wit wit` で従来の Future 構成を使います。WIT は `resource promise` を import し、`add: func(a:s32,b:s32)->promise` と `run: func(a:s32,b:s32)->promise` を定義します。
+`taraba new hello --no-std` と `taraba build ... --wit wit` で従来の Future 構成を使います。WIT は `resource promise` を import し、`add: func(a:s32,b:s32)->promise` と `run: func(a:s32,b:s32)->promise` を定義します。
 
 Future 構成は s32 / u32 / f64 と、JS に実体を置く imported resource の own / borrow を扱います。borrow は import 引数のみです。string、list、record、exported resource、WIT native async は未対応としてビルドを失敗させます。resource は `undefined` 以外の JS 参照を表し（`promise` は Promise を返す契約）、WIT の `promise` resource を返す同期境界の内側で Rust async を動かします。アプリ import は `bindings` に渡し、同名の関数を複数 interface から import する構成は拒否します。
 
@@ -88,8 +90,8 @@ V8 と system JavaScriptCore shell、および local workerd で検証します�
 ## 開発者向け
 
 ```sh
-git clone https://github.com/mizchi/kanimiso.git
-cd kanimiso
+git clone https://github.com/mizchi/taraba.git
+cd taraba
 just setup
 just check
 just package-check  # .crate を展開・インストールし、repo 外の利用アプリを std/no_std で実行

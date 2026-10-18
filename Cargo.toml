@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["crates/kanimiso", "crates/kanimiso-allocator", "examples/promise", "examples/jspi", "crates/kanimiso-cli"]
-default-members = ["crates/kanimiso", "crates/kanimiso-cli"]
+members = ["crates/taraba", "crates/taraba-allocator", "examples/promise", "examples/jspi", "crates/taraba-cli"]
+default-members = ["crates/taraba", "crates/taraba-cli"]
 
 [profile.release]
 opt-level = "z"

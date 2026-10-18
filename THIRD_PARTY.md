@@ -1,11 +1,11 @@
 # Third-party code
 
-`crates/kanimiso-allocator` is a wasm32-only derivative of
+`crates/taraba-allocator` is a wasm32-only derivative of
 [wee_alloc_bw](https://github.com/bourumir-wyngs/wee_alloc_bw), revision
 `9a9adc2106df80abd25501194275d7d51a1ba4c4`, itself derived from
 [rustwasm/wee_alloc](https://github.com/rustwasm/wee_alloc).
 It remains **MPL-2.0**, including its copied helper modules and regression tests.
-See `crates/kanimiso-allocator/LICENSE` and `crates/kanimiso-allocator/UPSTREAM.json`.
+See `crates/taraba-allocator/LICENSE` and `crates/taraba-allocator/UPSTREAM.json`.
 The root MIT license does not replace the license of these files.
 
 The allocator implementation and assertions were changed in the original

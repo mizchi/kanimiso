@@ -1,4 +1,4 @@
-package kanimiso:experiment@0.1.0;
+package taraba:experiment@0.1.0;
 interface js { resource promise; }
 world app {
     import js;

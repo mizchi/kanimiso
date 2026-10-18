@@ -1,4 +1,4 @@
-//! Build tools and bundled JS assets for kanimiso applications.
+//! Build tools and bundled JS assets for taraba applications.
 mod abi;
 mod build;
 mod imports;

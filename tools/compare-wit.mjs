@@ -61,6 +61,8 @@ const report = {
     }).trim(),
   },
   method: {
+    naming:
+      "taraba namespace after rename; differences from former-name snapshots may include symbol/path changes, not algorithm optimizations",
     algorithm: "experiments/wit/shared/compute.rs (same source)",
     rustflags:
       "-C link-arg=-zstack-size=65536 -C link-arg=--max-memory=1048576",
@@ -108,7 +110,7 @@ for (const mode of ["no_std", "std"])
     const raw = `${target}/wasm32-unknown-unknown/release/wit_${backend.replaceAll("-", "_")}.wasm`;
     let transform;
     if (backend === "core" || backend === "jspi")
-      transform = run("./target/release/kanimiso", [
+      transform = run("./target/release/taraba", [
         "build",
         raw,
         "--wit",
@@ -151,7 +153,7 @@ for (const mode of ["no_std", "std"])
         "jspi",
         "--async-imports",
         backend === "component-sync"
-          ? "kanimiso:experiment/host@0.1.0#add"
+          ? "taraba:experiment/host@0.1.0#add"
           : "add",
         "--async-exports",
         "run",
@@ -174,7 +176,7 @@ for (const mode of ["no_std", "std"])
     }
     const files =
       backend === "core" || backend === "jspi"
-        ? [`${dir}/app.wasm`, `${dir}/kanimiso.mjs`]
+        ? [`${dir}/app.wasm`, `${dir}/taraba.mjs`]
         : readdirSync(`${dir}/js`)
             .filter((f) => f.endsWith(".wasm") || f === "app.mjs")
             .map((f) => `${dir}/js/${f}`);
@@ -223,7 +225,7 @@ for (const profile of report.profiles) {
   const dir = `${out}/${profile.id}`;
   let factory;
   if (profile.backend === "core" || profile.backend === "jspi") {
-    const { instantiate } = await import(pathToFileURL(`${dir}/kanimiso.mjs`));
+    const { instantiate } = await import(pathToFileURL(`${dir}/taraba.mjs`));
     const module = new WebAssembly.Module(readFileSync(`${dir}/app.wasm`));
     factory = async (add) => {
       const host = await instantiate(module, { bindings: { add } });
@@ -243,7 +245,7 @@ for (const profile of report.profiles) {
       const api = await instantiate(
         (name) => modules[name],
         profile.backend === "component-sync"
-          ? { "kanimiso:experiment/host": { add } }
+          ? { "taraba:experiment/host": { add } }
           : { add: { default: add } },
       );
       return api.run;
@@ -263,11 +265,11 @@ for (const profile of report.profiles) {
         ]),
     );
     const importPath = !profile.backend.startsWith("component")
-      ? `${dir}/kanimiso.mjs`
+      ? `${dir}/taraba.mjs`
       : `${dir}/js/app.mjs`;
     const factorySource = !profile.backend.startsWith("component")
       ? `async add=>{const h=await instantiate(modules['app.wasm'],{bindings:{add}});return (...a)=>h.promise('run',...a)}`
-      : `async add=>{const a=await instantiate(name=>modules[name],${profile.backend === "component-sync" ? '{"kanimiso:experiment/host":{add}}' : "{add:{default:add}}"});return a.run}`;
+      : `async add=>{const a=await instantiate(name=>modules[name],${profile.backend === "component-sync" ? '{"taraba:experiment/host":{add}}' : "{add:{default:add}}"});return a.run}`;
     const source = `import {instantiate} from ${JSON.stringify(importPath)};import {verifyWit} from ${JSON.stringify(resolve("tests/support/wit-contract.mjs"))};const bytes=${JSON.stringify(mods)};const modules=Object.fromEntries(Object.entries(bytes).map(([n,b])=>[n,new WebAssembly.Module(new Uint8Array(b))]));verifyWit(${factorySource},${JSON.stringify(cases)}).then(result=>print(JSON.stringify({supported:true,result})),e=>print(JSON.stringify({supported:false,error:String(e),promising:typeof WebAssembly.promising,suspending:typeof WebAssembly.Suspending})));`;
     const bundle = await esbuild.build({
       stdin: { contents: source, resolveDir: root },
@@ -322,21 +324,18 @@ const sources = [
   "tools/compare-wit.mjs",
   "tests/support/metrics.mjs",
   "Cargo.lock",
-  "crates/kanimiso-cli/assets/provenance.json",
-  ...[
-    "crates/kanimiso",
-    "crates/kanimiso-allocator",
-    "crates/kanimiso-cli",
-  ].flatMap((base) =>
-    readdirSync(base, { recursive: true })
-      .filter(
-        (p) =>
-          p.endsWith(".rs") ||
-          p.endsWith(".wat") ||
-          p.endsWith(".mjs") ||
-          p === "Cargo.toml",
-      )
-      .map((p) => `${base}/${p}`),
+  "crates/taraba-cli/assets/provenance.json",
+  ...["crates/taraba", "crates/taraba-allocator", "crates/taraba-cli"].flatMap(
+    (base) =>
+      readdirSync(base, { recursive: true })
+        .filter(
+          (p) =>
+            p.endsWith(".rs") ||
+            p.endsWith(".wat") ||
+            p.endsWith(".mjs") ||
+            p === "Cargo.toml",
+        )
+        .map((p) => `${base}/${p}`),
   ),
 ];
 report.inputs = Object.fromEntries(

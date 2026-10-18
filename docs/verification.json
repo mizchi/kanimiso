@@ -168,5 +168,6 @@
     "scope": "2 ID model, 1 production Waker, 3 allocator boundaries. Native 64-bit; mock page backend. Not the whole runtime or JS engine.",
     "exploratory": "Two live allocations / adjacent coalescing exploratory harnesses timed out in a broader run. Not counted as proved; rerun with just kani-explore."
   },
-  "all_passed": true
+  "all_passed": true,
+  "historical_note": "Pre-rename extraction snapshot under the former kanimiso name. Original file paths and SHA-256 values are retained; they are not current taraba measurements."
 }

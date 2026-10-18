@@ -1,11 +1,11 @@
 [package]
-name = "kanimiso-allocator"
+name = "taraba-allocator"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.85"
 license = "MPL-2.0"
 description = "Small single-agent wasm32 allocator for JavaScript hosts"
-repository = "https://github.com/mizchi/kanimiso"
+repository = "https://github.com/mizchi/taraba"
 readme = "README.md"
 include = ["src/**", "build.rs", "Cargo.toml", "README.md", "LICENSE", "UPSTREAM.json"]
 

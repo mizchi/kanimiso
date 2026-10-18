@@ -8,7 +8,7 @@ pub struct HostError(pub i32);
 /// Clone retains the same root; Drop releases it, never deep-copies the JS value.
 /// This handle is local to one JS agent and Wasm instance (`!Send`, `!Sync`).
 /// ```compile_fail
-/// use kanimiso::JsValue;
+/// use taraba::JsValue;
 /// fn invalid(value: JsValue) { std::thread::spawn(move || drop(value)); }
 /// ```
 #[repr(transparent)]

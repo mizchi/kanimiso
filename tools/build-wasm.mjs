@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Contributor wrapper; installed users run the native kanimiso CLI directly.
+// Contributor wrapper; installed users run the native taraba CLI directly.
 import { execFileSync } from "node:child_process";
 import { copyFileSync, mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -15,10 +15,10 @@ if (!args[0] || !option("--wit") || !option("--output"))
   );
 const run = (bin, argv) =>
   execFileSync(bin, argv, { stdio: "pipe", maxBuffer: 32 * 1024 * 1024 });
-run("cargo", ["build", "--locked", "--release", "-p", "kanimiso-cli"]);
-const temp = mkdtempSync(resolve(tmpdir(), "kanimiso-build-"));
+run("cargo", ["build", "--locked", "--release", "-p", "taraba-cli"]);
+const temp = mkdtempSync(resolve(tmpdir(), "taraba-build-"));
 try {
-  run(resolve("target/release/kanimiso"), [
+  run(resolve("target/release/taraba"), [
     "build",
     resolve(args[0]),
     "--wit",

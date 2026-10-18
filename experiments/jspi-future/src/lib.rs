@@ -19,7 +19,7 @@ compile_error!("bounded requires --no-default-features");
 compile_error!("select arc or bounded");
 #[cfg(any(not(feature = "bounded"), feature = "heap-probes"))]
 #[global_allocator]
-static ALLOCATOR: kanimiso_allocator::Allocator = kanimiso_allocator::Allocator::INIT;
+static ALLOCATOR: taraba_allocator::Allocator = taraba_allocator::Allocator::INIT;
 #[cfg(all(feature = "bounded", not(feature = "heap-probes")))]
 mod no_heap {
     use core::alloc::{GlobalAlloc, Layout};

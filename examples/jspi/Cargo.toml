@@ -1,5 +1,5 @@
 [package]
-name = "kanimiso-jspi-promise"
+name = "taraba-jspi-promise"
 version = "0.1.0"
 edition = "2024"
 publish = false
@@ -10,5 +10,5 @@ default = []
 std = []
 probes = []
 [dependencies]
-kanimiso-allocator = {version = "0.1.0", path = "../../crates/kanimiso-allocator", default-features = false}
+taraba-allocator = {version = "0.1.0", path = "../../crates/taraba-allocator", default-features = false}
 wit-bindgen = {version = "=0.58.0", default-features = false, features = ["macros"]}

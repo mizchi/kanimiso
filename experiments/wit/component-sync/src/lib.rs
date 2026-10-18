@@ -4,7 +4,7 @@ use core::{
     task::{Context, Poll, Waker},
 };
 #[global_allocator]
-static ALLOCATOR: kanimiso_allocator::Allocator = kanimiso_allocator::Allocator::INIT;
+static ALLOCATOR: taraba_allocator::Allocator = taraba_allocator::Allocator::INIT;
 #[cfg(not(feature = "std"))]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
@@ -13,7 +13,7 @@ fn panic(_: &core::panic::PanicInfo) -> ! {
 #[path = "../../shared/compute.rs"]
 mod shared;
 wit_bindgen::generate!({path:"wit",world:"app"});
-use kanimiso::experiment::host::add;
+use taraba::experiment::host::add;
 struct App;
 impl Guest for App {
     fn run(a: i32, b: i32) -> i32 {

@@ -6,9 +6,9 @@
 #[cfg(test)]
 extern crate std;
 #[cfg(all(not(target_arch = "wasm32"), not(test)))]
-compile_error!("kanimiso-allocator supports wasm32 only; native backend is test-only");
+compile_error!("taraba-allocator supports wasm32 only; native backend is test-only");
 #[cfg(target_feature = "atomics")]
-compile_error!("kanimiso-allocator supports non-shared single-thread Wasm only");
+compile_error!("taraba-allocator supports non-shared single-thread Wasm only");
 #[macro_use]
 mod extra_assert;
 mod const_init;

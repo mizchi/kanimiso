@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 const hash = (file) =>
   createHash("sha256").update(readFileSync(file)).digest("hex");
 export function prepareKani(root = ".cache/kani") {
-  const allocator = "crates/kanimiso-allocator",
+  const allocator = "crates/taraba-allocator",
     harnesses = "verification/kani/harnesses";
   const inputs = [
     "tools/prepare-kani.mjs",
@@ -19,7 +19,7 @@ export function prepareKani(root = ".cache/kani") {
     `${allocator}/src/neighbors.rs`,
     `${allocator}/src/size_classes.rs`,
     `${allocator}/src/regression.rs`,
-    "crates/kanimiso/src/waker.rs",
+    "crates/taraba/src/waker.rs",
     ...["allocator", "backend", "waker"].map((n) => `${harnesses}/${n}.rs`),
   ];
   mkdirSync(`${root}/allocator/src`, { recursive: true });
@@ -45,9 +45,9 @@ export function prepareKani(root = ".cache/kani") {
   copyFileSync(`${allocator}/LICENSE`, `${root}/allocator/LICENSE`);
   writeFileSync(
     `${root}/allocator/Cargo.toml`,
-    `[package]\nname="kanimiso-allocator-kani"\nversion="0.0.0"\nedition="2021"\nlicense="MPL-2.0"\n[workspace]\n[features]\ndefault=[]\nsize_classes=[]\ninstrumentation=[]\nextra_assertions=[]\n[dependencies]\nmemory_units="=0.4.0"\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
+    `[package]\nname="taraba-allocator-kani"\nversion="0.0.0"\nedition="2021"\nlicense="MPL-2.0"\n[workspace]\n[features]\ndefault=[]\nsize_classes=[]\ninstrumentation=[]\nextra_assertions=[]\n[dependencies]\nmemory_units="=0.4.0"\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
   );
-  const original = readFileSync("crates/kanimiso/src/waker.rs", "utf8");
+  const original = readFileSync("crates/taraba/src/waker.rs", "utf8");
   const needle = '#[cfg(target_arch = "wasm32")]';
   assert.equal(original.split(needle).length, 2);
   writeFileSync(

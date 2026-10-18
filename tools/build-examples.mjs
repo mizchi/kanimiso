@@ -20,7 +20,7 @@ for (const mode of ["no_std", "std"])
         "--locked",
         "--release",
         "-p",
-        "kanimiso-promise",
+        "taraba-promise",
         "--target",
         "wasm32-unknown-unknown",
         "--no-default-features",
@@ -34,7 +34,7 @@ for (const mode of ["no_std", "std"])
         },
       },
     );
-    const raw = "target/wasm32-unknown-unknown/release/kanimiso_promise.wasm";
+    const raw = "target/wasm32-unknown-unknown/release/taraba_promise.wasm";
     const extra =
       surface === "minimal"
         ? ""
@@ -46,7 +46,7 @@ for (const mode of ["no_std", "std"])
     const wit = `dist/examples/${mode}-${surface}.wit`;
     writeFileSync(
       wit,
-      `package kanimiso:fixtures; interface js {resource value;} world app {import js; use js.{value}; export start: func(a:s32,b:s32)->value; ${extra} ${probes}}`,
+      `package taraba:fixtures; interface js {resource value;} world app {import js; use js.{value}; export start: func(a:s32,b:s32)->value; ${extra} ${probes}}`,
     );
     run(process.execPath, [
       "tools/build-wasm.mjs",
@@ -72,7 +72,7 @@ for (const mode of ["no_std", "std"])
         "--locked",
         "--release",
         "-p",
-        "kanimiso-jspi-promise",
+        "taraba-jspi-promise",
         "--target",
         "wasm32-unknown-unknown",
         ...(features.length ? ["--features", features.join(",")] : []),
@@ -85,9 +85,9 @@ for (const mode of ["no_std", "std"])
         },
       },
     );
-    run("target/release/kanimiso", [
+    run("target/release/taraba", [
       "build",
-      "target/wasm32-unknown-unknown/release/kanimiso_jspi_promise.wasm",
+      "target/wasm32-unknown-unknown/release/taraba_jspi_promise.wasm",
       "--wit",
       "examples/jspi/wit",
       "--world",

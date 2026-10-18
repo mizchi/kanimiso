@@ -1,5 +1,5 @@
 [package]
-name = "kanimiso-promise"
+name = "taraba-promise"
 version = "0.1.0"
 edition = "2024"
 publish = false
@@ -14,5 +14,5 @@ test-api = []
 probes = ["test-api"]
 
 [dependencies]
-jsrt = { package = "kanimiso", path = "../../crates/kanimiso", default-features = false }
-kanimiso-allocator = { version = "0.1.0", path = "../../crates/kanimiso-allocator", default-features = false }
+jsrt = { package = "taraba", path = "../../crates/taraba", default-features = false }
+taraba-allocator = { version = "0.1.0", path = "../../crates/taraba-allocator", default-features = false }

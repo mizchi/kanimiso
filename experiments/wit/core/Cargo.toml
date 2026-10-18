@@ -8,11 +8,11 @@ publish = false
 crate-type = ["cdylib"]
 [features]
 default = []
-std = ["kanimiso/std"]
+std = ["taraba/std"]
 [dependencies]
 wit-bindgen = {version = "=0.58.0", default-features = false, features = ["macros"]}
-kanimiso = {path = "../../../crates/kanimiso", default-features = false}
-kanimiso-allocator = {path = "../../../crates/kanimiso-allocator", default-features = false}
+taraba = {path = "../../../crates/taraba", default-features = false}
+taraba-allocator = {path = "../../../crates/taraba-allocator", default-features = false}
 [profile.release]
 opt-level = "z"
 lto = true

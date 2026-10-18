@@ -40,7 +40,7 @@ default = [{default}]
 std = [{std_feature}]
 [dependencies]
 {runtime_dependency}
-kanimiso-allocator = {{version = "0.1.0", default-features = false}}
+taraba-allocator = {{version = "0.1.0", default-features = false}}
 wit-bindgen = {{version = "=0.58.0", default-features = false, features = ["macros"]}}
 [profile.release]
 opt-level = "z"
@@ -48,11 +48,11 @@ lto = true
 panic = "abort"
 codegen-units = 1
 "#,
-            std_feature = if jspi { "" } else { "\"kanimiso/std\"" },
+            std_feature = if jspi { "" } else { "\"taraba/std\"" },
             runtime_dependency = if jspi {
                 ""
             } else {
-                "kanimiso = {version = \"0.1.0\", default-features = false}"
+                "taraba = {version = \"0.1.0\", default-features = false}"
             },
             default = if no_std { "" } else { "\"std\"" }
         ),
@@ -80,7 +80,7 @@ codegen-units = 1
     )?;
     fs::write(path.join(".gitignore"), "/target/\n/pkg/\n")?;
     println!(
-        "Created {} ({}). Build with cargo build --release --target wasm32-unknown-unknown, then kanimiso build target/wasm32-unknown-unknown/release/{}.wasm --wit wit{}",
+        "Created {} ({}). Build with cargo build --release --target wasm32-unknown-unknown, then taraba build target/wasm32-unknown-unknown/release/{}.wasm --wit wit{}",
         path.display(),
         if no_std { "no_std" } else { "std" },
         name.replace('-', "_"),

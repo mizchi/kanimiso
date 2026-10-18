@@ -1,5 +1,5 @@
 {
-  "name": "kanimiso-development",
+  "name": "taraba-development",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mizchi/kanimiso.git"
+    "url": "https://github.com/mizchi/taraba.git"
   },
   "engines": {
     "node": ">=24"

@@ -1,4 +1,4 @@
-package kanimiso:experiment@0.1.0;
+package taraba:experiment@0.1.0;
 world app {
     import add: async func(a: s32, b: s32) -> s32;
     export run: async func(a: s32, b: s32) -> s32;

@@ -48,7 +48,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
     let binaryen = o
         .binaryen
         .clone()
-        .or_else(|| std::env::var_os("KANIMISO_BINARYEN").map(PathBuf::from));
+        .or_else(|| std::env::var_os("TARABA_BINARYEN").map(PathBuf::from));
     let tool = |name: &str| {
         binaryen
             .as_ref()
@@ -64,7 +64,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
         let v = Command::new(tool(name))
             .arg("--version")
             .output()
-            .map_err(|e| format!("{name}: {e}; install Binaryen 133 or set KANIMISO_BINARYEN"))?;
+            .map_err(|e| format!("{name}: {e}; install Binaryen 133 or set TARABA_BINARYEN"))?;
         if !v.status.success()
             || !String::from_utf8_lossy(&v.stdout)
                 .split_whitespace()
@@ -120,7 +120,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
         )?;
         let mut merge = vec![
             text(&path("core.wasm")),
-            "kanimiso:core".into(),
+            "taraba:core".into(),
             text(&path("slots.wasm")),
             "pool".into(),
         ];
@@ -183,7 +183,10 @@ pub fn build(o: &BuildOptions) -> Result<()> {
         return Err("unexpected import after Core linking".into());
     }
     if o.jspi && finished.imports.iter().any(|i| i.module != "app") {
-        return Err("JSPI profile requires a synchronous scalar guest without kanimiso task/runtime imports".into());
+        return Err(
+            "JSPI profile requires a synchronous scalar guest without taraba task/runtime imports"
+                .into(),
+        );
     }
     fs::create_dir_all(&o.output)?;
     let dest = o.output.join("app.wasm");
@@ -192,23 +195,23 @@ pub fn build(o: &BuildOptions) -> Result<()> {
     }
     let js = if o.jspi {
         if o.debug {
-            include_bytes!("../assets/kanimiso-jspi-debug.mjs").as_slice()
+            include_bytes!("../assets/taraba-jspi-debug.mjs").as_slice()
         } else {
-            include_bytes!("../assets/kanimiso-jspi.mjs").as_slice()
+            include_bytes!("../assets/taraba-jspi.mjs").as_slice()
         }
     } else if o.debug {
-        include_bytes!("../assets/kanimiso-debug.mjs").as_slice()
+        include_bytes!("../assets/taraba-debug.mjs").as_slice()
     } else {
-        include_bytes!("../assets/kanimiso.mjs").as_slice()
+        include_bytes!("../assets/taraba.mjs").as_slice()
     };
     fs::write(dest, &bytes)?;
-    fs::write(o.output.join("kanimiso.mjs"), js)?;
+    fs::write(o.output.join("taraba.mjs"), js)?;
     fs::write(
-        o.output.join("kanimiso.d.mts"),
+        o.output.join("taraba.d.mts"),
         if o.jspi {
-            include_bytes!("../assets/kanimiso-jspi.d.mts").as_slice()
+            include_bytes!("../assets/taraba-jspi.d.mts").as_slice()
         } else {
-            include_bytes!("../assets/kanimiso.d.mts").as_slice()
+            include_bytes!("../assets/taraba.d.mts").as_slice()
         },
     )?;
     fs::write(

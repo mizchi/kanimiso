@@ -1,8 +1,8 @@
-use kanimiso_cli::{BuildOptions, build, new_jspi_project, new_project};
 use std::path::{Path, PathBuf};
+use taraba_cli::{BuildOptions, build, new_jspi_project, new_project};
 fn main() {
     if let Err(e) = main_impl() {
-        eprintln!("kanimiso: {e}");
+        eprintln!("taraba: {e}");
         std::process::exit(1)
     }
 }
@@ -20,9 +20,9 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
         ))
     };
     match args.first().map(String::as_str) {
-        Some("--version") => println!("kanimiso {}", env!("CARGO_PKG_VERSION")),
+        Some("--version") => println!("taraba {}", env!("CARGO_PKG_VERSION")),
         None | Some("--help") => println!(
-            "kanimiso new <directory> [--no-std] [--jspi]\nkanimiso build <raw.wasm> --wit <path> [--world <name>] [--out-dir pkg] [--debug] [--binaryen <bin-directory>] [--jspi]\nRequires Binaryen 133. WIT Core profile: s32/u32/f64 and imported resource handles; Promise resources map to native JS Promises. --jspi uses scalar WIT functions with serialized JSPI entry (Safari 27+)."
+            "taraba new <directory> [--no-std] [--jspi]\ntaraba build <raw.wasm> --wit <path> [--world <name>] [--out-dir pkg] [--debug] [--binaryen <bin-directory>] [--jspi]\nRequires Binaryen 133. WIT Core profile: s32/u32/f64 and imported resource handles; Promise resources map to native JS Promises. --jspi uses scalar WIT functions with serialized JSPI entry (Safari 27+)."
         ),
         Some("new") => {
             let path = Path::new(args.get(1).ok_or("missing directory")?);

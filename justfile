@@ -14,11 +14,11 @@ build: build-host
 
 test: build-host
     pnpm test
-    cargo test --locked -p kanimiso --lib
-    cargo test --locked -p kanimiso --lib --features std
-    cargo test --locked -p kanimiso-cli
-    cargo test --locked -p kanimiso-allocator --lib --features instrumentation,extra_assertions
-    cargo test --locked -p kanimiso-allocator --lib --no-default-features --features instrumentation,extra_assertions
+    cargo test --locked -p taraba --lib
+    cargo test --locked -p taraba --lib --features std
+    cargo test --locked -p taraba-cli
+    cargo test --locked -p taraba-allocator --lib --features instrumentation,extra_assertions
+    cargo test --locked -p taraba-allocator --lib --no-default-features --features instrumentation,extra_assertions
 
 check: build test
     pnpm format:check
@@ -38,10 +38,10 @@ stress seconds="60":
     node tools/stress.mjs {{seconds}}
 
 miri:
-    cargo +nightly miri test --locked -p kanimiso --lib -- --test-threads=1
-    cargo +nightly miri test --locked -p kanimiso --lib --features std -- --test-threads=1
-    cargo +nightly miri test --locked -p kanimiso-allocator --lib --no-default-features --features instrumentation -- --test-threads=1
-    cargo +nightly miri test --locked -p kanimiso-allocator --lib --no-default-features --features instrumentation,extra_assertions test_merge_free_ -- --test-threads=1
+    cargo +nightly miri test --locked -p taraba --lib -- --test-threads=1
+    cargo +nightly miri test --locked -p taraba --lib --features std -- --test-threads=1
+    cargo +nightly miri test --locked -p taraba-allocator --lib --no-default-features --features instrumentation -- --test-threads=1
+    cargo +nightly miri test --locked -p taraba-allocator --lib --no-default-features --features instrumentation,extra_assertions test_merge_free_ -- --test-threads=1
 
 kani-setup:
     cargo install --locked kani-verifier --version 0.67.0
@@ -73,7 +73,7 @@ compare-wit: build-host
     cargo fetch --locked --manifest-path experiments/wit/jspi/Cargo.toml
     cargo fetch --locked --manifest-path experiments/wit/core/Cargo.toml
     cargo fetch --locked --manifest-path experiments/wit/component/Cargo.toml
-    cargo build --locked --release -p kanimiso-cli
+    cargo build --locked --release -p taraba-cli
     node tools/compare-wit.mjs
 
 prepare-jspi-future: build-host
@@ -85,7 +85,7 @@ prepare-jspi-future: build-host
     node --test experiments/jspi-future/*.test.mjs
     cargo fmt --manifest-path experiments/jspi-future/Cargo.toml --all -- --check
     pnpm exec prettier --check experiments/jspi-future/*.mjs
-    cargo build --locked --release -p kanimiso-cli
+    cargo build --locked --release -p taraba-cli
 
 experiment-jspi-future: prepare-jspi-future
     node tools/experiment-jspi-future.mjs
