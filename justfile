@@ -53,8 +53,8 @@ kani:
     cargo kani --manifest-path .cache/kani/waker/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
     cargo kani --manifest-path .cache/kani/allocator/Cargo.toml --lib --tests --exact --harness kani_proofs::checked_rounding_all_usize_values --harness kani_boundary_proofs::neighbor_tag_bits_preserve_every_aligned_u32_address --harness kani_boundary_proofs::valid_layouts_return_null_on_refill_oom_without_overflow --output-format terse -Z unstable-options --harness-timeout 60s
 
-workers:
-    node tools/workers.mjs
+workers *args:
+    node tools/workers.mjs {{args}}
 
 modern:
     node tools/modern.mjs
@@ -75,3 +75,22 @@ compare-wit: build-host
     cargo fetch --locked --manifest-path experiments/wit/component/Cargo.toml
     cargo build --locked --release -p kanimiso-cli
     node tools/compare-wit.mjs
+
+prepare-jspi-future: build-host
+    cargo fetch --locked --manifest-path experiments/jspi-future/Cargo.toml
+    cargo fetch --locked --manifest-path experiments/wit/jspi/Cargo.toml
+    cargo fetch --locked --manifest-path experiments/wit/core/Cargo.toml
+    cargo test --locked --manifest-path experiments/jspi-future/adapter/Cargo.toml
+    node --test experiments/jspi-future/gates.test.mjs
+    cargo fmt --manifest-path experiments/jspi-future/Cargo.toml --all -- --check
+    pnpm exec prettier --check experiments/jspi-future/*.mjs
+    cargo build --locked --release -p kanimiso-cli
+
+experiment-jspi-future: prepare-jspi-future
+    node tools/experiment-jspi-future.mjs
+
+check-jspi-future: prepare-jspi-future
+    node tools/experiment-jspi-future.mjs --check
+
+miri-jspi-future:
+    cargo +nightly miri test --locked --manifest-path experiments/jspi-future/adapter/Cargo.toml -- --test-threads=1

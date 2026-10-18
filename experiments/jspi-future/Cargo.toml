@@ -1,0 +1,23 @@
+[package]
+name = "jspi-future-experiment"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[workspace]
+members = ["adapter"]
+[lib]
+crate-type = ["cdylib"]
+[features]
+default = []
+std = []
+probes = []
+[dependencies]
+jspi-future-driver = {path = "adapter"}
+kanimiso-allocator = {path = "../../crates/kanimiso-allocator", default-features = false}
+wit-bindgen = {version = "=0.58.0", default-features = false, features = ["macros"]}
+futures-util = {version = "=0.3.31", default-features = false, features = ["alloc"]}
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"
+codegen-units = 1

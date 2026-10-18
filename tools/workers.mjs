@@ -6,6 +6,7 @@ import { setTimeout } from "node:timers/promises";
 const dir = ".cache/workers";
 mkdirSync(dir, { recursive: true });
 const modes = ["no_std", "std"];
+const future = process.argv.includes("--jspi-future");
 writeFileSync(
   `${dir}/entry.mjs`,
   modes
@@ -17,6 +18,15 @@ writeFileSync(
           `\nimport jspi_${m} from "../../dist/examples/jspi-${m}-minimal.wasm";`,
       )
       .join("\n") +
+    (future
+      ? modes
+          .map(
+            (m) =>
+              `\nimport future_${m} from "../jspi-future-experiment/adapter-${m}/core/app.wasm";\nimport probes_${m} from "../jspi-future-experiment/adapter-${m}/probes/app.wasm";`,
+          )
+          .join("\n") +
+        `\nimport {instantiate as instantiateFuture} from "../../experiments/jspi-future/host.mjs";\nimport {verifyDriver} from "../../experiments/jspi-future/verify.mjs";\nconst futureModules={no_std:future_no_std,std:future_std},futureProbes={no_std:probes_no_std,std:probes_std};\n`
+      : "") +
     `
 import {createHost as release} from "../../dist/release.mjs";
 import {createHost as debug} from "../../dist/debug.mjs";
@@ -29,6 +39,17 @@ const handlers={release:workerService({no_std,std},release),debug:workerService(
 export default {async fetch(request) {
  const url=new URL(request.url),[variant,mode]=url.pathname.slice(1).split("/");
  if(variant==="health") return new Response("ok");
+ ${
+   future
+     ? `if(variant==="jspi-future") {
+   try {
+     const common=await verifyWit(async add=>{const h=await instantiateFuture(futureModules[mode],{bindings:{add}});return(...a)=>h.promise("run",...a)},[1,16,128,1024].flatMap(asyncCases));
+     const probes=await verifyDriver(instantiateFuture,futureProbes[mode]);
+     return Response.json({mode,common,probes,all_passed:true});
+   }catch(error){return Response.json({mode,error:String(error)},{status:500})}
+ }`
+     : ""
+ }
  if(variant==="jspi") {
    const capabilities={promising:typeof WebAssembly.promising,suspending:typeof WebAssembly.Suspending};
    if(capabilities.promising!=="function"||capabilities.suspending!=="function") return Response.json({mode,eligible:false,capabilities,reason:"JSPI is unavailable in this local workerd"});
@@ -143,6 +164,21 @@ try {
       `jspi/${mode}: ${entry.eligible ? "local workerd passed" : "JSPI unavailable in local workerd"}`,
     );
   }
+  const jspi_future = [];
+  if (future)
+    for (const mode of modes) {
+      const response = await fetch(
+        `http://127.0.0.1:${port}/jspi-future/${mode}`,
+        { signal: AbortSignal.timeout(30000) },
+      );
+      const entry = await response.json();
+      assert.equal(response.status, 200, JSON.stringify(entry));
+      assert.equal(entry.all_passed, true);
+      assert.equal(entry.common.tasks, 3507);
+      assert.equal(entry.probes.all_passed, true);
+      jspi_future.push(entry);
+      console.log(`jspi-future/${mode}: local workerd passed`);
+    }
   writeFileSync(
     ".cache/workers.json",
     JSON.stringify(
@@ -151,6 +187,7 @@ try {
           "local workerd; no production deployment; nodejs_compat for test assertions",
         entries,
         jspi,
+        ...(future ? { jspi_future } : {}),
         all_passed: true,
       },
       null,

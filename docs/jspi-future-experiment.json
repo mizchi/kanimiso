@@ -1,0 +1,538 @@
+{
+  "created_at": "2026-10-18T14:40:06.203Z",
+  "adopted": false,
+  "engine": "Node v24.21.0 / V8 13.6.233.17-node.53",
+  "machine": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M5"
+  },
+  "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "versions": {
+    "binaryen": 133,
+    "wit_bindgen": "0.58.0",
+    "futures_util": "0.3.31",
+    "esbuild": "0.28.2"
+  },
+  "method": {
+    "algorithm": "experiments/wit/shared/compute.rs",
+    "flags": "-C link-arg=-zstack-size=65536 -C link-arg=--max-memory=1048576",
+    "binaryen": 133,
+    "optimization": "Oz / flatten / rereloop / Oz / converge",
+    "cold": "empty target, cached dependencies, offline; 3 warm builds",
+    "timing": "4096 warmup, 11 samples × 4096 tasks, 512 JS submissions; adapter/direct serialize guest entry",
+    "contract": "common signed i32 arithmetic and two host requests only; no claim of identical cancellation/fatal/concurrency contracts",
+    "deployment": "core/app.wasm + host.mjs only; probe exports excluded from size comparison"
+  },
+  "profiles": [
+    {
+      "id": "adapter-no_std",
+      "backend": "adapter",
+      "mode": "no_std",
+      "cold_build_ms": 7993.560125,
+      "warm_build_ms": [
+        46.45104199999969,
+        44.10466599999927,
+        43.77141699999993
+      ],
+      "transform_ms": 533.4510420000006,
+      "files": [
+        {
+          "file": "core/app.wasm",
+          "bytes": 3291,
+          "raw": 3291,
+          "gzip": 1772,
+          "brotli": 1647,
+          "sha256": "355dfed55facea069a99497dfc5edc6b41ab7bf531b63000326a2bc9f1a93da8"
+        },
+        {
+          "file": "host.mjs",
+          "bytes": 2848,
+          "raw": 2848,
+          "gzip": 1282,
+          "brotli": 1171,
+          "sha256": "5db52dfe2af0c9c0ead3d7d49b07e9e8de9bebe8bb4330cded3ff24958bdf395"
+        }
+      ],
+      "wasm_bytes": 3291,
+      "js_bytes": 2848,
+      "total_bytes": 6139,
+      "gzip_bytes": 3054,
+      "probes_wasm_bytes": 8139,
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "probes": {
+        "all_passed": true,
+        "self_wakes": 1089,
+        "join_reverse_completion": true,
+        "futures_unordered_child_wakers": true,
+        "select_drops_loser": true,
+        "late_completion_isolated": true,
+        "pinned_stack_tasks": 32,
+        "pinned_stack_bytes": 1024,
+        "rejection_reasons": 2,
+        "post_suspension_trap": true
+      },
+      "timing": {
+        "unit": "microseconds/task (two host awaits)",
+        "tasks_per_sample": 4096,
+        "samples": [
+          1.5305683593744845,
+          1.3911335449208195,
+          1.2294006347648434,
+          1.308827636718135,
+          1.1810913085934516,
+          1.220581054687031,
+          1.1439208984374005,
+          1.2696533203122584,
+          1.780253173828683,
+          3.2758281250000465,
+          1.2739460449235906
+        ],
+        "median": 1.2739460449235906,
+        "min": 1.1439208984374005,
+        "max": 3.2758281250000465
+      }
+    },
+    {
+      "id": "jspi-no_std",
+      "backend": "jspi",
+      "mode": "no_std",
+      "cold_build_ms": 6712.168792,
+      "warm_build_ms": [
+        44.12995899999987,
+        40.55037500000071,
+        39.80199999999968
+      ],
+      "transform_ms": 46.836583999998766,
+      "files": [
+        {
+          "file": "core/app.wasm",
+          "bytes": 248,
+          "raw": 248,
+          "gzip": 201,
+          "brotli": 177,
+          "sha256": "f1162731bcafab1904c42e7ee6c0fb0f1c9ca0a1bf0a3022ad557875626af052"
+        },
+        {
+          "file": "host.mjs",
+          "bytes": 1324,
+          "raw": 1324,
+          "gzip": 634,
+          "brotli": 560,
+          "sha256": "6eb69c495deb02e293d68b41bff1dcad56beb7078a3466e6127e621c892ad3de"
+        }
+      ],
+      "wasm_bytes": 248,
+      "js_bytes": 1324,
+      "total_bytes": 1572,
+      "gzip_bytes": 835,
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "timing": {
+        "unit": "microseconds/task (two host awaits)",
+        "tasks_per_sample": 4096,
+        "samples": [
+          0.7712707519527129,
+          1.1325073242183237,
+          0.6331989746097832,
+          0.5941467285150992,
+          0.7490744628899648,
+          0.5919902343745065,
+          0.7488200683596347,
+          0.9289448242189025,
+          0.5991718749989161,
+          0.7603046875015451,
+          0.6354775390615686
+        ],
+        "median": 0.7488200683596347,
+        "min": 0.5919902343745065,
+        "max": 1.1325073242183237
+      }
+    },
+    {
+      "id": "core-no_std",
+      "backend": "core",
+      "mode": "no_std",
+      "cold_build_ms": 7165.058166999999,
+      "warm_build_ms": [
+        44.4700840000005,
+        40.21933299999728,
+        41.058374999996886
+      ],
+      "transform_ms": 148.43820899999992,
+      "files": [
+        {
+          "file": "core/app.wasm",
+          "bytes": 1744,
+          "raw": 1744,
+          "gzip": 1037,
+          "brotli": 991,
+          "sha256": "d90bf461353a441c595968128965cd964c08303d1037aedd2eb23b91609247c2"
+        },
+        {
+          "file": "host.mjs",
+          "bytes": 3874,
+          "raw": 3874,
+          "gzip": 1952,
+          "brotli": 1793,
+          "sha256": "741a202dd568b320ba9375fe8ddf772557122ffc0fc340f4863e1a8caf75e9ce"
+        }
+      ],
+      "wasm_bytes": 1744,
+      "js_bytes": 3874,
+      "total_bytes": 5618,
+      "gzip_bytes": 2989,
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "timing": {
+        "unit": "microseconds/task (two host awaits)",
+        "tasks_per_sample": 4096,
+        "samples": [
+          1.5376992187494665,
+          1.2570393066404506,
+          1.2473449707037787,
+          1.3266196289052345,
+          1.7689108886713711,
+          1.1509907226567861,
+          1.1885578613277659,
+          1.1335754394536934,
+          1.1439819335929968,
+          1.2513530273423612,
+          1.5136413574214913
+        ],
+        "median": 1.2513530273423612,
+        "min": 1.1335754394536934,
+        "max": 1.7689108886713711
+      }
+    },
+    {
+      "id": "adapter-std",
+      "backend": "adapter",
+      "mode": "std",
+      "cold_build_ms": 6694.651083000001,
+      "warm_build_ms": [
+        52.33833299999969,
+        41.390292000000045,
+        41.58429099999921
+      ],
+      "transform_ms": 88.56466600000203,
+      "files": [
+        {
+          "file": "core/app.wasm",
+          "bytes": 7528,
+          "raw": 7528,
+          "gzip": 3952,
+          "brotli": 3558,
+          "sha256": "38aae31aa82c3a5482b89e9653804af6671b889f2769a7edcc3898de95e0fc6e"
+        },
+        {
+          "file": "host.mjs",
+          "bytes": 2848,
+          "raw": 2848,
+          "gzip": 1282,
+          "brotli": 1171,
+          "sha256": "5db52dfe2af0c9c0ead3d7d49b07e9e8de9bebe8bb4330cded3ff24958bdf395"
+        }
+      ],
+      "wasm_bytes": 7528,
+      "js_bytes": 2848,
+      "total_bytes": 10376,
+      "gzip_bytes": 5234,
+      "probes_wasm_bytes": 13834,
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "probes": {
+        "all_passed": true,
+        "self_wakes": 1089,
+        "join_reverse_completion": true,
+        "futures_unordered_child_wakers": true,
+        "select_drops_loser": true,
+        "late_completion_isolated": true,
+        "pinned_stack_tasks": 32,
+        "pinned_stack_bytes": 1024,
+        "rejection_reasons": 2,
+        "post_suspension_trap": true
+      },
+      "timing": {
+        "unit": "microseconds/task (two host awaits)",
+        "tasks_per_sample": 4096,
+        "samples": [
+          1.3601074218758669,
+          1.1517128906248786,
+          1.2680156249995633,
+          1.326782226563239,
+          1.1635029296872546,
+          1.290171386717276,
+          1.1777446289062965,
+          1.2290141601560833,
+          1.2431843261726527,
+          1.285054443359357,
+          1.2647194824211283
+        ],
+        "median": 1.2647194824211283,
+        "min": 1.1517128906248786,
+        "max": 1.3601074218758669
+      }
+    },
+    {
+      "id": "jspi-std",
+      "backend": "jspi",
+      "mode": "std",
+      "cold_build_ms": 6892.160792000002,
+      "warm_build_ms": [
+        42.793916000002355,
+        39.7544160000034,
+        39.935042000004614
+      ],
+      "transform_ms": 80.83270900000207,
+      "files": [
+        {
+          "file": "core/app.wasm",
+          "bytes": 5623,
+          "raw": 5623,
+          "gzip": 2994,
+          "brotli": 2690,
+          "sha256": "8fa135b9d2d8888d0cf0bd403a678bf484bd3c94a9f42428a2802914c4a66b97"
+        },
+        {
+          "file": "host.mjs",
+          "bytes": 1324,
+          "raw": 1324,
+          "gzip": 634,
+          "brotli": 560,
+          "sha256": "6eb69c495deb02e293d68b41bff1dcad56beb7078a3466e6127e621c892ad3de"
+        }
+      ],
+      "wasm_bytes": 5623,
+      "js_bytes": 1324,
+      "total_bytes": 6947,
+      "gzip_bytes": 3628,
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "timing": {
+        "unit": "microseconds/task (two host awaits)",
+        "tasks_per_sample": 4096,
+        "samples": [
+          0.6252849121093362,
+          0.6004536132806493,
+          0.7233581542962497,
+          0.6789550781256537,
+          0.9860637207026457,
+          0.7133281250002454,
+          0.5988972167969564,
+          0.7966003417969603,
+          0.5606179199215688,
+          0.5552470703111823,
+          0.7362468261717936
+        ],
+        "median": 0.6789550781256537,
+        "min": 0.5552470703111823,
+        "max": 0.9860637207026457
+      }
+    },
+    {
+      "id": "core-std",
+      "backend": "core",
+      "mode": "std",
+      "cold_build_ms": 7253.6394999999975,
+      "warm_build_ms": [
+        62.27904199999466,
+        41.83316699999705,
+        40.26570899999933
+      ],
+      "transform_ms": 182.50729200000205,
+      "files": [
+        {
+          "file": "core/app.wasm",
+          "bytes": 7214,
+          "raw": 7214,
+          "gzip": 3886,
+          "brotli": 3478,
+          "sha256": "4f98d3e26b8215e8bc1a5fbdf1ba56d8ce28935348d84c139e5b26067b111941"
+        },
+        {
+          "file": "host.mjs",
+          "bytes": 3874,
+          "raw": 3874,
+          "gzip": 1952,
+          "brotli": 1793,
+          "sha256": "741a202dd568b320ba9375fe8ddf772557122ffc0fc340f4863e1a8caf75e9ce"
+        }
+      ],
+      "wasm_bytes": 7214,
+      "js_bytes": 3874,
+      "total_bytes": 11088,
+      "gzip_bytes": 5838,
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "timing": {
+        "unit": "microseconds/task (two host awaits)",
+        "tasks_per_sample": 4096,
+        "samples": [
+          1.3060097656243386,
+          1.2630209960935446,
+          1.1432495117187358,
+          1.1722717285156392,
+          1.3585510253903976,
+          1.4336853027341334,
+          1.1265666503916805,
+          1.1406860351570458,
+          1.230204101561938,
+          1.1869304199212394,
+          1.2368366699213595
+        ],
+        "median": 1.230204101561938,
+        "min": 1.1265666503916805,
+        "max": 1.4336853027341334
+      }
+    }
+  ],
+  "inputs": {
+    "Cargo.lock": "ff2a3e9435ebaef7534d5bf8c46ab483932a3ad5c3cc857dacd2a0e1ec090bcc",
+    "Cargo.toml": "c503450c756f1258f06e8fb20f481beb6dae4ebd818331efa72b93923f306603",
+    "crates/kanimiso-allocator/src/const_init.rs": "3990e2658a30f8674ad948ce6ca1a50a86c714417005df895d5e4892f863b867",
+    "crates/kanimiso-allocator/src/extra_assert.rs": "69119bed3138136b5a62d6f0604c984bda753d834931941680a33038f892a6fc",
+    "crates/kanimiso-allocator/src/imp_test.rs": "60e3ec7ccac4925e5aa33f4abeddb47d9e4210690c2689d97dd06028c2872910",
+    "crates/kanimiso-allocator/src/imp_wasm32.rs": "da90a938821d1d2c838027815398082675b2ac42d70fe5752991e711e103912e",
+    "crates/kanimiso-allocator/src/lib.rs": "85bb814145eda43cf2cbebfabaf9d4c1ef35d856ac39edb63f582a70e00c4879",
+    "crates/kanimiso-allocator/src/neighbors.rs": "603c99ca0f8117b79a8f1c9ec53cdba73260b84032f239f6a9f00f7da94834f5",
+    "crates/kanimiso-allocator/src/regression.rs": "a3ed87881832843c4f0d3536b6f818732008bda863f02344d984cb37a1737483",
+    "crates/kanimiso-allocator/src/size_classes.rs": "5bd2c84867afde2dc9e4c39ba2013e4244b539efd80b1f93abf76ed1517f2a35",
+    "crates/kanimiso-cli/assets/provenance.json": "5a92397dcfc6413a6c5ee7658890ddca9355ab17fd6a62ac5198e3326c6c405f",
+    "crates/kanimiso-cli/src/abi.rs": "f3eae9eb25585ba4d18a034583e1c25465c9649d310204ed7f156d4bc51e4936",
+    "crates/kanimiso-cli/src/build.rs": "a2eee89b08f645a961ae87af923a8dd04950764f2af04eac1174a6fd1a64b614",
+    "crates/kanimiso-cli/src/imports.rs": "de87fe8bdae64194d3afc6a5b27aa75acea7e03ce651f9bb8ac42828296be90f",
+    "crates/kanimiso-cli/src/lib.rs": "4d2d9529bf80c736e4613a5e2fe7f80d9ee30ae68cb7a22f588fab23ba945300",
+    "crates/kanimiso-cli/src/main.rs": "f03f7ba676ba6002437d57d7c9c9b76f7b3e308b7075fad2e3a96df50bf0f352",
+    "crates/kanimiso-cli/src/project.rs": "06520579c096ef72d95772aba735b284d624d55d908026b5975a428498650027",
+    "crates/kanimiso-cli/src/templates/app.rs": "4e9b5520ac7aa508d1721b98c1d732e20850e1cda8f8d86346b460bf1537a8ef",
+    "crates/kanimiso-cli/src/templates/app.wit": "19f0b345d8b03d88834cf4c2deee6a7cab8593c3b809ffe94ddae8ef2c7b7d1a",
+    "crates/kanimiso-cli/src/templates/jspi.rs": "d2d3d438463d2cb82e48fe75b715eb2d2ed8e42c06bc6e525a591cfec68c0d17",
+    "crates/kanimiso-cli/src/templates/jspi.wit": "0a788868aa35c4d0fd51c41a8c873812f314eab9d72a99f50d7e8ff7b04834ff",
+    "crates/kanimiso-cli/src/wit.rs": "3219167f3eadbea340df3fc65982b4fbd3b658fb00b29cf3c5be18378db1657c",
+    "crates/kanimiso/src/ffi.rs": "ef9cbf04f504ed01cd0375360c78678f6c72d6dfd559dbdeb38402af5ed569b7",
+    "crates/kanimiso/src/lib.rs": "b8f34e9fb4ec69fbbac5f56beed486215adbea712897bc17c0bd2716827706b8",
+    "crates/kanimiso/src/promise.rs": "786501a2f38c24a3e16d27f2152b73627b4a74ab0aa7c8568fc0d59a402470be",
+    "crates/kanimiso/src/storage.rs": "a9360b426d54b6abb4190a32b6d64c1a689ebe45211356eccdcc85946dd3daec",
+    "crates/kanimiso/src/task.rs": "be66e11dc64d8e5f1428c9a8d51d85ff16a89645c54c38a0ab8b5bdb9b552f69",
+    "crates/kanimiso/src/value.rs": "5c03d74391842c6988dc376b4562b0985bd3ab8ed0c7eb03614406ac95270f13",
+    "crates/kanimiso/src/waker.rs": "eac9c2b2f5a538918ac1cb0bfbad0934898c4c78b1b1fb84c893666029dc61b9",
+    "experiments/jspi-future/.gitignore": "aa8a4689f07a06b8823795e01fb6724506d06611ec7664be4d537b7a30d6ace2",
+    "experiments/jspi-future/Cargo.lock": "7052ac3e840a6b28545668894cceb4eb3722d912092115b0e0d09c12998f6c1a",
+    "experiments/jspi-future/Cargo.toml": "8afde36f583db4ffb7120a82d82907b53a776f098d110131c8caf5aedb194fa9",
+    "experiments/jspi-future/adapter/Cargo.toml": "628777ffd49fe9ae64edf53fdc42357bc620c49d1c3c821422742cda9c202feb",
+    "experiments/jspi-future/adapter/src/lib.rs": "73d7d59ecb38103e0fa3b4e71d09966761706462a6e5d818ba59b1a664bd975c",
+    "experiments/jspi-future/adapter/src/tests.rs": "181f0fb436b38e7560ea6ceaf15e5a1d1f294082e349d8fe1264551da22ae5ba",
+    "experiments/jspi-future/gates.mjs": "68fa0a7c2e7103fafcf4c64d47d507db6b2cdda25a21a5282617d94d9ff00a58",
+    "experiments/jspi-future/gates.test.mjs": "02ff95452bebfcc86f5c4a0e66ce920199649c94cf541c4b0c80fa0cbf2a8e52",
+    "experiments/jspi-future/host.mjs": "631bff4c2b3fa50047048d783b6fd60858c4450c710741e3534c4188695be5a5",
+    "experiments/jspi-future/src/lib.rs": "8eb029455b3765c0dfc4b6586a2758c119ea348af2f8a658895c8d2845f6d046",
+    "experiments/jspi-future/verify.mjs": "2fe978432b6944ca3abd1859a9a98a09b33a6daa1314480bc9e777d6706442a9",
+    "experiments/jspi-future/wit/app.wit": "6c5e98a4fd7b8c949a7b178a5ef40f38cfac41cc73dcd728745ba88140550e7d",
+    "experiments/wit/core/Cargo.lock": "9eba3d4fd9d665bb701a9baaf677e32c420f5eba45804c50dca40eba0dab6f15",
+    "experiments/wit/core/Cargo.toml": "053615cc95fd8e7f6e9e05a62ee6977b1fab9f734f36a04a974ce97bfb3d8317",
+    "experiments/wit/core/src/lib.rs": "6ef60e5522d91059cb936745b784c24ccf7a1cd9e3eeb8f80857ae8ccede1302",
+    "experiments/wit/core/wit/app.wit": "4e52436f0e44e113aa8ef4815169ec24fb85da772fb169b9dd1f7c275ad1fab1",
+    "experiments/wit/jspi/Cargo.lock": "cee49911f77280194e841824cab741a137b8c28e80d8c2bfb5dd51f21f40bd50",
+    "experiments/wit/jspi/Cargo.toml": "4a6f4e55c2e8d7d172fcea5c330cc95f6a861a67ed2cd160c5db176226effad6",
+    "experiments/wit/jspi/src/lib.rs": "857f9a39cb3d45d056b21c84a58456cc141d8c407a4225c4aedc5b9371fc73e1",
+    "experiments/wit/jspi/wit/app.wit": "0a788868aa35c4d0fd51c41a8c873812f314eab9d72a99f50d7e8ff7b04834ff",
+    "experiments/wit/shared/compute.rs": "dad3b1f23b34508677b208d188d5f87d955374b55328811f5066e86436eb1262",
+    "package.json": "c06e15de133310409780deb2d46c8a7df54bf5e0f32e7958354079e4d9ba9bc7",
+    "pnpm-lock.yaml": "0a6dc6db3845da5f63f71aaf97d052cfe00251c1527ad3f292e01ce5a1d4395d",
+    "src/error-codes.json": "5f983b94327523505f36b9e33da1d007bb3efdd2aa24e267948d1ad92db3964f",
+    "src/errors.mjs": "e6d1f993b7270652963f571af12fc938de58339e216a2ea67dc4161c875e1ec4",
+    "src/host.mjs": "6d2ce4941f4250eefdef6ab782336920095b87f91e43f6445da8529282d96a2a",
+    "src/index.mjs": "8d823825d250a6b7ebedd700229966167f49a6b769f4cbcd1012accd79f17f24",
+    "src/jspi.mjs": "3ed7f11117df199cbbea3873cd99769ec658ebf3c98c931e0951b769c2a71b8c",
+    "tests/support/async-contract.mjs": "6ec8416a13d55b8623d2a69e34a16275668664cc5e9906ddaabb0d82856ddfce",
+    "tests/support/metrics.mjs": "8e00d852b079470d4b2554dae8d21efb8b5a1493ae3b8cc78387c3389006d5de",
+    "tests/support/wit-contract.mjs": "b82b47cf1ff2a9149914d19e0e27eceb90bea4ecfedf51b4b70c27c3fd726ee7",
+    "tools/experiment-jspi-future.mjs": "465b76a72364affd775e853fa57d603f5e7ec7c5f98a28971f171d41719471c6"
+  }
+}

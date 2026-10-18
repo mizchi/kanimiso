@@ -11,6 +11,8 @@ JavaScript ホスト向けの小さな Rust/Wasm ランタイムです。実験�
 
 両者の Core lowering は Component Model の Canonical ABI とは異なります。標準 Component native async を含む比較は [測定結果](docs/wit-comparison.md)、エンジンの前提は [engine-baseline.md](docs/engine-baseline.md) にあります。
 
+JSPI で Rust Future を駆動する別の[アダプター実験](experiments/jspi-future/README.md)もあります。未採用で、製品 API には含めていません。
+
 ## インストールと利用
 
 `kanimiso`、`kanimiso-allocator`、`kanimiso-cli` の初回 crates.io 公開を準備中です。以下は公開後の利用手順です。まだレジストリからのインストール成功は保証していません。公開自体は実施していません。

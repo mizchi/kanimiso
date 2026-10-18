@@ -11,6 +11,8 @@ A small Rust/Wasm runtime for JavaScript hosts. This experimental project target
 
 Their Core lowering is distinct from the Component Model Canonical ABI. See the [measurements](docs/wit-comparison.md), including standard Component native async, and the [engine baseline](docs/engine-baseline.md).
 
+A separate [experimental adapter](experiments/jspi-future/README.md) drives Rust Futures through JSPI. It has not been adopted and is not part of the product API.
+
 ## Install and use
 
 The first crates.io releases of `kanimiso`, `kanimiso-allocator`, and `kanimiso-cli` are being prepared. The following is the intended workflow after publication. Registry installation has not yet been verified; no registry publish has been performed.

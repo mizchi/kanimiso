@@ -1,0 +1,23 @@
+package kanimiso:jspi-future-experiment;
+world app {
+  import open: func() -> s32;
+  import signal: func(id: s32);
+  import park: func(id: s32);
+  import close: func(id: s32);
+  import drain: func(id: s32) -> s32;
+  import begin: func(gate: s32, a: s32, b: s32) -> s32;
+  import ready: func(job: s32) -> s32;
+  import take: func(job: s32) -> s32;
+  import cancel: func(job: s32);
+  export run: func(a: s32, b: s32) -> s32;
+}
+world probes {
+  include app;
+  import dropped: func();
+  export self-wake: func(count: s32) -> s32;
+  export joined: func(a: s32, b: s32) -> s32;
+  export unordered: func(a: s32, b: s32) -> s32;
+  export raced: func(a: s32, b: s32) -> s32;
+  export held: func(a: s32, b: s32) -> s32;
+  export trap: func();
+}
