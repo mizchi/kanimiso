@@ -81,6 +81,7 @@ prepare-jspi-future: build-host
     cargo fetch --locked --manifest-path experiments/wit/jspi/Cargo.toml
     cargo fetch --locked --manifest-path experiments/wit/core/Cargo.toml
     cargo test --locked --manifest-path experiments/jspi-future/adapter/Cargo.toml
+    cargo test --locked --manifest-path experiments/jspi-future/adapter/Cargo.toml --no-default-features --features bounded
     node --test experiments/jspi-future/gates.test.mjs
     cargo fmt --manifest-path experiments/jspi-future/Cargo.toml --all -- --check
     pnpm exec prettier --check experiments/jspi-future/*.mjs
@@ -94,3 +95,6 @@ check-jspi-future: prepare-jspi-future
 
 miri-jspi-future:
     cargo +nightly miri test --locked --manifest-path experiments/jspi-future/adapter/Cargo.toml -- --test-threads=1
+
+kani-jspi-future:
+    cargo kani --manifest-path experiments/jspi-future/adapter/Cargo.toml --no-default-features --features bounded --lib --output-format terse -Z unstable-options --harness-timeout 60s

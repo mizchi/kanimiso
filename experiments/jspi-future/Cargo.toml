@@ -8,12 +8,15 @@ members = ["adapter"]
 [lib]
 crate-type = ["cdylib"]
 [features]
-default = []
+default = ["arc"]
 std = []
 probes = []
+arc = ["jspi-future-driver/alloc", "dep:kanimiso-allocator"]
+bounded = ["jspi-future-driver/bounded"]
+heap-probes = ["dep:kanimiso-allocator"]
 [dependencies]
-jspi-future-driver = {path = "adapter"}
-kanimiso-allocator = {path = "../../crates/kanimiso-allocator", default-features = false}
+jspi-future-driver = {path = "adapter", default-features = false}
+kanimiso-allocator = {path = "../../crates/kanimiso-allocator", default-features = false, optional = true}
 wit-bindgen = {version = "=0.58.0", default-features = false, features = ["macros"]}
 futures-util = {version = "=0.3.31", default-features = false, features = ["alloc"]}
 [profile.release]

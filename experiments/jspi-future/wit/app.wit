@@ -1,5 +1,6 @@
 package kanimiso:jspi-future-experiment;
 world app {
+  import fail: func(code: s32);
   import open: func() -> s32;
   import signal: func(id: s32);
   import park: func(id: s32);
@@ -11,13 +12,20 @@ world app {
   import cancel: func(job: s32);
   export run: func(a: s32, b: s32) -> s32;
 }
-world probes {
+world bounded-probes {
   include app;
   import dropped: func();
   export self-wake: func(count: s32) -> s32;
   export joined: func(a: s32, b: s32) -> s32;
-  export unordered: func(a: s32, b: s32) -> s32;
   export raced: func(a: s32, b: s32) -> s32;
   export held: func(a: s32, b: s32) -> s32;
   export trap: func();
+  export capacity: func(count: s32) -> s32;
+  export drop-capacity: func(count: s32) -> s32;
+  export borrow-conflict: func();
+}
+
+world probes {
+  include bounded-probes;
+  export unordered: func(a: s32, b: s32) -> s32;
 }

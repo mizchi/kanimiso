@@ -3,3 +3,10 @@ name = "jspi-future-driver"
 version = "0.0.0"
 edition = "2024"
 publish = false
+
+[features]
+default = ["alloc", "bounded"]
+alloc = []
+bounded = []
+[lints.rust]
+unexpected_cfgs = {level = "warn", check-cfg = ["cfg(kani)"]}

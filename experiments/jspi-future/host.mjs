@@ -47,6 +47,9 @@ export async function instantiate(
       }
     };
   const imports = {
+    fail: sync((code) => {
+      throw Error("JF" + code);
+    }),
     open: sync(() => {
       const id = gates.open();
       completed.set(id, []);

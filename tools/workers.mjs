@@ -22,10 +22,10 @@ writeFileSync(
       ? modes
           .map(
             (m) =>
-              `\nimport future_${m} from "../jspi-future-experiment/adapter-${m}/core/app.wasm";\nimport probes_${m} from "../jspi-future-experiment/adapter-${m}/probes/app.wasm";`,
+              `\nimport future_${m} from "../jspi-future-experiment/adapter-${m}/core/app.wasm";\nimport probes_${m} from "../jspi-future-experiment/adapter-${m}/probes/app.wasm";\nimport bounded_${m} from "../jspi-future-experiment/bounded-${m}/core/app.wasm";\nimport boundedProbes_${m} from "../jspi-future-experiment/bounded-${m}/probes/app.wasm";\nimport heapProbes_${m} from "../jspi-future-experiment/bounded-${m}/heap-probes/app.wasm";`,
           )
           .join("\n") +
-        `\nimport {instantiate as instantiateFuture} from "../../experiments/jspi-future/host.mjs";\nimport {verifyDriver} from "../../experiments/jspi-future/verify.mjs";\nconst futureModules={no_std:future_no_std,std:future_std},futureProbes={no_std:probes_no_std,std:probes_std};\n`
+        `\nimport {instantiate as instantiateFuture} from "../../experiments/jspi-future/host.mjs";\nimport {verifyDriver} from "../../experiments/jspi-future/verify.mjs";\nconst futureModules={no_std:future_no_std,std:future_std},futureProbes={no_std:probes_no_std,std:probes_std};const boundedModules={no_std:bounded_no_std,std:bounded_std},boundedProbes={no_std:boundedProbes_no_std,std:boundedProbes_std},heapProbes={no_std:heapProbes_no_std,std:heapProbes_std};\n`
       : "") +
     `
 import {createHost as release} from "../../dist/release.mjs";
@@ -41,11 +41,13 @@ export default {async fetch(request) {
  if(variant==="health") return new Response("ok");
  ${
    future
-     ? `if(variant==="jspi-future") {
+     ? `if(variant==="jspi-future"||variant==="jspi-bounded") {
    try {
-     const common=await verifyWit(async add=>{const h=await instantiateFuture(futureModules[mode],{bindings:{add}});return(...a)=>h.promise("run",...a)},[1,16,128,1024].flatMap(asyncCases));
-     const probes=await verifyDriver(instantiateFuture,futureProbes[mode]);
-     return Response.json({mode,common,probes,all_passed:true});
+     const bounded=variant==="jspi-bounded";
+     const common=await verifyWit(async add=>{const h=await instantiateFuture((bounded?boundedModules:futureModules)[mode],{bindings:{add}});return(...a)=>h.promise("run",...a)},[1,16,128,1024].flatMap(asyncCases));
+     const probes=await verifyDriver(instantiateFuture,(bounded?boundedProbes:futureProbes)[mode],{unordered:!bounded,bounded});
+     const heap_probes=bounded?await verifyDriver(instantiateFuture,heapProbes[mode],{unordered:true,bounded:true}):null;
+     return Response.json({mode,bounded,common,probes,heap_probes,all_passed:true});
    }catch(error){return Response.json({mode,error:String(error)},{status:500})}
  }`
      : ""
@@ -166,19 +168,24 @@ try {
   }
   const jspi_future = [];
   if (future)
-    for (const mode of modes) {
-      const response = await fetch(
-        `http://127.0.0.1:${port}/jspi-future/${mode}`,
-        { signal: AbortSignal.timeout(30000) },
-      );
-      const entry = await response.json();
-      assert.equal(response.status, 200, JSON.stringify(entry));
-      assert.equal(entry.all_passed, true);
-      assert.equal(entry.common.tasks, 3507);
-      assert.equal(entry.probes.all_passed, true);
-      jspi_future.push(entry);
-      console.log(`jspi-future/${mode}: local workerd passed`);
-    }
+    for (const variant of ["jspi-future", "jspi-bounded"])
+      for (const mode of modes) {
+        const response = await fetch(
+          `http://127.0.0.1:${port}/${variant}/${mode}`,
+          { signal: AbortSignal.timeout(30000) },
+        );
+        const entry = await response.json();
+        assert.equal(response.status, 200, JSON.stringify(entry));
+        assert.equal(entry.all_passed, true);
+        assert.equal(entry.common.tasks, 3507);
+        assert.equal(entry.probes.all_passed, true);
+        if (variant === "jspi-bounded") {
+          assert.equal(entry.probes.fixed_capacity, 16);
+          assert.equal(entry.heap_probes.futures_unordered_child_wakers, true);
+        }
+        jspi_future.push({ variant, ...entry });
+        console.log(`${variant}/${mode}: local workerd passed`);
+      }
   writeFileSync(
     ".cache/workers.json",
     JSON.stringify(
