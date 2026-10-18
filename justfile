@@ -34,11 +34,26 @@ library-check: build-host
     cargo build --locked --release -p taraba-cli
     node tools/check-library.mjs
 
+prepare-async-size: build-host
+    node tools/install-wasm-bindgen.mjs
+    cargo fetch --locked --manifest-path experiments/async-size/Cargo.toml
+    cargo fmt --manifest-path experiments/async-size/Cargo.toml --all -- --check
+    pnpm exec prettier --check experiments/async-size/*.mjs experiments/async-size/bindgen/io.mjs
+    cargo build --locked --release -p taraba-cli
+
+compare-async-size: prepare-async-size
+    node tools/compare-async-size.mjs
+
+check-async-size: prepare-async-size
+    node tools/compare-async-size.mjs --check
+
 fmt:
     pnpm format
     cargo fmt --all
     cargo fmt --manifest-path verification/kani/models/Cargo.toml
     rustfmt --edition 2021 verification/kani/harnesses/*.rs
+    cargo fmt --manifest-path experiments/async-size/Cargo.toml --all
+    pnpm exec prettier --write experiments/async-size/*.mjs experiments/async-size/bindgen/io.mjs
 
 stress seconds="60":
     node tools/stress.mjs {{seconds}}

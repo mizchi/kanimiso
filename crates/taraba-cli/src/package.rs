@@ -199,8 +199,47 @@ pub fn package_component(o: &ComponentOptions, npm: &NpmOptions, jco: &Path) -> 
     for name in ["app.component.wasm", "app.wit", "build.json"] {
         fs::copy(component_dir.join(name), js.join(name))?;
     }
-    // jco's named interfaces and async return types remain the sole source of TS types.
-    finish(&js, &o.output, npm, "app.js", "app.d.ts", true)
+    // jco 1.39 declares versioned ImportObject keys but reads versionless keys.
+    // Adapt the JS entry, keeping its generated declarations as the type source.
+    let (entry, types) = component_entry(&js)?;
+    finish(&js, &o.output, npm, entry, types, true)
+}
+
+fn component_entry(dir: &Path) -> Result<(&'static str, &'static str)> {
+    let (r, world) = component::resolve(&dir.join("app.wit"), None)?;
+    let mut aliases = std::collections::BTreeMap::new();
+    for (key, item) in &r.worlds[world].imports {
+        if !matches!(item, wit_parser::WorldItem::Interface { .. }) {
+            continue;
+        }
+        let name = r.name_world_key(key);
+        if let Some((alias, _)) = name.rsplit_once('@') {
+            if aliases.insert(alias.to_string(), name.clone()).is_some() {
+                return Err(format!(
+                    "jco runtime import names collide after removing versions: {alias}"
+                )
+                .into());
+            }
+        }
+    }
+    if aliases.is_empty() {
+        return Ok(("app.js", "app.d.ts"));
+    }
+    let mut source = String::from(
+        "import { instantiate as component } from './app.js';\nexport function instantiate(load, imports, ...options) {\nconst mapped = Object.assign(Object.create(null), imports);\n",
+    );
+    for (alias, name) in aliases {
+        source.push_str(&format!(
+            "if (Object.hasOwn(imports, {})) mapped[{}] = imports[{}];\n",
+            json(&name),
+            json(&alias),
+            json(&name)
+        ));
+    }
+    source.push_str("return component(load, mapped, ...options);\n}\n");
+    fs::write(dir.join("index.mjs"), source)?;
+    fs::write(dir.join("index.d.mts"), "export * from './app.js';\n")?;
+    Ok(("index.mjs", "index.d.mts"))
 }
 
 fn ts_type(ty: crate::abi::Abi) -> &'static str {

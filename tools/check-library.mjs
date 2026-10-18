@@ -342,7 +342,7 @@ export!(App);`,
     const installed = await install(out, "component", id, true);
     const seen = [];
     const api = await installed.instantiate(installed.load, {
-      "example:orders/domain": {
+      "example:orders/domain@0.1.0": {
         evaluate: async (order) => {
           seen.push(structuredClone(order));
           if (order.label === "denied") throw "denied";

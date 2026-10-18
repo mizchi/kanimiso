@@ -66,7 +66,7 @@ test("scalar WIT preserves the full u32 range and f64 values in both profiles", 
       `(module
       (import "$root" "echo" (func $u (param i32) (result i32)))
       (import "$root" "echo64" (func $f (param f64) (result f64)))
-      (memory (export "memory") 4 16)
+      (memory (export "memory") 1 16)
       (func (export "round") (param i32) (result i32) local.get 0 call $u)
       (func (export "round64") (param f64) (result f64) local.get 0 call $f))`,
     );

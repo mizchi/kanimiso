@@ -2,150 +2,57 @@
 
 English | [日本語](README.ja.md)
 
-Build Rust/Wasm libraries from **WIT contracts**, including async functions, and distribute them as Components or typed npm packages. The toolkit also provides a small JSPI backend and an optional Rust Future runtime for JavaScript hosts. Formerly `kanimiso`.
+Build Rust/Wasm libraries from **WIT**, including async functions, and distribute them as **Components or typed npm packages**. A small Core/JSPI backend and the existing Rust Future runtime provide different size/concurrency tradeoffs. Formerly `kanimiso`.
 
-## Choose an execution contract and a distribution format
+| Need | Execution | Distribution |
+|---|---|---|
+| WIT async, records, strings, lists, typed domain values | `--component` | Component Model artifact |
+| The same API as an npm library with TS declarations | `--component` | add `--npm-name @scope/library` |
+| Small numeric JS API (s32/u32/f64) | default / `--jspi` | Core Wasm + JS; npm optional |
+| Concurrent Rust Futures, spawn_local and cancellation | `--future` | Core Promise/resource runtime; npm optional |
 
-| Use case | Execution option | Distribution option | What the user writes / receives |
-|---|---|---|---|
-| A Component Model library for an async-capable component host | `--component` | no npm flag | WIT `async func`, Rust `async fn`; `app.component.wasm` with Canonical ABI |
-| An npm library with typed async/domain values | `--component` | `--npm-name @scope/library` | Standard `wit-bindgen` Rust bindings and `jco` JS/TS bindings; records, strings, lists, `result`, typed async results |
-| A small browser/JS library with numeric boundaries | default / `--jspi` | `--npm-name @scope/library` | Synchronous Rust imports suspend through JSPI; WIT-derived typed exports, `Promise<number>` |
-| Concurrent Rust Future tasks, `spawn_local`, explicit cancellation | `--future` | optionally `--npm-name` | The existing Core Promise/resource runtime; opaque resource payloads are `unknown` in TS |
+For WIT-first typed async libraries, choose Component. For size-sensitive numeric APIs, choose JSPI. Set the same execution option on `new` and `build`. Component uses Canonical ABI; Core uses a private JS ABI. npm packaging is independent of this choice.
 
-**Choose Component for WIT-first async application libraries.** Choose Core/JSPI when size is the main constraint and s32/u32/f64 boundaries are sufficient. The CLI's default remains Core/JSPI. Set the same execution option on `new` and `build`; backend selection is explicit.
+## Start here
 
-`--component` uses standard Component Model Canonical ABI. The two Core profiles use a private JS ABI. Component and Core artifacts are different contracts; they are not interchangeable. npm packaging is a separate choice that can be combined with either.
-
-## Installation
-
-The three crates (`taraba-cli`, `taraba`, `taraba-allocator`) are prepared for their first crates.io release. Registry publication and registry installation have not been performed. The following commands describe the intended workflow after publication; archived crates and external consumers are tested today.
+The first crates.io releases are prepared but unpublished. These are the intended post-publication commands; archived crates and external consumers are verified today. See [installation and prerequisites](docs/guide.md#installation).
 
 ```sh
-rustup target add wasm32-unknown-unknown
 cargo install taraba-cli --version 0.1.0 --locked
-# Install Binaryen 133 and put its tools on PATH.
-# --binaryen /path/to/bin or TARABA_BINARYEN can select another location.
-```
-
-Component builds also require `wasm-tools 1.245.1`. Component **npm** builds additionally require Node.js 24+ and `@bytecodealliance/jco@1.39.0`; `--jco /path/to/jco` selects the executable. Core builds embed their JS runtime and require neither Node nor jco. No consumer needs this repository checkout or esbuild.
-
-## A WIT-first async Component library
-
-```sh
-taraba new orders --component --no-std
-cd orders
-```
-
-The generated `wit/app.wit` is the public API:
-
-```wit
-package taraba:app@0.1.0;
-world app {
-  import add: async func(a: s32, b: s32) -> s32;
-  export run: async func(a: s32, b: s32) -> s32;
-}
-```
-
-Official `wit-bindgen` generates the Rust types, imports and `Guest` trait. Application code contains no handle conversions or runtime ABI exports:
-
-```rust
-wit_bindgen::generate!({ path: "wit", world: "app" });
-
-struct App;
-impl Guest for App {
-    async fn run(a: i32, b: i32) -> i32 {
-        let first = add(a, b).await;
-        add(first, 1).await
-    }
-}
-export!(App);
-```
-
-The scaffold supplies the allocator, no_std panic handler, async binding features and release settings. Omit `--no-std` for std. Edit WIT and the implementation, then build:
-
-```sh
+rustup target add wasm32-unknown-unknown
+# Install Binaryen 133 and wasm-tools 1.245.1 for Component builds.
+taraba new hello --component --no-std
+cd hello
 cargo build --release --target wasm32-unknown-unknown
-taraba build target/wasm32-unknown-unknown/release/orders.wasm \
-  --wit wit --component --out-dir pkg
-# Or use the generated justfile: just build
+taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --component
 ```
 
-`pkg/app.component.wasm` is optimized, encoded and validated, then checked against the selected WIT world. `app.wit` describes the encoded component and `build.json` records its ABI. `--world` selects a world when WIT contains several. The component path preserves Canonical ABI metadata; it never uses Core externref lowering.
+Write `async func` in `wit/app.wit`, implement the generated Rust `Guest` trait with `async fn`, and receive `pkg/app.component.wasm`. Add `--npm-name @example/hello --npm-version 0.1.0 --license MIT` to generate JS, TypeScript, all required Wasm and `package.json`; Component npm builds also need jco 1.39.0. `pnpm pack` produces a tarball. Builds never publish.
 
-Use WIT records/lists/strings/results for domain contracts. Imported interfaces and resource ownership are generated by the standard tools. Native async needs a component host supporting that proposal; this project's library check validates the artifact and executes its jco output, rather than claiming execution on every native component host. The scaffold supplies no ambient WASI implementation or Preview 1 adapter. Provide the component's declared imports at its host boundary.
+<!-- async-size:begin -->
+## Build size comparison
 
-## Build an npm library, including TypeScript
+The same two-await Rust implementation, std and taraba-allocator (size classes disabled). Uncompressed bytes after JS minification and wasm-opt -Oz on every Wasm. All 24 artifacts pass the same 3,507 cases.
 
-From the Component project above:
+| Backend | Async Wasm B | Async JS B | Total B | Growth from sync B |
+|---|---:|---:|---:|---:|
+| taraba JSPI | 5,635 | 1,431 | 7,066 | +4,789 |
+| taraba Future | 7,238 | 4,007 | 11,245 | +6,392 |
+| Embassy WASM + JsFuture | 13,844 | 5,211 | 19,055 | +17,069 |
+| wasm-bindgen-futures | 15,620 | 4,442 | 20,062 | +18,076 |
+| Component + jco | 25,800 | 66,776 | 92,576 | +39,062 |
 
-```sh
-pnpm add -D @bytecodealliance/jco@1.39.0
-taraba build target/wasm32-unknown-unknown/release/orders.wasm \
-  --wit wit --component --jco node_modules/.bin/jco \
-  --npm-name @example/orders --npm-version 0.1.0 --license MIT --out-dir pkg
-cd pkg
-pnpm pack
-```
+Contracts differ: JSPI serializes an instance; Component includes typed WIT async and Canonical ABI. The Component container is not counted again alongside its runtime cores. See [no_std, compression, wee_alloc controls and methodology](docs/async-size.md).
+<!-- async-size:end -->
 
-This prepares `package.json` with ESM exports, a `types` condition, an explicit `files` list, and all JS/Wasm/type files needed at runtime. jco generates application-specific declarations, including async `Promise<T>` results and domain types. The package also exports the original Component as `@example/orders/component.wasm` and its encoded WIT as `@example/orders/wit`. jco/wasm-tools/taraba are build tools, not runtime dependencies of this package. Build never publishes. `--license` defaults to `UNLICENSED`; choose the application license explicitly for distribution.
+## Documentation
 
-A Node consumer installs the tarball (or, after publication, the package) and provides its imports and a core-module loader:
+- [Usage guide](docs/guide.md): installation, WIT/Rust async, domain model example, Node/browser loading, TS, npm and daily workflow.
+- [Core API reference](docs/core-runtime.md): JSPI/Future contracts, ownership, task limits and errors.
+- [Current async size comparison](docs/async-size.md): same workload with taraba, Embassy, wasm-bindgen-futures and an allocator control; sync-to-async growth and all runtime JS/Wasm counted.
+- [Documentation index](docs/README.md): earlier measurements and experiments.
+- [Development and verification](docs/development.md): tests, package checks and reproduction commands.
 
-```js
-import { readFile } from 'node:fs/promises';
-import { instantiate } from '@example/orders';
+JavaScript async targets Safari 27+ / JSPI-capable V8. Real Safari and native Component-host execution are unverified here. Component async/jco remains experimental upstream. JSPI serializes an instance across I/O and treats reject/trap as fatal; it is not a general Rust Future executor. These contracts differ from the optional Future runtime and the standard Component toolchain.
 
-const base = new URL(import.meta.resolve('@example/orders/package.json'));
-const api = await instantiate(
-  async name => WebAssembly.compile(await readFile(new URL(name, base))),
-  { add: { default: async (a, b) => (a + b) | 0 } },
-);
-console.log(await api.run(20, 21)); // 42; typed Promise<number>
-```
-
-Browser consumers supply a loader that fetches the package's generated core `.wasm` files. Ship every core file; dynamic loader paths are not automatically discovered by all bundlers. Instantiation mode keeps host imports explicit and allows separate instances. See [jco's instantiation contract](https://bytecodealliance.github.io/jco/transpiling.html).
-
-## Build a smaller numeric npm library
-
-```sh
-taraba new tiny --no-std
-cd tiny
-cargo build --release --target wasm32-unknown-unknown
-taraba build target/wasm32-unknown-unknown/release/tiny.wasm --wit wit \
-  --npm-name @example/tiny --npm-version 0.1.0 --license MIT
-```
-
-```js
-import { readFile } from 'node:fs/promises';
-import { instantiate } from '@example/tiny';
-
-const host = await instantiate(
-  await readFile(new URL(import.meta.resolve('@example/tiny/app.wasm'))),
-  { bindings: { add: async (a, b) => (a + b) | 0 } },
-);
-console.log(await host.exports.run(20, 21)); // typed Promise<number>
-```
-
-The numeric Core API has `AppBindings`, `AppExports`, and `AppHost` generated from WIT; export names/arguments are checked by TypeScript. Without `--npm-name`, Core builds retain the lower-level `taraba.mjs`/`taraba.d.mts` API. Both formats support debug errors via `--debug`; release uses error codes with an external dictionary.
-
-Core/JSPI serializes each instance across I/O waits; a slow call blocks later calls. Host rejection/trap closes the instance, with no cancellation or Rust Drop guarantee on that path. It does not drive arbitrary Rust Futures or native WIT async. Use `--future` when the existing executor's independent task progress and cancellation are required. Its WIT Promise resource has no payload type, so TS correctly returns `Promise<unknown>`; use Component for WIT-typed async results. See the [Core runtime reference](docs/core-runtime.md) for APIs, ownership, task limits and error behavior.
-
-## Size, compatibility and verification
-
-The JavaScript async baseline is Safari 27+ / JSPI-capable V8. Real Safari 27 browser execution remains unverified. Component async/jco is experimental upstream. Its scheduler/ownership/cancellation contract comes from the Component toolchain and is not the Core Future contract.
-
-Size comparisons: [WIT/Core/Component](docs/wit-comparison.md), [parallel JSPI experiments](docs/jspi-concurrent.md). These dated measurements are not the sizes of every generated npm package. npm `build.json` separately records JS, declarations and packaged Wasm bytes, including the optional Component container. A tarball includes declarations and the container; runtime download size depends on which entry is used.
-
-The JSPI Future adapter and stack-snapshot concurrency remain under `experiments/`; neither is silently enabled by library builds. See [adoption gates](docs/jspi-adoption.md).
-
-```sh
-just setup
-just check          # includes npm pack/install, strict TS and shared algorithm tests
-just library-check  # three profiles × std/no_std; rich WIT domain/error cases
-just package-check  # repeat consumer tests using an unpacked .crate CLI
-```
-
-Development requires Node.js 24+, pnpm, Rust and just. `just setup` installs the pinned Binaryen/wasm-tools binaries. Verification runs the same 3,507 computation cases and controlled async waits for all three profiles. Component cases also cover Unicode records, typed arrays/lists, u32 boundaries, typed application errors and recovery. Wrong arguments/exports/async return usage are rejected by strict TypeScript. `package-check` patches unpublished dependencies to unpacked crate archives; it publishes nothing.
-
-Runtime/CLI/JS: MIT. Optional `taraba-allocator`: MPL-2.0, derived from wee_alloc. Preserve its license/source obligations when distributing applications. [THIRD_PARTY.md](THIRD_PARTY.md).
+CLI/runtime/JS: MIT. Optional allocator: MPL-2.0. [Third-party sources and licenses](THIRD_PARTY.md).

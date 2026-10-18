@@ -1,0 +1,10 @@
+[workspace]
+resolver = "3"
+members = ["core", "bindgen"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = false

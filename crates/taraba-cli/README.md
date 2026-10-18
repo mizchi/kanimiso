@@ -27,6 +27,6 @@ Requires Rust's wasm32-unknown-unknown target and Binaryen 133. Component builds
 
 JavaScript async targets Safari 27+ / JSPI-capable V8; real Safari execution is unverified. Default Core/JSPI serializes instance entry including I/O, treats reject/trap as fatal, and provides no arbitrary Future executor or cancellation. The Future profile has its own ownership/cancellation contract. Native Component async follows the Component toolchain contract; it is not an implementation of the Core runtime. The scaffold does not supply WASI implementations or Preview 1 adapters.
 
-See the [English guide](https://github.com/mizchi/taraba#readme), [日本語ガイド](https://github.com/mizchi/taraba/blob/main/README.ja.md), and [Core runtime reference](https://github.com/mizchi/taraba/blob/main/docs/core-runtime.md).
+See the [English guide](https://github.com/mizchi/taraba/blob/main/docs/guide.md), [日本語ガイド](https://github.com/mizchi/taraba/blob/main/docs/guide.ja.md), and [Core runtime reference](https://github.com/mizchi/taraba/blob/main/docs/core-runtime.md).
 
 MIT. The optional taraba-allocator is separately licensed MPL-2.0.

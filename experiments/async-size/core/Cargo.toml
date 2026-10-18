@@ -1,0 +1,18 @@
+[package]
+name = "size-core"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[lib]
+crate-type = ["cdylib"]
+[features]
+default = []
+std = ["taraba?/std"]
+jspi = []
+future = ["dep:taraba"]
+component = ["wit-bindgen/async", "wit-bindgen/async-spawn"]
+async-workload = []
+[dependencies]
+taraba = {path = "../../../crates/taraba", default-features = false, optional = true}
+taraba-allocator = {path = "../../../crates/taraba-allocator", default-features = false}
+wit-bindgen = {version = "=0.58.0", default-features = false, features = ["macros"]}

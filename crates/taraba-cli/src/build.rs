@@ -113,13 +113,15 @@ pub fn build(o: &BuildOptions) -> Result<()> {
     let raw = fs::read(&o.input)?;
     let core = crate::abi::lower_with_abi(&raw, &abi)?;
     let m = walrus::Module::from_buffer(&core)?;
+    let needs_pool = m.imports.iter().any(|i| i.module == "pool");
     let exports: Vec<_> = m.exports.iter().map(|e| e.name.clone()).collect();
     let temp = tempfile::tempdir()?;
     let path = |name: &str| temp.path().join(name);
     fs::write(path("core.wasm"), &core)?;
     let features: Vec<String> = FEATURES.iter().map(|f| format!("--enable-{f}")).collect();
-    if jspi {
-        // JSPI owns suspension stacks; this profile has no intrusive task pool.
+    if jspi || !needs_pool {
+        // JSPI owns suspension stacks. A synchronous Future-profile library
+        // also needs no pool: merging it would impose a false four-page minimum.
         fs::write(path("linked.wasm"), &core)?;
     } else {
         fs::write(
