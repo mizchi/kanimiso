@@ -55,3 +55,59 @@ test("WIT resource ownership supports matching import/export names and explicit 
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("scalar WIT preserves the full u32 range and f64 values in both profiles", async () => {
+  const { instantiate: instantiateJspi } = await import("../dist/jspi.mjs");
+  const dir = mkdtempSync(join(tmpdir(), "kanimiso-scalars-"));
+  try {
+    writeFileSync(
+      `${dir}/raw.wat`,
+      `(module
+      (import "$root" "echo" (func $u (param i32) (result i32)))
+      (import "$root" "echo64" (func $f (param f64) (result f64)))
+      (memory (export "memory") 4 16)
+      (func (export "round") (param i32) (result i32) local.get 0 call $u)
+      (func (export "round64") (param f64) (result f64) local.get 0 call $f))`,
+    );
+    execFileSync(".cache/toolchains/binaryen-version_133/bin/wasm-as", [
+      `${dir}/raw.wat`,
+      "-o",
+      `${dir}/raw.wasm`,
+    ]);
+    writeFileSync(
+      `${dir}/app.wit`,
+      "package test:scalars; world app {import echo: func(v:u32)->u32; import echo64:func(v:f64)->f64; export round:func(v:u32)->u32; export round64:func(v:f64)->f64;}",
+    );
+    for (const jspi of [false, true]) {
+      const output = `${dir}/${jspi ? "jspi" : "core"}.wasm`;
+      execFileSync(process.execPath, [
+        "tools/build-wasm.mjs",
+        `${dir}/raw.wasm`,
+        "--wit",
+        `${dir}/app.wit`,
+        "--output",
+        output,
+        ...(jspi ? ["--jspi"] : []),
+      ]);
+      const observed = [];
+      const factory = jspi ? instantiateJspi : instantiate;
+      const host = await factory(readFileSync(output), {
+        bindings: {
+          echo: (v) => {
+            observed.push(v);
+            return v;
+          },
+          echo64: (v) => v,
+        },
+      });
+      const values = [0, 1, 2147483647, 2147483648, 4294967295];
+      for (const value of values)
+        assert.equal(await host.promise("round", value), value);
+      assert.deepEqual(observed, values);
+      for (const value of [0, -0, 1.5, NaN, Infinity, -Infinity])
+        assert.ok(Object.is(await host.promise("round64", value), value));
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

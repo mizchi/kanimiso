@@ -1,4 +1,4 @@
-use kanimiso_cli::{BuildOptions, build, new_project};
+use kanimiso_cli::{BuildOptions, build, new_jspi_project, new_project};
 use std::path::{Path, PathBuf};
 fn main() {
     if let Err(e) = main_impl() {
@@ -22,18 +22,23 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
     match args.first().map(String::as_str) {
         Some("--version") => println!("kanimiso {}", env!("CARGO_PKG_VERSION")),
         None | Some("--help") => println!(
-            "kanimiso new <directory> [--no-std]\nkanimiso build <raw.wasm> --wit <path> [--world <name>] [--out-dir pkg] [--debug] [--binaryen <bin-directory>]\nRequires Binaryen 133. WIT Core profile: s32/u32/f64 and imported resource handles; Promise resources map to native JS Promises."
+            "kanimiso new <directory> [--no-std] [--jspi]\nkanimiso build <raw.wasm> --wit <path> [--world <name>] [--out-dir pkg] [--debug] [--binaryen <bin-directory>] [--jspi]\nRequires Binaryen 133. WIT Core profile: s32/u32/f64 and imported resource handles; Promise resources map to native JS Promises. --jspi uses scalar WIT functions with serialized JSPI entry (Safari 27+)."
         ),
-        Some("new") => new_project(
-            Path::new(args.get(1).ok_or("missing directory")?),
-            args.contains(&"--no-std".into()),
-        )?,
+        Some("new") => {
+            let path = Path::new(args.get(1).ok_or("missing directory")?);
+            let no_std = args.contains(&"--no-std".into());
+            if args.contains(&"--jspi".into()) {
+                new_jspi_project(path, no_std)?;
+            } else {
+                new_project(path, no_std)?;
+            }
+        }
         Some("build") => {
             let mut i = 2;
             while i < args.len() {
                 match args[i].as_str() {
                     "--wit" | "--world" | "--out-dir" | "--binaryen" => i += 2,
-                    "--debug" | "--probes" => i += 1,
+                    "--debug" | "--probes" | "--jspi" => i += 1,
                     other => return Err(format!("unknown argument: {other}").into()),
                 }
             }
@@ -45,6 +50,7 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
                 binaryen: value("--binaryen")?.map(PathBuf::from),
                 debug: args.contains(&"--debug".into()),
                 probes: args.contains(&"--probes".into()),
+                jspi: args.contains(&"--jspi".into()),
             })?;
         }
         Some(other) => return Err(format!("unknown command {other}; use --help").into()),

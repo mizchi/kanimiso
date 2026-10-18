@@ -1,0 +1,14 @@
+[package]
+name = "kanimiso-jspi-promise"
+version = "0.1.0"
+edition = "2024"
+publish = false
+[lib]
+crate-type = ["cdylib"]
+[features]
+default = []
+std = []
+probes = []
+[dependencies]
+kanimiso-allocator = {version = "0.1.0", path = "../../crates/kanimiso-allocator", default-features = false}
+wit-bindgen = {version = "=0.58.0", default-features = false, features = ["macros"]}

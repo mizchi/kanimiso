@@ -1,0 +1,9 @@
+package kanimiso:app@0.1.0;
+world app {
+    import add: func(a:s32,b:s32)->s32;
+    export run: func(a:s32,b:s32)->s32;
+}
+world probes {
+    include app;
+    export hold: func(a:s32,b:s32)->s32;
+}

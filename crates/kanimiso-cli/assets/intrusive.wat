@@ -4,7 +4,7 @@
   (import "kanimiso:core" "memory" (memory 4 16))
   (global $next (mut i32) (i32.const 0))
   (global $head (mut i32) (i32.const 0))
-  
+
   (func (export "used") (result i32) (i32.const 0))
   (func (export "allocate") (param $base i32) (param $bytes i32) (param $align i32) (result i32)
     (local $ptr i32)
@@ -23,7 +23,7 @@
         (if (i32.ge_u (global.get $next) (i32.const 1024)) (then (return (i32.const 0))))
         (local.set $ptr (i32.add (local.get $base) (i32.shl (global.get $next) (i32.const 7))))
         (global.set $next (i32.add (global.get $next) (i32.const 1)))))
-    
+
     (local.get $ptr))
   (func (export "free") (param $ptr i32)
     (i32.store (local.get $ptr) (global.get $head))

@@ -21,3 +21,5 @@ See the [English README](https://github.com/mizchi/kanimiso#readme) or
 Task storage is fixed at 128 B × 1024 slots (alignment ≤64), including each Future and header.
 Larger Futures or an exhausted task pool cause a fatal OOM. Dropping a JoinHandle detaches;
 explicit cancellation drops a task. Fatal errors close the instance and preserve the first exception.
+
+The CLI also offers an experimental `--jspi` scalar WIT profile for Safari 27+ / JSPI-capable V8. That profile calls synchronous guest functions through JSPI and does not depend on this Future executor. See the repository documentation for its serialized-entry and fatal-error contract.

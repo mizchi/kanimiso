@@ -1,5 +1,11 @@
 use std::{error::Error, fs, path::Path};
 pub fn new_project(path: &Path, no_std: bool) -> Result<(), Box<dyn Error>> {
+    scaffold(path, no_std, false)
+}
+pub fn new_jspi_project(path: &Path, no_std: bool) -> Result<(), Box<dyn Error>> {
+    scaffold(path, no_std, true)
+}
+fn scaffold(path: &Path, no_std: bool, jspi: bool) -> Result<(), Box<dyn Error>> {
     if path.exists() {
         return Err("destination already exists".into());
     }
@@ -31,9 +37,9 @@ edition = "2024"
 crate-type = ["cdylib"]
 [features]
 default = [{default}]
-std = ["kanimiso/std"]
+std = [{std_feature}]
 [dependencies]
-kanimiso = {{version = "0.1.0", default-features = false}}
+{runtime_dependency}
 kanimiso-allocator = {{version = "0.1.0", default-features = false}}
 wit-bindgen = {{version = "=0.58.0", default-features = false, features = ["macros"]}}
 [profile.release]
@@ -42,11 +48,31 @@ lto = true
 panic = "abort"
 codegen-units = 1
 "#,
+            std_feature = if jspi { "" } else { "\"kanimiso/std\"" },
+            runtime_dependency = if jspi {
+                ""
+            } else {
+                "kanimiso = {version = \"0.1.0\", default-features = false}"
+            },
             default = if no_std { "" } else { "\"std\"" }
         ),
     )?;
-    fs::write(path.join("src/lib.rs"), include_str!("templates/app.rs"))?;
-    fs::write(path.join("wit/app.wit"), include_str!("templates/app.wit"))?;
+    fs::write(
+        path.join("src/lib.rs"),
+        if jspi {
+            include_str!("templates/jspi.rs")
+        } else {
+            include_str!("templates/app.rs")
+        },
+    )?;
+    fs::write(
+        path.join("wit/app.wit"),
+        if jspi {
+            include_str!("templates/jspi.wit")
+        } else {
+            include_str!("templates/app.wit")
+        },
+    )?;
     fs::create_dir_all(path.join(".cargo"))?;
     fs::write(
         path.join(".cargo/config.toml"),
@@ -54,10 +80,11 @@ codegen-units = 1
     )?;
     fs::write(path.join(".gitignore"), "/target/\n/pkg/\n")?;
     println!(
-        "Created {} ({}). Build with cargo build --release --target wasm32-unknown-unknown, then kanimiso build target/wasm32-unknown-unknown/release/{}.wasm --wit wit",
+        "Created {} ({}). Build with cargo build --release --target wasm32-unknown-unknown, then kanimiso build target/wasm32-unknown-unknown/release/{}.wasm --wit wit{}",
         path.display(),
         if no_std { "no_std" } else { "std" },
-        name.replace('-', "_")
+        name.replace('-', "_"),
+        if jspi { " --jspi" } else { "" }
     );
     Ok(())
 }

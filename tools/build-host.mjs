@@ -57,6 +57,23 @@ for (const debug of [false, true]) {
   );
 }
 
+for (const debug of [false, true]) {
+  const b = await esbuild.build({
+    entryPoints: ["src/jspi.mjs"],
+    bundle: true,
+    minify: true,
+    format: "esm",
+    platform: "neutral",
+    target: "es2022",
+    write: false,
+    define: { __JSRT_DEBUG_ERRORS__: String(debug) },
+  });
+  writeFileSync(
+    `dist/jspi${debug ? "-debug" : ""}.mjs`,
+    b.outputFiles[0].contents,
+  );
+}
+
 // The crates.io CLI embeds these ready-to-use assets. Consumers need neither
 // this repository nor Node/esbuild to generate matching JS and Wasm.
 const assetsRoot = "crates/kanimiso-cli/assets";
@@ -64,6 +81,9 @@ mkdirSync(assetsRoot, { recursive: true });
 const assets = {
   "kanimiso.mjs": readFileSync("dist/index.mjs"),
   "kanimiso-debug.mjs": readFileSync("dist/index-debug.mjs"),
+  "kanimiso-jspi.mjs": readFileSync("dist/jspi.mjs"),
+  "kanimiso-jspi-debug.mjs": readFileSync("dist/jspi-debug.mjs"),
+  "kanimiso-jspi.d.mts": readFileSync("src/jspi.d.ts"),
   "kanimiso.d.mts": readFileSync("src/index.d.ts"),
   "error-codes.json": readFileSync("src/error-codes.json"),
   "private-imports.json": readFileSync("dist/private-imports.json"),
@@ -89,6 +109,8 @@ const inputs = [
   "src/error-codes.json",
   "src/index.mjs",
   "src/index.d.ts",
+  "src/jspi.mjs",
+  "src/jspi.d.ts",
   "src/intrusive.wat",
   "tools/build-host.mjs",
   "tools/import-contract.mjs",

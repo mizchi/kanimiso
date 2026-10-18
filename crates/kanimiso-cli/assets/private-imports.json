@@ -1,8 +1,8 @@
 {
   "__root": "o",
   "__take": "i",
-  "retain": "a",
-  "release": "f",
+  "retain": "f",
+  "release": "a",
   "oom": "c",
   "exhausted": "u",
   "number": "l",
@@ -10,8 +10,8 @@
   "task_new": "h",
   "task_promise": "p",
   "task_cancel": "m",
-  "task_finish": "R",
-  "subscribe": "g",
+  "task_finish": "g",
+  "subscribe": "R",
   "unsubscribe": "T",
   "deferred_add": "w"
 }

@@ -26,6 +26,7 @@ check: build test
     cargo fmt --manifest-path verification/kani/models/Cargo.toml -- --check
     rustfmt --edition 2021 --check verification/kani/harnesses/*.rs
     node tools/check.mjs
+    node tools/check-jspi.mjs
 
 fmt:
     pnpm format
@@ -68,6 +69,8 @@ package-check: build-host
     node tools/package-check.mjs
 
 compare-wit: build-host
+    cargo fetch --locked --manifest-path experiments/wit/component-sync/Cargo.toml
+    cargo fetch --locked --manifest-path experiments/wit/jspi/Cargo.toml
     cargo fetch --locked --manifest-path experiments/wit/core/Cargo.toml
     cargo fetch --locked --manifest-path experiments/wit/component/Cargo.toml
     cargo build --locked --release -p kanimiso-cli

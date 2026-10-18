@@ -2,9 +2,14 @@
 
 [English](README.md) | 日本語
 
-JavaScript ホスト向けの小さな Rust/Wasm 非同期ランタイムです。Rust の Future を native Promise に接続し、`spawn_local`、Promise の await、キャンセルを提供します。`std` / `no_std + alloc` に対応し、JS オブジェクトの実体はホスト側に保持します。
+JavaScript ホスト向けの小さな Rust/Wasm ランタイムです。実験環境の前提は **Safari 27 以降、JSPI 対応 V8** です。Safari 27 の JSPI 対応は [WebKit の公式発表](https://webkit.org/blog/18325/webkit-features-for-safari-27-0/#webassembly)で確認しています。
 
-公開インターフェースは **WIT**、Rust の型・Guest・import/export は公式 **wit-bindgen** で生成します。実行形式は **Core Wasm + externref** です。この軽量プロファイルの JS root 管理は Component Model の Canonical ABI とは異なります。標準 Component async との同一アルゴリズムによる実測は [比較結果](docs/wit-comparison.md) にあります。
+公開インターフェースは **WIT**、Rust の型・Guest・import/export は公式 **wit-bindgen** で生成します。Core Wasm の実行構成は二つあります。
+
+- **JSPI scalar** (`--jspi`): 同期 WIT 関数の I/O を native Promise に接続し、エンジンで Wasm を suspend / resume します。Rust executor・task pool を持たない省サイズ構成です。
+- **Future** (オプションなし): `spawn_local`、Rust Future、JS Promise の await、キャンセルを提供する既存構成です。`std` / `no_std + alloc` に対応し、JS オブジェクトはホスト側に保持します。
+
+両者の Core lowering は Component Model の Canonical ABI とは異なります。標準 Component native async を含む比較は [測定結果](docs/wit-comparison.md)、エンジンの前提は [engine-baseline.md](docs/engine-baseline.md) にあります。
 
 ## インストールと利用
 
@@ -14,15 +19,15 @@ JavaScript ホスト向けの小さな Rust/Wasm 非同期ランタイムです�
 rustup target add wasm32-unknown-unknown
 cargo install kanimiso-cli --version 0.1.0 --locked
 # Binaryen 133 の wasm-opt / wasm-as / wasm-merge / wasm-metadce を PATH に置く
-kanimiso new hello --no-std
+kanimiso new hello --no-std --jspi
 cd hello
 cargo build --release --target wasm32-unknown-unknown
-kanimiso build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg
+kanimiso build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg --jspi
 ```
 
 CLI はビルド済み JS と intrusive pool の WAT を内包します。利用者によるこのリポジトリの checkout や Node/esbuild でのホスト生成は不要です。Binaryen は外部ツールです。PATH の代わりに `KANIMISO_BINARYEN=/path/to/bin` または `--binaryen /path/to/bin` を指定できます。
 
-`new` はレジストリのバージョン依存を使う独立した Cargo プロジェクトを生成します。生成例の stack は 64 KiB、memory 上限は 1 MiB で、`.cargo/config.toml` から変更できます。既存のプロジェクトでは次の依存を追加し、生成例と同じ WIT / `export_runtime!()` を利用します。
+`new` はレジストリのバージョン依存を使う独立した Cargo プロジェクトを生成します。生成例の stack は 64 KiB、memory 上限は 1 MiB で、`.cargo/config.toml` から変更できます。JSPI の生成例は `wit-bindgen` と allocator のみを依存に持ちます。既存の Future 構成を使うプロジェクトでは次の依存と `export_runtime!()` を利用します。
 
 ```sh
 cargo add kanimiso@0.1.0 --no-default-features
@@ -30,7 +35,7 @@ cargo add kanimiso-allocator@0.1.0 --no-default-features
 cargo add wit-bindgen@=0.58.0 --no-default-features --features macros
 ```
 
-`--no-std` を付けない `new` は std 構成です。JS 用 allocator はアプリ側で選択します。`kanimiso-allocator` は `wee_alloc` 由来の MPL-2.0 の fork で、以前の実験名 `wee-port` から改名しています。最小構成は size classes を無効にします。
+`--no-std` を付けない `new` は std 構成です。`--jspi` を省くと Future 構成を生成します。JS 用 allocator はアプリ側で選択します。`kanimiso-allocator` は `wee_alloc` 由来の MPL-2.0 の fork で、以前の実験名 `wee-port` から改名しています。最小構成は size classes を無効にします。
 
 生成された `pkg/app.wasm` と `pkg/kanimiso.mjs` を一緒に配信します。ブラウザーでは Wasm を fetch して ArrayBuffer にし、Node.js では次のように使えます。
 
@@ -46,28 +51,35 @@ console.log(await host.promise('run', 20, 21)); // 42: await add(20,21), await a
 
 `--debug` は説明付きエラーを含む JS を出力します。release は短いエラーコードを使い、`pkg/error-codes.json` で説明を確認できます。型宣言とビルド情報も pkg に出力します。
 
-## WIT の範囲と所有権
+## JSPI scalar の WIT と実行契約
 
 ```wit
 package example:app@0.1.0;
-interface js { resource promise; }
 world app {
-  import js;
-  use js.{promise};
-  import add: func(a: s32, b: s32) -> promise;
-  export run: func(a: s32, b: s32) -> promise;
+  import add: func(a: s32, b: s32) -> s32;
+  export run: func(a: s32, b: s32) -> s32;
 }
 ```
 
-Core プロファイルは s32 / u32 / f64 と、JS に実体を置く imported resource の own / borrow を扱います。borrow は import 引数のみです。string、list、record、exported resource、WIT native async は未対応としてビルドを失敗させます。resource は `undefined` 以外の JS 参照を表し（`promise` は Promise を返す契約）、WIT の `promise` resource を返す同期境界の内側で Rust async を動かします。アプリ import は `bindings` に渡し、同名の関数を複数 interface から import する構成は拒否します。
+Rust からは同期関数として呼びます。JS の `bindings.add` が返した Promise を `WebAssembly.Suspending` が待機し、エクスポートは `WebAssembly.promising` で Promise に変換します。s32 / u32 / f64 と戻り値なしの関数が対象です。resource、string、list、record、WIT native async はこの省サイズ構成では未対応です。
+
+同じインスタンスの呼び出しは直列化します。これは LLVM が線形メモリーに置くスタックを、待機中の再入で壊さないためです。binding から同じインスタンスを await する再入、キャンセル、任意の Rust Future を poll する executor は提供しません。ホストの reject / Wasm trap は最初の理由を保って instance を閉じ、キュー中の呼び出しも同じ理由で reject します。JS 例外で Rust の Drop が実行されるとは仮定しません。
+
+JSPI のないエンジンでは `RT15` で失敗し、互換フォールバックは行いません。アプリ呼び出しは `host.call` / `host.promise` のどちらも Promise を返します。`kanimiso.d.mts` はこの構成専用の型を含みます。
+
+## Future 構成の WIT と所有権
+
+`kanimiso new hello --no-std` と `kanimiso build ... --wit wit` で従来の Future 構成を使います。WIT は `resource promise` を import し、`add: func(a:s32,b:s32)->promise` と `run: func(a:s32,b:s32)->promise` を定義します。
+
+Future 構成は s32 / u32 / f64 と、JS に実体を置く imported resource の own / borrow を扱います。borrow は import 引数のみです。string、list、record、exported resource、WIT native async は未対応としてビルドを失敗させます。resource は `undefined` 以外の JS 参照を表し（`promise` は Promise を返す契約）、WIT の `promise` resource を返す同期境界の内側で Rust async を動かします。アプリ import は `bindings` に渡し、同名の関数を複数 interface から import する構成は拒否します。
 
 生成された resource の handle と `JsPromise` の間の変換は、この Core プロファイル内でのみ有効です。別の Component host にそのまま渡せる canonical resource handle ではありません。raw ポインター・root ID・`rt_*` は非公開 ABI です。アプリ関数は host の `call` / `promise` 経由で呼び出してください。
 
 ## 検証と制約
 
-single-agent、非共有 wasm32 memory、`alloc`、現代の JS/Wasm エンジンを対象にします。固定 pool は 128 B × 1,024 slots、Future の大きさ・alignment に上限があります。大きな Future に対応する汎用 executor ではありません。JS roots は参照保持だけを行い、JS オブジェクトを線形メモリーへコピーしません。fatal 時は最初のエラーで停止し、JS roots を解放します。壊れた Rust Drop は再試行しません。
+single-agent、非共有 wasm32 memory を対象にします。Future 構成は `alloc` を使い、固定 pool は 128 B × 1,024 slots、Future の大きさ・alignment に上限があります。大きな Future に対応する汎用 executor ではありません。JS roots は参照保持だけを行い、JS オブジェクトを線形メモリーへコピーしません。fatal 時は最初のエラーで停止し、JS roots を解放します。壊れた Rust Drop は再試行しません。
 
-V8 と system JavaScriptCore shell、および local workerd で検証します。JSC shell の queueMicrotask は Promise job で補います。Safari 実ブラウザーと Cloudflare 本番への deploy は未検証です。js-string / exnref / typed funcref / GC の機能検証と、通常ランタイムがそれら全てを使うことは別です。Kani は native 64-bit の限定されたモデル・部品の検証で、JS・エンジン・Wasm 全体の証明ではありません。
+V8 と system JavaScriptCore shell、および local workerd で検証します。JSC shell の queueMicrotask は Promise job で補います。手元の古い system JSC は JSPI の前提外として記録します。JSPI の std/no_std は local workerd でも共通3,507ケースと二回の待機を通過しています。Safari 27 実ブラウザーと Cloudflare 本番への deploy は未検証です。js-string / exnref / typed funcref / GC の機能検証と、通常ランタイムがそれら全てを使うことは別です。Kani は native 64-bit の限定されたモデル・部品の検証で、JS・エンジン・Wasm 全体の証明ではありません。
 
 抽出時点の過去の結果は [verification.md](docs/verification.md) と [JSON](docs/verification.json)、来歴は [provenance.json](provenance.json) にあります。パス変更前のハッシュやサイズは現在の測定値として流用しません。
 

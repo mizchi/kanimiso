@@ -28,6 +28,7 @@ jobs:
           name: verification
           path: |
             .cache/check.json
+            .cache/jspi-check.json
             .cache/stress.json
             .cache/package-check.json
             .cache/package-check-error.log

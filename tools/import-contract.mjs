@@ -44,7 +44,7 @@ export function stripUsedCounter(wat) {
     end = pos;
     pattern.lastIndex = pos;
   }
-  return result + wat.slice(end);
+  return (result + wat.slice(end)).replace(/[ \t]+$/gm, "");
 }
 
 // Patch just the import section. Function/table indices, code, GC types, data,

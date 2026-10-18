@@ -13,6 +13,7 @@ pub struct BuildOptions {
     pub binaryen: Option<PathBuf>,
     pub debug: bool,
     pub probes: bool,
+    pub jspi: bool,
 }
 const FEATURES: &[&str] = &[
     "mutable-globals",
@@ -54,7 +55,12 @@ pub fn build(o: &BuildOptions) -> Result<()> {
             .map(|p| p.join(name))
             .unwrap_or_else(|| PathBuf::from(name))
     };
-    for name in ["wasm-opt", "wasm-as", "wasm-merge", "wasm-metadce"] {
+    let tools: &[&str] = if o.jspi {
+        &["wasm-opt"]
+    } else {
+        &["wasm-opt", "wasm-as", "wasm-merge", "wasm-metadce"]
+    };
+    for name in tools {
         let v = Command::new(tool(name))
             .arg("--version")
             .output()
@@ -68,6 +74,22 @@ pub fn build(o: &BuildOptions) -> Result<()> {
         }
     }
     let abi = crate::wit::parse(&o.wit, o.world.as_deref())?;
+    if o.jspi {
+        use crate::abi::Abi;
+        if o.probes
+            || abi
+                .imports
+                .values()
+                .chain(abi.exports.values())
+                .any(|(args, result)| {
+                    args.iter()
+                        .chain(result.iter())
+                        .any(|t| matches!(t, Abi::Own | Abi::Borrow))
+                })
+        {
+            return Err("JSPI profile supports only scalar WIT functions (s32/u32/f64), without resources or --probes".into());
+        }
+    }
     let raw = fs::read(&o.input)?;
     let core = crate::abi::lower_with_abi(&raw, &abi)?;
     let m = walrus::Module::from_buffer(&core)?;
@@ -75,50 +97,58 @@ pub fn build(o: &BuildOptions) -> Result<()> {
     let temp = tempfile::tempdir()?;
     let path = |name: &str| temp.path().join(name);
     fs::write(path("core.wasm"), &core)?;
-    fs::write(
-        path("slots.wat"),
-        if o.probes {
-            include_bytes!("../assets/intrusive-probes.wat").as_slice()
-        } else {
-            include_bytes!("../assets/intrusive.wat").as_slice()
-        },
-    )?;
-    run(
-        &tool("wasm-as"),
-        &[
-            text(&path("slots.wat")),
-            "-o".into(),
-            text(&path("slots.wasm")),
-        ],
-    )?;
     let features: Vec<String> = FEATURES.iter().map(|f| format!("--enable-{f}")).collect();
-    let mut merge = vec![
-        text(&path("core.wasm")),
-        "kanimiso:core".into(),
-        text(&path("slots.wasm")),
-        "pool".into(),
-    ];
-    merge.extend(features.clone());
-    merge.extend(["-o".into(), text(&path("merged.wasm"))]);
-    run(&tool("wasm-merge"), &merge)?;
-    let graph: Vec<_> = exports
-        .iter()
-        .map(|name| serde_json::json!({"name":format!("host:{name}"),"export":name,"root":true}))
-        .chain(
-            ["allocate", "free", "used"]
-                .map(|name| serde_json::json!({"name":format!("internal:{name}"),"export":name})),
-        )
-        .collect();
-    fs::write(path("graph.json"), serde_json::to_vec(&graph)?)?;
-    let mut dce = vec![text(&path("merged.wasm"))];
-    dce.extend(features.clone());
-    dce.extend([
-        "--graph-file".into(),
-        text(&path("graph.json")),
-        "-o".into(),
-        text(&path("linked.wasm")),
-    ]);
-    run(&tool("wasm-metadce"), &dce)?;
+    if o.jspi {
+        // JSPI owns suspension stacks; this profile has no intrusive task pool.
+        fs::write(path("linked.wasm"), &core)?;
+    } else {
+        fs::write(
+            path("slots.wat"),
+            if o.probes {
+                include_bytes!("../assets/intrusive-probes.wat").as_slice()
+            } else {
+                include_bytes!("../assets/intrusive.wat").as_slice()
+            },
+        )?;
+        run(
+            &tool("wasm-as"),
+            &[
+                text(&path("slots.wat")),
+                "-o".into(),
+                text(&path("slots.wasm")),
+            ],
+        )?;
+        let mut merge = vec![
+            text(&path("core.wasm")),
+            "kanimiso:core".into(),
+            text(&path("slots.wasm")),
+            "pool".into(),
+        ];
+        merge.extend(features.clone());
+        merge.extend(["-o".into(), text(&path("merged.wasm"))]);
+        run(&tool("wasm-merge"), &merge)?;
+        let graph: Vec<_> = exports
+            .iter()
+            .map(
+                |name| serde_json::json!({"name":format!("host:{name}"),"export":name,"root":true}),
+            )
+            .chain(
+                ["allocate", "free", "used"].map(
+                    |name| serde_json::json!({"name":format!("internal:{name}"),"export":name}),
+                ),
+            )
+            .collect();
+        fs::write(path("graph.json"), serde_json::to_vec(&graph)?)?;
+        let mut dce = vec![text(&path("merged.wasm"))];
+        dce.extend(features.clone());
+        dce.extend([
+            "--graph-file".into(),
+            text(&path("graph.json")),
+            "-o".into(),
+            text(&path("linked.wasm")),
+        ]);
+        run(&tool("wasm-metadce"), &dce)?;
+    }
     let mut opt = vec![
         text(&path("linked.wasm")),
         "-Oz".into(),
@@ -152,12 +182,21 @@ pub fn build(o: &BuildOptions) -> Result<()> {
     {
         return Err("unexpected import after Core linking".into());
     }
+    if o.jspi && finished.imports.iter().any(|i| i.module != "app") {
+        return Err("JSPI profile requires a synchronous scalar guest without kanimiso task/runtime imports".into());
+    }
     fs::create_dir_all(&o.output)?;
     let dest = o.output.join("app.wasm");
     if dest.exists() && fs::canonicalize(&dest)? == fs::canonicalize(&o.input)? {
         return Err("output must not overwrite input".into());
     }
-    let js = if o.debug {
+    let js = if o.jspi {
+        if o.debug {
+            include_bytes!("../assets/kanimiso-jspi-debug.mjs").as_slice()
+        } else {
+            include_bytes!("../assets/kanimiso-jspi.mjs").as_slice()
+        }
+    } else if o.debug {
         include_bytes!("../assets/kanimiso-debug.mjs").as_slice()
     } else {
         include_bytes!("../assets/kanimiso.mjs").as_slice()
@@ -166,13 +205,17 @@ pub fn build(o: &BuildOptions) -> Result<()> {
     fs::write(o.output.join("kanimiso.mjs"), js)?;
     fs::write(
         o.output.join("kanimiso.d.mts"),
-        include_bytes!("../assets/kanimiso.d.mts"),
+        if o.jspi {
+            include_bytes!("../assets/kanimiso-jspi.d.mts").as_slice()
+        } else {
+            include_bytes!("../assets/kanimiso.d.mts").as_slice()
+        },
     )?;
     fs::write(
         o.output.join("error-codes.json"),
         include_bytes!("../assets/error-codes.json"),
     )?;
-    let info = serde_json::json!({"builder":env!("CARGO_PKG_VERSION"),"profile":"wit-core-externref","binaryen":133,"wasm_bytes":bytes.len(),"js_bytes":js.len(),"debug":o.debug,"assets":serde_json::from_str::<serde_json::Value>(include_str!("../assets/provenance.json"))?});
+    let info = serde_json::json!({"builder":env!("CARGO_PKG_VERSION"),"profile":if o.jspi {"wit-core-jspi"}else{"wit-core-externref"},"engine_baseline":"Safari 27+ / JSPI-capable V8","binaryen":133,"wasm_bytes":bytes.len(),"js_bytes":js.len(),"debug":o.debug,"assets":serde_json::from_str::<serde_json::Value>(include_str!("../assets/provenance.json"))?});
     fs::write(
         o.output.join("build.json"),
         serde_json::to_vec_pretty(&info)?,

@@ -1,4 +1,4 @@
-// Portable to V8 and JavaScriptCore. Both profiles run this exact contract.
+// Portable to V8 and JavaScriptCore. All profiles run this exact contract.
 const equal = (a, b, message) => {
   if (JSON.stringify(a) !== JSON.stringify(b)) throw Error(message);
 };

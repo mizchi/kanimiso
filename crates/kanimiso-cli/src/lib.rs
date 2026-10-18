@@ -5,4 +5,4 @@ mod imports;
 mod project;
 mod wit;
 pub use build::{BuildOptions, build};
-pub use project::new_project;
+pub use project::{new_jspi_project, new_project};

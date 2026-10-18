@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/kanimiso", "crates/kanimiso-allocator", "examples/promise", "crates/kanimiso-cli"]
+members = ["crates/kanimiso", "crates/kanimiso-allocator", "examples/promise", "examples/jspi", "crates/kanimiso-cli"]
 default-members = ["crates/kanimiso", "crates/kanimiso-cli"]
 
 [profile.release]

@@ -1,5 +1,6 @@
 {
-  "created_at": "2026-10-18T12:41:09.239Z",
+  "created_at": "2026-10-18T13:50:19.059Z",
+  "engine_baseline": "Safari 27+ / JSPI-capable V8 (old system JSC does not determine current Safari support)",
   "machine": {
     "platform": "darwin",
     "arch": "arm64",
@@ -29,37 +30,37 @@
   },
   "profiles": [
     {
-      "id": "core-no_std",
-      "backend": "core",
+      "id": "jspi-no_std",
+      "backend": "jspi",
       "mode": "no_std",
-      "cold_build_ms": 7290.243291,
+      "cold_build_ms": 13074.545917,
       "warm_build_ms": [
-        49.76387499999964,
-        42.69095800000014,
-        40.58300000000054
+        73.63958300000013,
+        40.735375000000204,
+        40.53637499999968
       ],
-      "transform_ms": 333.5197499999995,
-      "raw_wasm_bytes": 6804,
+      "transform_ms": 471.68104200000016,
+      "raw_wasm_bytes": 3208,
       "component_container_bytes": null,
-      "wasm_bytes": 1744,
-      "js_bytes": 3874,
-      "total_bytes": 5618,
-      "gzip_bytes": 2990,
-      "brotli_bytes": 2786,
+      "wasm_bytes": 248,
+      "js_bytes": 1324,
+      "total_bytes": 1572,
+      "gzip_bytes": 835,
+      "brotli_bytes": 737,
       "files": [
         {
           "file": "app.wasm",
-          "bytes": 1744,
-          "gzip": 1038,
-          "brotli": 993,
-          "sha256": "404a5b57681c5604328acab0407defba4c40a9a6077fb3213e5b659ae2b2fb3a"
+          "bytes": 248,
+          "gzip": 201,
+          "brotli": 177,
+          "sha256": "f1162731bcafab1904c42e7ee6c0fb0f1c9ca0a1bf0a3022ad557875626af052"
         },
         {
           "file": "kanimiso.mjs",
-          "bytes": 3874,
-          "gzip": 1952,
-          "brotli": 1793,
-          "sha256": "b38c5b56a29341c2bcbd1ec014b6503ca038685038abadb33aeec099f7334a55"
+          "bytes": 1324,
+          "gzip": 634,
+          "brotli": 560,
+          "sha256": "6eb69c495deb02e293d68b41bff1dcad56beb7078a3466e6127e621c892ad3de"
         }
       ],
       "v8": {
@@ -82,21 +83,100 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.3634948730469887,
-          1.3294777832024707,
-          1.1675922851557274,
-          1.1172180175789137,
-          1.1281943359371382,
-          1.1166481933591044,
-          1.1482443847654622,
-          1.1219379882811964,
-          1.1166889648439593,
-          1.1369628906257034,
-          1.1393535156249968
+          0.7289023437486719,
+          0.6927082519503358,
+          0.7882792968736396,
+          0.6703593750003733,
+          0.6516418457032103,
+          0.731333496094777,
+          1.4535014648444644,
+          1.5063986816414854,
+          1.2805480957034376,
+          0.5997314453125568,
+          0.6476645507831336
         ],
-        "median": 1.1369628906257034,
-        "min": 1.1166481933591044,
-        "max": 1.3634948730469887
+        "median": 0.7289023437486719,
+        "min": 0.5997314453125568,
+        "max": 1.5063986816414854
+      },
+      "javascriptcore": {
+        "supported": false,
+        "error": "TypeError: RT15",
+        "promising": "undefined",
+        "suspending": "undefined",
+        "outside_engine_baseline": true,
+        "note": "Old system JSC, not a Safari 27 compatibility result"
+      }
+    },
+    {
+      "id": "core-no_std",
+      "backend": "core",
+      "mode": "no_std",
+      "cold_build_ms": 6788.3675,
+      "warm_build_ms": [
+        43.352999999999156,
+        41.492582999999286,
+        50.84958299999926
+      ],
+      "transform_ms": 152.50537500000064,
+      "raw_wasm_bytes": 6804,
+      "component_container_bytes": null,
+      "wasm_bytes": 1744,
+      "js_bytes": 3874,
+      "total_bytes": 5618,
+      "gzip_bytes": 2989,
+      "brotli_bytes": 2784,
+      "files": [
+        {
+          "file": "app.wasm",
+          "bytes": 1744,
+          "gzip": 1037,
+          "brotli": 991,
+          "sha256": "d90bf461353a441c595968128965cd964c08303d1037aedd2eb23b91609247c2"
+        },
+        {
+          "file": "kanimiso.mjs",
+          "bytes": 3874,
+          "gzip": 1952,
+          "brotli": 1793,
+          "sha256": "741a202dd568b320ba9375fe8ddf772557122ffc0fc340f4863e1a8caf75e9ce"
+        }
+      ],
+      "v8": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "v8_timing": {
+        "unit": "microseconds/task (two host awaits)",
+        "tasks_per_sample": 4096,
+        "samples": [
+          1.5912272949201167,
+          1.287729980468555,
+          1.1318054199200844,
+          1.7077739257800317,
+          1.5434367675766225,
+          1.2772216796861358,
+          1.2443542480475855,
+          1.2413330078118179,
+          1.2734577636734912,
+          1.2516276855478736,
+          1.2600607910151496
+        ],
+        "median": 1.2734577636734912,
+        "min": 1.1318054199200844,
+        "max": 1.7077739257800317
       },
       "javascriptcore": {
         "supported": true,
@@ -119,16 +199,95 @@
       }
     },
     {
+      "id": "component-sync-no_std",
+      "backend": "component-sync",
+      "mode": "no_std",
+      "cold_build_ms": 6989.773084,
+      "warm_build_ms": [
+        44.76708299999882,
+        41.15779100000145,
+        40.83091699999932
+      ],
+      "transform_ms": 373.0240410000006,
+      "raw_wasm_bytes": 3452,
+      "component_container_bytes": 2300,
+      "wasm_bytes": 1797,
+      "js_bytes": 48735,
+      "total_bytes": 50532,
+      "gzip_bytes": 14864,
+      "brotli_bytes": 13446,
+      "files": [
+        {
+          "file": "js/app.core.wasm",
+          "bytes": 1797,
+          "gzip": 1018,
+          "brotli": 946,
+          "sha256": "e6e4e60719524b3b40e41788b4dc60f2d1c993f90285c63386b6ccaedd0fbe79"
+        },
+        {
+          "file": "js/app.mjs",
+          "bytes": 48735,
+          "gzip": 13846,
+          "brotli": 12500,
+          "sha256": "406bf6ddc5df9d9eba14bf9c7d3d5292ca755ca2607888d6fe435068e333a2b7"
+        }
+      ],
+      "v8": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "v8_timing": {
+        "unit": "microseconds/task (two host awaits)",
+        "tasks_per_sample": 4096,
+        "samples": [
+          17.762440917966416,
+          16.45141601562372,
+          16.420918701172127,
+          16.541676757814372,
+          18.899332763670174,
+          15.973378417967865,
+          17.248219726560876,
+          18.378540039062585,
+          17.40075683594,
+          16.309814453123295,
+          16.286885498047354
+        ],
+        "median": 16.541676757814372,
+        "min": 15.973378417967865,
+        "max": 18.899332763670174
+      },
+      "javascriptcore": {
+        "supported": false,
+        "error": "TypeError: undefined is not a constructor (evaluating 'new w.Suspending(Nt(0, ht.bind(null, { trampolineIdx: 0, componentIdx: 0, isAsync: false, isManualAsync: t.manuallyAsync, paramLiftFns: [j, j], resultLowerFns: [ut], hasResultPointer: false, funcTypeIsAsync: false, getCallbackFn: () => null, getPostReturnFn: () => null, isCancellable: false, memoryIdx: null, stringEncoding: \"utf8\", getMemoryFn: () => null, getReallocFn: void 0, importFn: t }), false, false, false))')",
+        "promising": "undefined",
+        "suspending": "undefined",
+        "outside_engine_baseline": true,
+        "note": "Old system JSC, not a Safari 27 compatibility result"
+      }
+    },
+    {
       "id": "component-no_std",
       "backend": "component",
       "mode": "no_std",
-      "cold_build_ms": 6605.492041999999,
+      "cold_build_ms": 7196.339,
       "warm_build_ms": [
-        51.09375,
-        44.193084000000454,
-        44.78166600000077
+        64.52833299999475,
+        205.42224999999598,
+        136.43687499999942
       ],
-      "transform_ms": 402.1212909999995,
+      "transform_ms": 460.4984170000025,
       "raw_wasm_bytes": 32842,
       "component_container_bytes": 15255,
       "wasm_bytes": 14272,
@@ -193,61 +352,63 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          2381.4022114257814,
-          2382.872680664061,
-          2369.5647377929704,
-          2393.204925537109,
-          2356.9232890625003,
-          2373.7792766113303,
-          2415.9383544921875,
-          2387.391194580079,
-          2378.5975749511686,
-          2375.872822998048,
-          2391.5625915527344
+          2435.364288330078,
+          2410.2727558593742,
+          2392.3835346679675,
+          2364.2357482910156,
+          2457.128997802737,
+          2403.4402770996126,
+          2406.9401855468795,
+          2386.6417338867195,
+          2407.0650837402354,
+          2409.8736674804686,
+          2475.5975241699275
         ],
-        "median": 2381.4022114257814,
-        "min": 2356.9232890625003,
-        "max": 2415.9383544921875
+        "median": 2407.0650837402354,
+        "min": 2364.2357482910156,
+        "max": 2475.5975241699275
       },
       "javascriptcore": {
         "supported": false,
         "error": "TypeError: undefined is not a constructor (evaluating 'new S.Suspending(t)')",
         "promising": "undefined",
-        "suspending": "undefined"
+        "suspending": "undefined",
+        "outside_engine_baseline": true,
+        "note": "Old system JSC, not a Safari 27 compatibility result"
       }
     },
     {
-      "id": "core-std",
-      "backend": "core",
+      "id": "jspi-std",
+      "backend": "jspi",
       "mode": "std",
-      "cold_build_ms": 7181.708457999999,
+      "cold_build_ms": 7604.733124999999,
       "warm_build_ms": [
-        43.60649999999805,
-        41.01862500000061,
-        41.827917000002344
+        44.5434580000001,
+        40.5771670000031,
+        49.01762500000041
       ],
-      "transform_ms": 194.59720799999923,
-      "raw_wasm_bytes": 14632,
+      "transform_ms": 91.6502909999981,
+      "raw_wasm_bytes": 10961,
       "component_container_bytes": null,
-      "wasm_bytes": 7214,
-      "js_bytes": 3874,
-      "total_bytes": 11088,
-      "gzip_bytes": 5839,
-      "brotli_bytes": 5271,
+      "wasm_bytes": 5623,
+      "js_bytes": 1324,
+      "total_bytes": 6947,
+      "gzip_bytes": 3628,
+      "brotli_bytes": 3250,
       "files": [
         {
           "file": "app.wasm",
-          "bytes": 7214,
-          "gzip": 3887,
-          "brotli": 3478,
-          "sha256": "7aad0a92e9a6c1980080db17032faf46e6dbfe07ab5198e0106d2d71ba8ef4d7"
+          "bytes": 5623,
+          "gzip": 2994,
+          "brotli": 2690,
+          "sha256": "8fa135b9d2d8888d0cf0bd403a678bf484bd3c94a9f42428a2802914c4a66b97"
         },
         {
           "file": "kanimiso.mjs",
-          "bytes": 3874,
-          "gzip": 1952,
-          "brotli": 1793,
-          "sha256": "b38c5b56a29341c2bcbd1ec014b6503ca038685038abadb33aeec099f7334a55"
+          "bytes": 1324,
+          "gzip": 634,
+          "brotli": 560,
+          "sha256": "6eb69c495deb02e293d68b41bff1dcad56beb7078a3466e6127e621c892ad3de"
         }
       ],
       "v8": {
@@ -270,21 +431,100 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.3934223632858789,
-          1.3194069824180588,
-          1.1451618652316142,
-          1.2191669921861603,
-          1.227081298821986,
-          1.2532551269544001,
-          1.1106467285131316,
-          1.11513256835849,
-          1.1061604003899106,
-          1.127197265624602,
-          1.1209309082076402
+          0.6962077636742947,
+          0.6328227539071918,
+          0.6156108398442939,
+          0.83888745116667,
+          0.8677468261737431,
+          0.5556335449270478,
+          0.5559487304651611,
+          0.5369465332094592,
+          0.5643615722661366,
+          0.9866740722657141,
+          0.568674560547322
         ],
-        "median": 1.1451618652316142,
-        "min": 1.1061604003899106,
-        "max": 1.3934223632858789
+        "median": 0.6156108398442939,
+        "min": 0.5369465332094592,
+        "max": 0.9866740722657141
+      },
+      "javascriptcore": {
+        "supported": false,
+        "error": "TypeError: RT15",
+        "promising": "undefined",
+        "suspending": "undefined",
+        "outside_engine_baseline": true,
+        "note": "Old system JSC, not a Safari 27 compatibility result"
+      }
+    },
+    {
+      "id": "core-std",
+      "backend": "core",
+      "mode": "std",
+      "cold_build_ms": 6999.747166999994,
+      "warm_build_ms": [
+        43.49266599999828,
+        40.39620800000557,
+        41.09100000000035
+      ],
+      "transform_ms": 183.51654199999757,
+      "raw_wasm_bytes": 14632,
+      "component_container_bytes": null,
+      "wasm_bytes": 7214,
+      "js_bytes": 3874,
+      "total_bytes": 11088,
+      "gzip_bytes": 5838,
+      "brotli_bytes": 5271,
+      "files": [
+        {
+          "file": "app.wasm",
+          "bytes": 7214,
+          "gzip": 3886,
+          "brotli": 3478,
+          "sha256": "4f98d3e26b8215e8bc1a5fbdf1ba56d8ce28935348d84c139e5b26067b111941"
+        },
+        {
+          "file": "kanimiso.mjs",
+          "bytes": 3874,
+          "gzip": 1952,
+          "brotli": 1793,
+          "sha256": "741a202dd568b320ba9375fe8ddf772557122ffc0fc340f4863e1a8caf75e9ce"
+        }
+      ],
+      "v8": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "v8_timing": {
+        "unit": "microseconds/task (two host awaits)",
+        "tasks_per_sample": 4096,
+        "samples": [
+          1.2949523925769313,
+          1.207173583985366,
+          1.1006774902355687,
+          1.1101379394489186,
+          1.1127829589838711,
+          1.1135153808581322,
+          1.172465087890373,
+          1.1132507324234098,
+          1.1158852539097097,
+          1.1013894042974925,
+          1.1009013671881007
+        ],
+        "median": 1.1132507324234098,
+        "min": 1.1006774902355687,
+        "max": 1.2949523925769313
       },
       "javascriptcore": {
         "supported": true,
@@ -307,16 +547,95 @@
       }
     },
     {
+      "id": "component-sync-std",
+      "backend": "component-sync",
+      "mode": "std",
+      "cold_build_ms": 6824.875416999996,
+      "warm_build_ms": [
+        44.95100000000093,
+        40.11450000000332,
+        39.28983399999561
+      ],
+      "transform_ms": 343.7346249999973,
+      "raw_wasm_bytes": 11205,
+      "component_container_bytes": 6350,
+      "wasm_bytes": 5847,
+      "js_bytes": 48735,
+      "total_bytes": 54582,
+      "gzip_bytes": 17005,
+      "brotli_bytes": 15298,
+      "files": [
+        {
+          "file": "js/app.core.wasm",
+          "bytes": 5847,
+          "gzip": 3159,
+          "brotli": 2798,
+          "sha256": "ccabcdfc5202b3fa7ac150becbadf3474ebda943bb30bd1b51707c4e6d9f5fc0"
+        },
+        {
+          "file": "js/app.mjs",
+          "bytes": 48735,
+          "gzip": 13846,
+          "brotli": 12500,
+          "sha256": "406bf6ddc5df9d9eba14bf9c7d3d5292ca755ca2607888d6fe435068e333a2b7"
+        }
+      ],
+      "v8": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "v8_timing": {
+        "unit": "microseconds/task (two host awaits)",
+        "tasks_per_sample": 4096,
+        "samples": [
+          16.31824731445164,
+          16.188303710933383,
+          15.789459228514602,
+          15.413635253906932,
+          15.364298583982361,
+          15.288482666015568,
+          15.325337646480364,
+          15.321919677731444,
+          15.25671386718841,
+          15.615773437502867,
+          15.572082519533126
+        ],
+        "median": 15.413635253906932,
+        "min": 15.25671386718841,
+        "max": 16.31824731445164
+      },
+      "javascriptcore": {
+        "supported": false,
+        "error": "TypeError: undefined is not a constructor (evaluating 'new w.Suspending(Nt(0, ht.bind(null, { trampolineIdx: 0, componentIdx: 0, isAsync: false, isManualAsync: t.manuallyAsync, paramLiftFns: [j, j], resultLowerFns: [ut], hasResultPointer: false, funcTypeIsAsync: false, getCallbackFn: () => null, getPostReturnFn: () => null, isCancellable: false, memoryIdx: null, stringEncoding: \"utf8\", getMemoryFn: () => null, getReallocFn: void 0, importFn: t }), false, false, false))')",
+        "promising": "undefined",
+        "suspending": "undefined",
+        "outside_engine_baseline": true,
+        "note": "Old system JSC, not a Safari 27 compatibility result"
+      }
+    },
+    {
       "id": "component-std",
       "backend": "component",
       "mode": "std",
-      "cold_build_ms": 7032.114167,
+      "cold_build_ms": 7630.587750000006,
       "warm_build_ms": [
-        46.771709000000556,
-        42.63420799999949,
-        42.56733300000269
+        46.88666600000579,
+        43.60250000000815,
+        44.58675000000221
       ],
-      "transform_ms": 409.27454200000284,
+      "transform_ms": 423.85591600000043,
       "raw_wasm_bytes": 49425,
       "component_container_bytes": 26930,
       "wasm_bytes": 25946,
@@ -381,45 +700,56 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          2392.1885986328134,
-          2391.7416381835965,
-          2400.8371479492184,
-          2399.445892333986,
-          2378.234252929687,
-          2382.5104472656235,
-          2383.6635031738283,
-          2417.15479516602,
-          2397.950663330079,
-          2403.8094584960845,
-          2391.202982666016
+          2405.77597045899,
+          2403.2469074707024,
+          2382.5652568359387,
+          2369.9121398925768,
+          2363.2566833496044,
+          2420.5792541503824,
+          2410.2470092773415,
+          2400.2776081542975,
+          2441.7454631347655,
+          2410.991170166014,
+          2387.6857299804756
         ],
-        "median": 2392.1885986328134,
-        "min": 2378.234252929687,
-        "max": 2417.15479516602
+        "median": 2403.2469074707024,
+        "min": 2363.2566833496044,
+        "max": 2441.7454631347655
       },
       "javascriptcore": {
         "supported": false,
         "error": "TypeError: undefined is not a constructor (evaluating 'new S.Suspending(t)')",
         "promising": "undefined",
-        "suspending": "undefined"
+        "suspending": "undefined",
+        "outside_engine_baseline": true,
+        "note": "Old system JSC, not a Safari 27 compatibility result"
       }
     }
   ],
   "inputs": {
     "experiments/wit/shared/compute.rs": "dad3b1f23b34508677b208d188d5f87d955374b55328811f5066e86436eb1262",
+    "experiments/wit/jspi/Cargo.toml": "4a6f4e55c2e8d7d172fcea5c330cc95f6a861a67ed2cd160c5db176226effad6",
+    "experiments/wit/jspi/Cargo.lock": "cee49911f77280194e841824cab741a137b8c28e80d8c2bfb5dd51f21f40bd50",
+    "experiments/wit/jspi/src/lib.rs": "857f9a39cb3d45d056b21c84a58456cc141d8c407a4225c4aedc5b9371fc73e1",
+    "experiments/wit/jspi/wit/app.wit": "0a788868aa35c4d0fd51c41a8c873812f314eab9d72a99f50d7e8ff7b04834ff",
     "experiments/wit/core/Cargo.toml": "053615cc95fd8e7f6e9e05a62ee6977b1fab9f734f36a04a974ce97bfb3d8317",
     "experiments/wit/core/Cargo.lock": "9eba3d4fd9d665bb701a9baaf677e32c420f5eba45804c50dca40eba0dab6f15",
     "experiments/wit/core/src/lib.rs": "6ef60e5522d91059cb936745b784c24ccf7a1cd9e3eeb8f80857ae8ccede1302",
     "experiments/wit/core/wit/app.wit": "4e52436f0e44e113aa8ef4815169ec24fb85da772fb169b9dd1f7c275ad1fab1",
+    "experiments/wit/component-sync/Cargo.toml": "c206f58fdfa6b65707276fa5810ec21714ba9e9eb911b6a8b5e772849c013fc5",
+    "experiments/wit/component-sync/Cargo.lock": "97809de53747370d5fb7a8a9e4a9a0edab20144732ab2d5f110a2f1c8cfc5c0e",
+    "experiments/wit/component-sync/src/lib.rs": "76c78ace261e0214ed97198a88c19801c44f1dd7a4b59ade98849d1259ab1fcf",
+    "experiments/wit/component-sync/wit/app.wit": "f806083627c095ff69eef05e66ac6f2a8af27fa1e0df76b0cfde4bb9f447824e",
     "experiments/wit/component/Cargo.toml": "422926fb704e953611fcbeedac59284a19ba06420321e73de6c323016bb2e7a4",
     "experiments/wit/component/Cargo.lock": "9302bb9bcb5648ca210dd6cce9fc6121c447efd26e72b547cd9e741190b03e09",
     "experiments/wit/component/src/lib.rs": "7927d600c25429af68ad6d7a1b363d1baa4c23a2fd031c2c437eec573f36eb59",
     "experiments/wit/component/wit/app.wit": "f291b63388de3609e96299472fb48180b592fb2ce59b5627928d2c1670c46f35",
-    "tests/support/wit-contract.mjs": "00130115567216d59888356a976809aacdc7751afd47f676eaf8ac6a11487ca5",
+    "tests/support/wit-contract.mjs": "b82b47cf1ff2a9149914d19e0e27eceb90bea4ecfedf51b4b70c27c3fd726ee7",
     "tests/support/async-contract.mjs": "6ec8416a13d55b8623d2a69e34a16275668664cc5e9906ddaabb0d82856ddfce",
-    "tools/compare-wit.mjs": "a52ef8b4b9ef92d7f960245b9eab846181c7d6f2b76436b93f8bc6e1d6f1c641",
+    "tools/compare-wit.mjs": "194efcba1a7f67896d998a139dcdbff5a960d419800a3ca7c4cbc9b459406050",
     "tests/support/metrics.mjs": "8e00d852b079470d4b2554dae8d21efb8b5a1493ae3b8cc78387c3389006d5de",
-    "Cargo.lock": "79a75875218b6fba351948d58eaf89f984b467167bf4734741f892687664a8de",
+    "Cargo.lock": "ff2a3e9435ebaef7534d5bf8c46ab483932a3ad5c3cc857dacd2a0e1ec090bcc",
+    "crates/kanimiso-cli/assets/provenance.json": "5a92397dcfc6413a6c5ee7658890ddca9355ab17fd6a62ac5198e3326c6c405f",
     "crates/kanimiso/Cargo.toml": "5432d2fbe9b73b3bf6498d86579d7b528acc6661cc130a7f705cfcfe9f3c6341",
     "crates/kanimiso/build.rs": "1fcd2d553fab84267da595b7583da5d5b72e98f0af2eb51865c15e69670afc86",
     "crates/kanimiso/src/ffi.rs": "ef9cbf04f504ed01cd0375360c78678f6c72d6dfd559dbdeb38402af5ed569b7",
@@ -441,21 +771,27 @@
     "crates/kanimiso-allocator/src/size_classes.rs": "5bd2c84867afde2dc9e4c39ba2013e4244b539efd80b1f93abf76ed1517f2a35",
     "crates/kanimiso-cli/Cargo.toml": "9bbdc421f51882561c5b841841e6f38abcdec5bf351884c11389207bc45606ac",
     "crates/kanimiso-cli/assets/intrusive-probes.wat": "dd012276f4f5a7dad3b8e8fd75f38d6db8132fd8114d1f915a999ac0abaf1cb5",
-    "crates/kanimiso-cli/assets/intrusive.wat": "ca1d00fce79975749317097387ec466623aa032b9be27d834f0d123cf8ffdf78",
-    "crates/kanimiso-cli/assets/kanimiso-debug.mjs": "bcf5e9035f4cd3bbd6bc3a20488dc1343c0c4323aee2d1d0f756600c14564b8c",
-    "crates/kanimiso-cli/assets/kanimiso.mjs": "b38c5b56a29341c2bcbd1ec014b6503ca038685038abadb33aeec099f7334a55",
-    "crates/kanimiso-cli/src/abi.rs": "1e945e0c8cb78f1ee1df1bf54031732807b0d3814822cfa24c4183e801642d47",
-    "crates/kanimiso-cli/src/build.rs": "e54fac93bf4fa206f08aa8bd8196c115dddbe8925a560f97c9cf77e968720a44",
+    "crates/kanimiso-cli/assets/intrusive.wat": "7d4ebc1dfcc07acfd9b97ff4af16e73ee45b792786b233312afbabd141063688",
+    "crates/kanimiso-cli/assets/kanimiso-debug.mjs": "ae7771397c18309963eae356e8bf61f8f100f4a077ffcd3bc8a99f66d39557dc",
+    "crates/kanimiso-cli/assets/kanimiso-jspi-debug.mjs": "18eb6dc65f1cfecfe3a70922cf35f681530016795fb841c5f9439393fceeabbd",
+    "crates/kanimiso-cli/assets/kanimiso-jspi.mjs": "6eb69c495deb02e293d68b41bff1dcad56beb7078a3466e6127e621c892ad3de",
+    "crates/kanimiso-cli/assets/kanimiso.mjs": "741a202dd568b320ba9375fe8ddf772557122ffc0fc340f4863e1a8caf75e9ce",
+    "crates/kanimiso-cli/src/abi.rs": "f3eae9eb25585ba4d18a034583e1c25465c9649d310204ed7f156d4bc51e4936",
+    "crates/kanimiso-cli/src/build.rs": "a2eee89b08f645a961ae87af923a8dd04950764f2af04eac1174a6fd1a64b614",
     "crates/kanimiso-cli/src/imports.rs": "de87fe8bdae64194d3afc6a5b27aa75acea7e03ce651f9bb8ac42828296be90f",
-    "crates/kanimiso-cli/src/lib.rs": "0632affc4c9e164524c9d3a109bf207b53cafa0291b29256f990a48f6945e449",
-    "crates/kanimiso-cli/src/main.rs": "d557aa37d4922fcacfc6e045771be5f3019c09112b05884f05ca594737ae9745",
-    "crates/kanimiso-cli/src/project.rs": "e7158f697d158408167f937a46a961a43280acbfbea6fb320c61a3c7fbc9b71f",
-    "crates/kanimiso-cli/src/wit.rs": "566504cf5afdd09750ae67bd0bcd992253eeecf2fdc1ba61b0d9a17f533f7856",
-    "crates/kanimiso-cli/src/templates/app.rs": "4e9b5520ac7aa508d1721b98c1d732e20850e1cda8f8d86346b460bf1537a8ef"
+    "crates/kanimiso-cli/src/lib.rs": "4d2d9529bf80c736e4613a5e2fe7f80d9ee30ae68cb7a22f588fab23ba945300",
+    "crates/kanimiso-cli/src/main.rs": "f03f7ba676ba6002437d57d7c9c9b76f7b3e308b7075fad2e3a96df50bf0f352",
+    "crates/kanimiso-cli/src/project.rs": "06520579c096ef72d95772aba735b284d624d55d908026b5975a428498650027",
+    "crates/kanimiso-cli/src/wit.rs": "3219167f3eadbea340df3fc65982b4fbd3b658fb00b29cf3c5be18378db1657c",
+    "crates/kanimiso-cli/src/templates/app.rs": "4e9b5520ac7aa508d1721b98c1d732e20850e1cda8f8d86346b460bf1537a8ef",
+    "crates/kanimiso-cli/src/templates/jspi.rs": "d2d3d438463d2cb82e48fe75b715eb2d2ed8e42c06bc6e525a591cfec68c0d17"
   },
   "decision": {
-    "default": "WIT + wit-bindgen synchronous resource bindings + kanimiso Core externref lowering",
-    "reason": "smaller combined JS/Wasm and successful common tests on both local V8 and JavaScriptCore; native Component async via jco JSPI remains an experiment",
-    "compatibility": "Core profile uses JS-root ownership, NOT the Component canonical resource ABI. Standard Component async needs JSPI here. System JavaScriptCore is not a Safari browser test."
+    "engine_baseline": "Safari 27+ / JSPI-capable V8; JSPI is available by design",
+    "small_profile": "Direct scalar WIT/Core JSPI (--jspi)",
+    "future_profile": "Existing Core Future runtime for spawn_local/cancel and concurrent Rust Futures",
+    "component_profiles": "Both synchronous WIT + JSPI and native WIT async + jco are retained for comparison",
+    "contracts": "JSPI scalar serializes guest entry, treats rejection/trap as fatal, and does not provide cancellation or arbitrary Future execution; common success tests are not full runtime equivalence",
+    "safari_verification": "Official Safari 27 JSPI support confirmed; this run uses Node V8 and an old system JSC, not a Safari 27 browser"
   }
 }

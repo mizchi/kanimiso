@@ -58,3 +58,49 @@ for (const mode of ["no_std", "std"])
       ...(surface === "probes" ? ["--probes"] : []),
     ]);
   }
+
+for (const mode of ["no_std", "std"])
+  for (const probes of [false, true]) {
+    const features = [
+      ...(mode === "std" ? ["std"] : []),
+      ...(probes ? ["probes"] : []),
+    ];
+    run(
+      "cargo",
+      [
+        "build",
+        "--locked",
+        "--release",
+        "-p",
+        "kanimiso-jspi-promise",
+        "--target",
+        "wasm32-unknown-unknown",
+        ...(features.length ? ["--features", features.join(",")] : []),
+      ],
+      {
+        env: {
+          ...process.env,
+          RUSTFLAGS:
+            "-C link-arg=-zstack-size=65536 -C link-arg=--max-memory=1048576",
+        },
+      },
+    );
+    run("target/release/kanimiso", [
+      "build",
+      "target/wasm32-unknown-unknown/release/kanimiso_jspi_promise.wasm",
+      "--wit",
+      "examples/jspi/wit",
+      "--world",
+      probes ? "probes" : "app",
+      "--jspi",
+      "--binaryen",
+      ".cache/toolchains/binaryen-version_133/bin",
+      "--out-dir",
+      `.cache/jspi-example-${mode}-${probes}`,
+    ]);
+    const { copyFileSync } = await import("node:fs");
+    copyFileSync(
+      `.cache/jspi-example-${mode}-${probes}/app.wasm`,
+      `dist/examples/jspi-${mode}-${probes ? "probes" : "minimal"}.wasm`,
+    );
+  }

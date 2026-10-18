@@ -4,22 +4,27 @@
   "inputs": {
     "src/host.mjs": "6d2ce4941f4250eefdef6ab782336920095b87f91e43f6445da8529282d96a2a",
     "src/errors.mjs": "e6d1f993b7270652963f571af12fc938de58339e216a2ea67dc4161c875e1ec4",
-    "src/error-codes.json": "4adb821a07cfb1db965cdc2bee5f89ceea51a1dbbf7d09947c84c327622bb46f",
+    "src/error-codes.json": "5f983b94327523505f36b9e33da1d007bb3efdd2aa24e267948d1ad92db3964f",
     "src/index.mjs": "8d823825d250a6b7ebedd700229966167f49a6b769f4cbcd1012accd79f17f24",
     "src/index.d.ts": "f042853d196d0fce34cafabda9ba4c4b7616b68f8d0c7b02cb9f2ac37f40c6f5",
+    "src/jspi.mjs": "3ed7f11117df199cbbea3873cd99769ec658ebf3c98c931e0951b769c2a71b8c",
+    "src/jspi.d.ts": "981e5698382671969a6399ec0a6295d27ac45e70d8485cef688f2ca80d12bc67",
     "src/intrusive.wat": "4bc6c4acfd532af79c6ba99b17df955f6cc65e6ea26f57ed99be5746c976748f",
-    "tools/build-host.mjs": "c6507356d9dc0991331cb6ed285365a1a3e113f8f56af287126c0934a8a61eb7",
-    "tools/import-contract.mjs": "51b197ed59689a6317d538843626c7f184a3aa140c799472ea2b864f553f5b20",
+    "tools/build-host.mjs": "ed48fd002f5e67878f79504e60d3124ac6dfa1e5f272ac55a8e8dff552b573b3",
+    "tools/import-contract.mjs": "fe09b54c9c84fb3b3c14b30a7f33af5d4e46645b9c5cc0c082c1831d3a1fc614",
     "package.json": "c06e15de133310409780deb2d46c8a7df54bf5e0f32e7958354079e4d9ba9bc7",
     "pnpm-lock.yaml": "0a6dc6db3845da5f63f71aaf97d052cfe00251c1527ad3f292e01ce5a1d4395d"
   },
   "assets": {
-    "kanimiso.mjs": "b38c5b56a29341c2bcbd1ec014b6503ca038685038abadb33aeec099f7334a55",
-    "kanimiso-debug.mjs": "bcf5e9035f4cd3bbd6bc3a20488dc1343c0c4323aee2d1d0f756600c14564b8c",
+    "kanimiso.mjs": "741a202dd568b320ba9375fe8ddf772557122ffc0fc340f4863e1a8caf75e9ce",
+    "kanimiso-debug.mjs": "ae7771397c18309963eae356e8bf61f8f100f4a077ffcd3bc8a99f66d39557dc",
+    "kanimiso-jspi.mjs": "6eb69c495deb02e293d68b41bff1dcad56beb7078a3466e6127e621c892ad3de",
+    "kanimiso-jspi-debug.mjs": "18eb6dc65f1cfecfe3a70922cf35f681530016795fb841c5f9439393fceeabbd",
+    "kanimiso-jspi.d.mts": "981e5698382671969a6399ec0a6295d27ac45e70d8485cef688f2ca80d12bc67",
     "kanimiso.d.mts": "f042853d196d0fce34cafabda9ba4c4b7616b68f8d0c7b02cb9f2ac37f40c6f5",
-    "error-codes.json": "4adb821a07cfb1db965cdc2bee5f89ceea51a1dbbf7d09947c84c327622bb46f",
-    "private-imports.json": "9b600ae95071fa35629b2e9cb631782983198e53a327b67f960dc56e10319aa9",
-    "intrusive.wat": "ca1d00fce79975749317097387ec466623aa032b9be27d834f0d123cf8ffdf78",
+    "error-codes.json": "5f983b94327523505f36b9e33da1d007bb3efdd2aa24e267948d1ad92db3964f",
+    "private-imports.json": "59717e952842214c631d7d838a83302fc30290dd301a091af5a24dd3699a3cb5",
+    "intrusive.wat": "7d4ebc1dfcc07acfd9b97ff4af16e73ee45b792786b233312afbabd141063688",
     "intrusive-probes.wat": "dd012276f4f5a7dad3b8e8fd75f38d6db8132fd8114d1f915a999ac0abaf1cb5"
   }
 }

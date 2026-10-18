@@ -20,7 +20,8 @@ pub(crate) fn parse_text(text: &str) -> Result<Bindings> {
 }
 fn value(r: &Resolve, ty: Type) -> Result<Abi> {
     Ok(match ty {
-        Type::S32 | Type::U32 => Abi::I32,
+        Type::S32 => Abi::I32,
+        Type::U32 => Abi::U32,
         Type::F64 => Abi::F64,
         Type::Id(id) => match r.types[id].kind {
             TypeDefKind::Type(t) => return value(r, t),

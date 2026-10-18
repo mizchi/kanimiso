@@ -4,6 +4,7 @@ use walrus::{ExportItem, FunctionBuilder, FunctionKind, ImportKind, Module, RefT
 #[derive(Clone, Copy)]
 pub(crate) enum Abi {
     I32,
+    U32,
     F64,
     Borrow,
     Own,
@@ -19,6 +20,7 @@ impl Abi {
     fn external(self) -> ValType {
         match self {
             Borrow | Own => ValType::Ref(RefType::EXTERNREF),
+            U32 => ValType::F64,
             _ => self.raw(),
         }
     }
@@ -188,6 +190,9 @@ pub(crate) fn lower_with_abi(
         for (arg, local) in args.iter().zip(&locals) {
             body.local_get(*local);
             match arg {
+                U32 => {
+                    body.unop(walrus::ir::UnaryOp::F64ConvertUI32);
+                }
                 Borrow => {
                     body.table_get(table);
                 }
@@ -198,6 +203,9 @@ pub(crate) fn lower_with_abi(
             }
         }
         body.call(external);
+        if matches!(result, Some(U32)) {
+            body.unop(walrus::ir::UnaryOp::I32TruncUSatF64);
+        }
         if result.is_some_and(Abi::reference) {
             body.call(root);
         }
@@ -226,11 +234,17 @@ pub(crate) fn lower_with_abi(
         let mut body = b.func_body();
         for (arg, local) in args.iter().zip(&locals) {
             body.local_get(*local);
+            if matches!(arg, U32) {
+                body.unop(walrus::ir::UnaryOp::I32TruncUSatF64);
+            }
             if arg.reference() {
                 body.call(root);
             }
         }
         body.call(original);
+        if matches!(result, Some(U32)) {
+            body.unop(walrus::ir::UnaryOp::F64ConvertUI32);
+        }
         if result.is_some_and(Abi::reference) {
             body.call(take);
         }

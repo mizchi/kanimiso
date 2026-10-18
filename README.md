@@ -2,9 +2,14 @@
 
 English | [日本語](README.ja.md)
 
-A small Rust/Wasm async runtime for JavaScript hosts. It connects Rust Futures to native Promises, with `spawn_local`, Promise awaiting, and cancellation. Both `std` and `no_std + alloc` are supported; JavaScript objects stay in the host.
+A small Rust/Wasm runtime for JavaScript hosts. This experimental project targets **Safari 27+ and JSPI-capable V8**. Safari 27 support is documented in [WebKit’s announcement](https://webkit.org/blog/18325/webkit-features-for-safari-27-0/#webassembly).
 
-**WIT** defines application contracts and official **wit-bindgen** generates Rust types, Guest traits, and imports/exports. The execution format is **Core Wasm + externref**. Its JS root ownership is a lightweight profile, distinct from the Component Model Canonical ABI. See the [measured comparison](docs/wit-comparison.md) against standard Component async using the same algorithm.
+**WIT** defines application contracts and official **wit-bindgen** generates Rust types, Guest traits, and imports/exports. Two Core Wasm configurations are available:
+
+- **JSPI scalar** (`--jspi`): native Promises suspend and resume synchronous WIT calls through the engine. This small configuration has no Rust executor or task pool.
+- **Future** (without the option): the existing `spawn_local`, Rust Future, Promise awaiting, and cancellation runtime, supporting `std` and `no_std + alloc`. JS objects stay in the host.
+
+Their Core lowering is distinct from the Component Model Canonical ABI. See the [measurements](docs/wit-comparison.md), including standard Component native async, and the [engine baseline](docs/engine-baseline.md).
 
 ## Install and use
 
@@ -14,15 +19,15 @@ The first crates.io releases of `kanimiso`, `kanimiso-allocator`, and `kanimiso-
 rustup target add wasm32-unknown-unknown
 cargo install kanimiso-cli --version 0.1.0 --locked
 # Install Binaryen 133: wasm-opt, wasm-as, wasm-merge, wasm-metadce on PATH
-kanimiso new hello --no-std
+kanimiso new hello --no-std --jspi
 cd hello
 cargo build --release --target wasm32-unknown-unknown
-kanimiso build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg
+kanimiso build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg --jspi
 ```
 
 The native CLI embeds ready-to-use JS and the intrusive pool WAT. Consumers do not need a repository checkout, Node, or esbuild to generate the host. Binaryen is an external prerequisite. Use `KANIMISO_BINARYEN=/path/to/bin` or `--binaryen /path/to/bin` instead of PATH if desired.
 
-`new` generates an independent Cargo application with registry version dependencies. Its example uses a 64 KiB stack and a 1 MiB memory limit, adjustable in `.cargo/config.toml`. For an existing application, add these dependencies and use the generated example's WIT bindings and `export_runtime!()`:
+`new` generates an independent Cargo application with registry version dependencies. Its example uses a 64 KiB stack and a 1 MiB memory limit, adjustable in `.cargo/config.toml`. The JSPI example depends only on wit-bindgen and the allocator. For the Future configuration in an existing application, add these dependencies and use `export_runtime!()`:
 
 ```sh
 cargo add kanimiso@0.1.0 --no-default-features
@@ -30,7 +35,7 @@ cargo add kanimiso-allocator@0.1.0 --no-default-features
 cargo add wit-bindgen@=0.58.0 --no-default-features --features macros
 ```
 
-Omit `--no-std` to generate a std application. The application selects its global allocator. `kanimiso-allocator` is the MPL-2.0 fork derived from `wee_alloc`, renamed from the experimental `wee-port`. Disable size classes for the smallest configuration.
+Omit `--no-std` to generate a std application. Omit `--jspi` to generate the Future configuration. The application selects its global allocator. `kanimiso-allocator` is the MPL-2.0 fork derived from `wee_alloc`, renamed from the experimental `wee-port`. Disable size classes for the smallest configuration.
 
 Deploy `pkg/app.wasm` with its matching `pkg/kanimiso.mjs`. In a browser, fetch the Wasm as an ArrayBuffer. In Node.js:
 
@@ -46,28 +51,35 @@ console.log(await host.promise('run', 20, 21)); // 42: await add(20,21), await a
 
 `--debug` emits JS with descriptive errors. Release JS uses short error codes; `pkg/error-codes.json` explains them offline. The output also includes type declarations and build metadata.
 
-## WIT scope and ownership
+## JSPI scalar WIT and execution contract
 
 ```wit
 package example:app@0.1.0;
-interface js { resource promise; }
 world app {
-  import js;
-  use js.{promise};
-  import add: func(a: s32, b: s32) -> promise;
-  export run: func(a: s32, b: s32) -> promise;
+  import add: func(a: s32, b: s32) -> s32;
+  export run: func(a: s32, b: s32) -> s32;
 }
 ```
 
-The Core profile supports s32, u32, f64, and own/borrow handles to imported resources whose objects live in JS. Borrow is supported only for import arguments. Unsupported string/list/record types, exported resources, and native WIT async fail the build. Core resources require a non-undefined JS value; a `promise` import must return a Promise. A synchronous boundary returning that resource connects to Rust async internally. Provide application imports through `bindings`; duplicate function names across imported interfaces are rejected.
+Rust calls synchronous functions. `WebAssembly.Suspending` waits for the Promise returned by `bindings.add`, and `WebAssembly.promising` exposes guest exports as Promises. Supported boundaries are s32/u32/f64 and functions without results. Resources, strings, lists, records, and native WIT async are outside this small profile.
+
+Guest entry is serialized per instance to protect LLVM's linear-memory stack across suspension. Bindings must not await re-entry into the same instance. This profile does not provide cancellation or an executor for arbitrary Rust Futures. A host rejection or Wasm trap permanently closes the instance with the first reason and rejects queued calls with that same reason. Rust Drop is not assumed to run when a JS exception exits Wasm.
+
+Missing JSPI fails with `RT15`; no compatibility fallback is used. Both `host.call` and `host.promise` return Promises. The emitted `kanimiso.d.mts` describes this profile's API.
+
+## Future WIT and ownership
+
+Use `kanimiso new hello --no-std` and `kanimiso build ... --wit wit` for the existing Future profile. Its WIT imports `resource promise` and defines `add: func(a:s32,b:s32)->promise` and `run: func(a:s32,b:s32)->promise`.
+
+The Future profile supports s32, u32, f64, and own/borrow handles to imported resources whose objects live in JS. Borrow is supported only for import arguments. Unsupported string/list/record types, exported resources, and native WIT async fail the build. Core resources require a non-undefined JS value; a `promise` import must return a Promise. A synchronous boundary returning that resource connects to Rust async internally. Provide application imports through `bindings`; duplicate function names across imported interfaces are rejected.
 
 Converting generated resource handles to `JsPromise` is valid only within this Core profile. These are not canonical resource-table handles usable unchanged with Component hosts. Raw pointers, root IDs, and `rt_*` are private ABI. Invoke application exports through the host's guarded `call` / `promise` methods.
 
 ## Verification and limits
 
-The target is one JS agent, non-shared wasm32 memory, `alloc`, and modern JS/Wasm engines. The fixed pool has 1,024 × 128 B slots and limits Future size/alignment. JS roots retain references without copying object data into linear memory. A fatal error stops the instance with the first error and clears JS roots; Rust Drop is never retried after a trap.
+The target is one JS agent and non-shared wasm32 memory. The Future profile requires `alloc`; its fixed pool has 1,024 × 128 B slots and limits Future size/alignment. JS roots retain references without copying object data into linear memory. A fatal error stops the instance with the first error and clears JS roots; Rust Drop is never retried after a trap.
 
-Verification covers V8, the system JavaScriptCore shell, and local workerd. The JSC shell is supplied with queueMicrotask via a Promise job. Safari browser execution and Cloudflare production deployment remain unverified. Tests for js-string, exnref, typed funcref, and GC do not imply that the runtime uses all those features. Kani verifies selected native 64-bit models and components, not the JS engine or the complete Wasm runtime.
+Verification covers V8, the system JavaScriptCore shell, and local workerd. The JSC shell is supplied with queueMicrotask via a Promise job. The old local system JSC is classified outside the JSPI baseline. The JSPI std/no_std builds also pass the 3,507 common cases and two controlled suspensions on local workerd. Safari 27 browser execution and Cloudflare production deployment remain unverified. Tests for js-string, exnref, typed funcref, and GC do not imply that the runtime uses all those features. Kani verifies selected native 64-bit models and components, not the JS engine or the complete Wasm runtime.
 
 Historical extraction results are in [verification.md](docs/verification.md) and [JSON](docs/verification.json); [provenance.json](provenance.json) records their origins. Hashes and sizes from before relocation are not presented as current measurements.
 

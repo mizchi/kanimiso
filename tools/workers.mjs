@@ -11,14 +11,32 @@ writeFileSync(
   modes
     .map((m) => `import ${m} from "../../dist/examples/${m}-full.wasm";`)
     .join("\n") +
+    modes
+      .map(
+        (m) =>
+          `\nimport jspi_${m} from "../../dist/examples/jspi-${m}-minimal.wasm";`,
+      )
+      .join("\n") +
     `
 import {createHost as release} from "../../dist/release.mjs";
 import {createHost as debug} from "../../dist/debug.mjs";
+import {instantiate as instantiateJspi} from "../../dist/jspi.mjs";
+import {verifyWit} from "../../tests/support/wit-contract.mjs";
+import {asyncCases} from "../../tests/support/async-contract.mjs";
 import {workerService} from "../../tests/support/worker.mjs";
+const jspiModules={no_std:jspi_no_std,std:jspi_std};
 const handlers={release:workerService({no_std,std},release),debug:workerService({no_std,std},debug)};
-export default {fetch(request) {
+export default {async fetch(request) {
  const url=new URL(request.url),[variant,mode]=url.pathname.slice(1).split("/");
  if(variant==="health") return new Response("ok");
+ if(variant==="jspi") {
+   const capabilities={promising:typeof WebAssembly.promising,suspending:typeof WebAssembly.Suspending};
+   if(capabilities.promising!=="function"||capabilities.suspending!=="function") return Response.json({mode,eligible:false,capabilities,reason:"JSPI is unavailable in this local workerd"});
+   try {
+     const result=await verifyWit(async add=>{const h=await instantiateJspi(jspiModules[mode],{bindings:{add}});return(...a)=>h.promise("run",...a)},[1,16,128,1024].flatMap(asyncCases));
+     return Response.json({mode,eligible:true,...result});
+   } catch(error) {return Response.json({mode,eligible:true,error:String(error)},{status:500});}
+ }
  if(!handlers[variant]) return new Response("not found",{status:404});
  url.pathname="/"+mode;
  return handlers[variant].fetch(new Request(url,request));
@@ -109,6 +127,22 @@ try {
       entries.push({ variant, ...r });
       console.log(`${variant}/${mode}: local workerd passed`);
     }
+  const jspi = [];
+  for (const mode of modes) {
+    const response = await fetch(`http://127.0.0.1:${port}/jspi/${mode}`, {
+      signal: AbortSignal.timeout(30000),
+    });
+    const entry = await response.json();
+    assert.equal(response.status, 200, JSON.stringify(entry));
+    if (entry.eligible) {
+      assert.equal(entry.all_passed, true);
+      assert.equal(entry.tasks, 3507);
+    }
+    jspi.push(entry);
+    console.log(
+      `jspi/${mode}: ${entry.eligible ? "local workerd passed" : "JSPI unavailable in local workerd"}`,
+    );
+  }
   writeFileSync(
     ".cache/workers.json",
     JSON.stringify(
@@ -116,6 +150,7 @@ try {
         environment:
           "local workerd; no production deployment; nodejs_compat for test assertions",
         entries,
+        jspi,
         all_passed: true,
       },
       null,

@@ -39,6 +39,8 @@ const run = (bin, args, options = {}) => {
 const cases = [1, 16, 128, 1024].flatMap((c) => asyncCases(c));
 const report = {
   created_at: new Date().toISOString(),
+  engine_baseline:
+    "Safari 27+ / JSPI-capable V8 (old system JSC does not determine current Safari support)",
   machine: {
     platform: process.platform,
     arch: process.arch,
@@ -77,7 +79,7 @@ const report = {
   profiles: [],
 };
 for (const mode of ["no_std", "std"])
-  for (const backend of ["core", "component"]) {
+  for (const backend of ["jspi", "core", "component-sync", "component"]) {
     const id = `${backend}-${mode}`,
       dir = `${out}/${id}`,
       target = `${out}/target-${id}`;
@@ -103,18 +105,19 @@ for (const mode of ["no_std", "std"])
     ];
     const cold = run("cargo", args, { env }),
       warm = Array.from({ length: 3 }, () => run("cargo", args, { env }));
-    const raw = `${target}/wasm32-unknown-unknown/release/wit_${backend}.wasm`;
+    const raw = `${target}/wasm32-unknown-unknown/release/wit_${backend.replaceAll("-", "_")}.wasm`;
     let transform;
-    if (backend === "core")
+    if (backend === "core" || backend === "jspi")
       transform = run("./target/release/kanimiso", [
         "build",
         raw,
         "--wit",
-        `experiments/wit/core/wit`,
+        `experiments/wit/${backend}/wit`,
         "--out-dir",
         dir,
         "--binaryen",
         binaryen,
+        ...(backend === "jspi" ? ["--jspi"] : []),
       ]);
     else {
       const t = performance.now();
@@ -147,7 +150,9 @@ for (const mode of ["no_std", "std"])
         "--async-mode",
         "jspi",
         "--async-imports",
-        "add",
+        backend === "component-sync"
+          ? "kanimiso:experiment/host@0.1.0#add"
+          : "add",
         "--async-exports",
         "run",
         "--no-wasi-shim",
@@ -168,7 +173,7 @@ for (const mode of ["no_std", "std"])
       transform = performance.now() - t;
     }
     const files =
-      backend === "core"
+      backend === "core" || backend === "jspi"
         ? [`${dir}/app.wasm`, `${dir}/kanimiso.mjs`]
         : readdirSync(`${dir}/js`)
             .filter((f) => f.endsWith(".wasm") || f === "app.mjs")
@@ -198,10 +203,9 @@ for (const mode of ["no_std", "std"])
       warm_build_ms: warm,
       transform_ms: transform,
       raw_wasm_bytes: readFileSync(raw).length,
-      component_container_bytes:
-        backend === "component"
-          ? readFileSync(`${dir}/app.component.wasm`).length
-          : null,
+      component_container_bytes: backend.startsWith("component")
+        ? readFileSync(`${dir}/app.component.wasm`).length
+        : null,
       wasm_bytes: wasmBytes,
       js_bytes: jsBytes,
       total_bytes: jsBytes + wasmBytes,
@@ -218,7 +222,7 @@ for (const mode of ["no_std", "std"])
 for (const profile of report.profiles) {
   const dir = `${out}/${profile.id}`;
   let factory;
-  if (profile.backend === "core") {
+  if (profile.backend === "core" || profile.backend === "jspi") {
     const { instantiate } = await import(pathToFileURL(`${dir}/kanimiso.mjs`));
     const module = new WebAssembly.Module(readFileSync(`${dir}/app.wasm`));
     factory = async (add) => {
@@ -236,9 +240,12 @@ for (const profile of report.profiles) {
         ]),
     );
     factory = async (add) => {
-      const api = await instantiate((name) => modules[name], {
-        add: { default: add },
-      });
+      const api = await instantiate(
+        (name) => modules[name],
+        profile.backend === "component-sync"
+          ? { "kanimiso:experiment/host": { add } }
+          : { add: { default: add } },
+      );
       return api.run;
     };
   }
@@ -251,16 +258,16 @@ for (const profile of report.profiles) {
       profile.files
         .filter((f) => f.file.endsWith(".wasm"))
         .map((f) => [
-          profile.backend === "component" ? f.file.slice(3) : f.file,
+          profile.backend.startsWith("component") ? f.file.slice(3) : f.file,
           Array.from(readFileSync(`${dir}/${f.file}`)),
         ]),
     );
-    const importPath =
-      profile.backend === "core" ? `${dir}/kanimiso.mjs` : `${dir}/js/app.mjs`;
-    const factorySource =
-      profile.backend === "core"
-        ? `async add=>{const h=await instantiate(modules['app.wasm'],{bindings:{add}});return (...a)=>h.promise('run',...a)}`
-        : `async add=>{const a=await instantiate(name=>modules[name],{add:{default:add}});return a.run}`;
+    const importPath = !profile.backend.startsWith("component")
+      ? `${dir}/kanimiso.mjs`
+      : `${dir}/js/app.mjs`;
+    const factorySource = !profile.backend.startsWith("component")
+      ? `async add=>{const h=await instantiate(modules['app.wasm'],{bindings:{add}});return (...a)=>h.promise('run',...a)}`
+      : `async add=>{const a=await instantiate(name=>modules[name],${profile.backend === "component-sync" ? '{"kanimiso:experiment/host":{add}}' : "{add:{default:add}}"});return a.run}`;
     const source = `import {instantiate} from ${JSON.stringify(importPath)};import {verifyWit} from ${JSON.stringify(resolve("tests/support/wit-contract.mjs"))};const bytes=${JSON.stringify(mods)};const modules=Object.fromEntries(Object.entries(bytes).map(([n,b])=>[n,new WebAssembly.Module(new Uint8Array(b))]));verifyWit(${factorySource},${JSON.stringify(cases)}).then(result=>print(JSON.stringify({supported:true,result})),e=>print(JSON.stringify({supported:false,error:String(e),promising:typeof WebAssembly.promising,suspending:typeof WebAssembly.Suspending})));`;
     const bundle = await esbuild.build({
       stdin: { contents: source, resolveDir: root },
@@ -284,8 +291,16 @@ for (const profile of report.profiles) {
         timeout: 60000,
       }).trim(),
     );
+    if (
+      !result.supported &&
+      (result.promising !== "function" || result.suspending !== "function") &&
+      profile.backend !== "core"
+    ) {
+      result.outside_engine_baseline = true;
+      result.note = "Old system JSC, not a Safari 27 compatibility result";
+    }
     profile.javascriptcore = result;
-    if (profile.backend === "core") {
+    if (!result.outside_engine_baseline) {
       assert.equal(result.supported, true);
       assert.deepEqual(result.result, profile.v8);
     }
@@ -296,7 +311,7 @@ for (const profile of report.profiles) {
 }
 const sources = [
   "experiments/wit/shared/compute.rs",
-  ...["core", "component"].flatMap((p) => [
+  ...["jspi", "core", "component-sync", "component"].flatMap((p) => [
     `experiments/wit/${p}/Cargo.toml`,
     `experiments/wit/${p}/Cargo.lock`,
     `experiments/wit/${p}/src/lib.rs`,
@@ -307,6 +322,7 @@ const sources = [
   "tools/compare-wit.mjs",
   "tests/support/metrics.mjs",
   "Cargo.lock",
+  "crates/kanimiso-cli/assets/provenance.json",
   ...[
     "crates/kanimiso",
     "crates/kanimiso-allocator",
@@ -330,12 +346,16 @@ report.inputs = Object.fromEntries(
   ]),
 );
 report.decision = {
-  default:
-    "WIT + wit-bindgen synchronous resource bindings + kanimiso Core externref lowering",
-  reason:
-    "smaller combined JS/Wasm and successful common tests on both local V8 and JavaScriptCore; native Component async via jco JSPI remains an experiment",
-  compatibility:
-    "Core profile uses JS-root ownership, NOT the Component canonical resource ABI. Standard Component async needs JSPI here. System JavaScriptCore is not a Safari browser test.",
+  engine_baseline: "Safari 27+ / JSPI-capable V8; JSPI is available by design",
+  small_profile: "Direct scalar WIT/Core JSPI (--jspi)",
+  future_profile:
+    "Existing Core Future runtime for spawn_local/cancel and concurrent Rust Futures",
+  component_profiles:
+    "Both synchronous WIT + JSPI and native WIT async + jco are retained for comparison",
+  contracts:
+    "JSPI scalar serializes guest entry, treats rejection/trap as fatal, and does not provide cancellation or arbitrary Future execution; common success tests are not full runtime equivalence",
+  safari_verification:
+    "Official Safari 27 JSPI support confirmed; this run uses Node V8 and an old system JSC, not a Safari 27 browser",
 };
 mkdirSync("docs", { recursive: true });
 writeFileSync(
@@ -345,11 +365,34 @@ writeFileSync(
 const rows = report.profiles
   .map(
     (p) =>
-      `| ${p.id} | ${p.wasm_bytes.toLocaleString("en-US")} | ${p.js_bytes.toLocaleString("en-US")} | ${p.total_bytes.toLocaleString("en-US")} | ${p.gzip_bytes.toLocaleString("en-US")} | ${(p.cold_build_ms / 1000).toFixed(2)} s | ${p.v8_timing.median.toFixed(3)} | ${p.javascriptcore?.supported ? "通過" : "JSPI API 不足で失敗"} |`,
+      `| ${p.id} | ${p.wasm_bytes.toLocaleString("en-US")} | ${p.js_bytes.toLocaleString("en-US")} | ${p.total_bytes.toLocaleString("en-US")} | ${p.gzip_bytes.toLocaleString("en-US")} | ${(p.cold_build_ms / 1000).toFixed(2)} s | ${p.v8_timing.median.toFixed(3)} | ${p.javascriptcore?.supported ? "通過" : "旧 JSC: 前提外"} |`,
   )
   .join("\n");
 writeFileSync(
   "docs/wit-comparison.md",
-  `# WIT / async ABI 比較実験\n\n${report.created_at}\n\n同じ [二段 await](../experiments/wit/shared/compute.rs) を異なるランタイムにコンパイルした。両者で 3,507 件の符号付き i32 計算と全 host I/O、外から解決する二回の待機を共通テストで確認。WIT の型は Core 版が opaque Promise resource、Component 版が async s32。JS オブジェクトの同一性、reject、cancel、fatal の契約は共通ではなく、この比較の同等性の範囲に含めない。\n\n| 構成 | Wasm B | JS B | 合計 B | gzip 合計 B | cold build | V8 μs/task 中央値 | system JSC |\n|---|---:|---:|---:|---:|---:|---:|---|\n${rows}\n\nWasm は配信する全モジュール、JS は loader を含む配信 ESM。Component container と展開後モジュールを二重計上せず、型宣言は除外。圧縮はファイルごとに適用して合計。Component の生成 JS には最終 esbuild minify も適用した。Core の JS は同じ esbuild で生成。両者とも Binaryen 133、Oz / flatten / rereloop / converge、64 KiB stack、1 MiB memory 上限、同じ allocator（size classes 無効）。\n\nビルドは各構成の空の CARGO_TARGET_DIR 一回、依存ダウンロード済み・offline、Rust と変換工程は別計時。warm build は変更なし三回を JSON に保存。CLI / jco / Binaryen 自体のインストール時間は除外。実行時間は V8 上で 512 同時実行、二段 host await を 4,096 タスクずつ 11 回。ウォームアップ後の中央値で、Rust 計算だけの速度ではない。jco の生成 scheduler は setTimeout（10 ms）で再開する経路を含むため、この差を Wasm 命令自体や Component Model 全体の速度差とは解釈しない。ビルドと性能測定は同時実行しない。\n\n採用: 公開契約は WIT、Rust の型と Guest/imports は公式 wit-bindgen で生成し、既定の実行形式は軽量 Core Wasm とする。WIT のアプリ境界を JS root と externref に lowering し、実行時の Promise scheduler・固定 pool は kanimiso が実装する。標準 Component の Canonical ABI と互換だとは扱わない。Component native async は jco JSPI の実験として残す。system JavaScriptCore では実際の生成物が JSPI API 不足で失敗した。Safari 実ブラウザーの通過は未確認。\n\n再実行: \`just compare-wit\`。バージョン、各ファイルのサイズ・ハッシュ、各計時サンプル、JSC の実エラー、入力ハッシュは [JSON](wit-comparison.json)。\n`,
+  `# WIT / JSPI 比較実験
+
+${report.created_at}
+
+実験環境の前提は **Safari 27+ / JSPI 対応 V8**。[WebKit 公式](https://webkit.org/blog/18325/webkit-features-for-safari-27-0/#webassembly)で Safari 27 の JSPI 対応を確認した。旧 system JSC の未対応を最新 Safari の非対応とは扱わない。Safari 27 実ブラウザーはこの測定では未検証。
+
+同じ [二段 await](../experiments/wit/shared/compute.rs) をコンパイルし、全構成で符号付き i32 の共通 3,507 ケース、全 host I/O、外から解決する二回の待機を通した。JSPI の Rust デモは同期 import 内でエンジンが待機し、同じ Future の poll は Ready を返す。任意の Pending Future の executor ではない。
+
+| 構成 | Wasm B | JS B | 合計 B | gzip 合計 B | cold build | V8 μs/task 中央値 | system JSC |
+|---|---:|---:|---:|---:|---:|---:|---|
+${rows}
+
+jspi は直接 Core JSPI、core は従来の Future 構成、component-sync は同期 WIT + jco JSPI、component は WIT native async + jco JSPI。サイズは実際に配信する全 Wasm と loader を含む JS の合計。Component container を展開後ファイルと二重計上せず、型宣言は除外。圧縮はファイルごとに適用。
+
+全構成で Binaryen 133、Oz / flatten / rereloop / converge、64 KiB stack、1 MiB memory 上限、同じ allocator（size classes 無効）。JS は esbuild minify を適用。直接 JSPI は Rust task pool を持たず、不要な canonical realloc とメタデータを除去する。Rust/JS ともアプリを含むサイズであり、機能が同一なランタイムの固定費ではない。
+
+ビルドは各構成の空の CARGO_TARGET_DIR 一回、依存取得後・offline。Rust build と変換工程は別計時で、warm build 三回も JSON に保存する。ツールのインストール時間は除外。実行は V8 上で 512 呼び出しを投入し、4,096 タスクずつ 11 回。直接 JSPI は投入された呼び出しを instance 内で直列実行する。ビルドと性能測定は同時実行しない。
+
+速度は JSPI / Promise / host I/O / scheduler 込み。WIT native async の jco scheduler は setTimeout（10 ms）を使う経路を含むため、値を Wasm 命令自体や Component Model 全体の速度差とは解釈しない。
+
+採用方針: JSPI を実行環境の前提として、スカラー I/O は省サイズの **--jspi** を用意する。これは guest entry の直列化と reject / trap 時の first-fatal を契約とする。spawn_local / cancel / 一般的な Rust Future を使う場合は従来構成を選ぶ。JS オブジェクト同一性、reject、cancel、fatal の契約の同等性は共通計算テストの範囲に含めない。Core lowering は Component Model Canonical ABI とは異なる。
+
+実製品の JSPI 検証は \`just check\` と \`just package-check\`。release/debug × std/no_std で同じ入力と実 Rust stack spill、crate 外の consumer を確認する。測定再実行は \`just compare-wit\`。バージョン、全サンプル、各ファイルと入力のハッシュは [JSON](wit-comparison.json)。
+`,
 );
 console.log("wrote docs/wit-comparison.{json,md}");

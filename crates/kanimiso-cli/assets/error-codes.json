@@ -12,5 +12,6 @@
   "RT11": "private runtime ABI",
   "RT12": "runtime already attached/closed",
   "RT13": "shared memory unsupported",
-  "RT14": "application bindings must be functions"
+  "RT14": "application bindings must be functions",
+  "RT15": "JSPI requires WebAssembly.promising and WebAssembly.Suspending (Safari 27+ or a JSPI-capable V8)"
 }

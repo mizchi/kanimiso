@@ -1,0 +1,3 @@
+package kanimiso:experiment@0.1.0;
+interface host {add:func(a:s32,b:s32)->s32;}
+world app {import host; export run:func(a:s32,b:s32)->s32;}

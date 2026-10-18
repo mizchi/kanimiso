@@ -28,6 +28,7 @@ try {
     "--binaryen",
     resolve(".cache/toolchains/binaryen-version_133/bin"),
     ...(args.includes("--probes") ? ["--probes"] : []),
+    ...(args.includes("--jspi") ? ["--jspi"] : []),
   ]);
   mkdirSync(dirname(resolve(option("--output"))), { recursive: true });
   copyFileSync(`${temp}/app.wasm`, resolve(option("--output")));
