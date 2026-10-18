@@ -34,7 +34,7 @@ fn value(r: &Resolve, ty: Type) -> Result<Abi> {
 }
 fn signature(r: &Resolve, f: &Function, export: bool) -> Result<Signature> {
     if !matches!(f.kind, FunctionKind::Freestanding) {
-        return Err("Core profile requires synchronous freestanding WIT functions returning opaque Promise resources; WIT async belongs to the Component profile".into());
+        return Err("Core profile requires synchronous freestanding WIT functions; select --component for native WIT async and Canonical ABI types".into());
     }
     let args = f
         .params

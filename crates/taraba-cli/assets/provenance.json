@@ -12,8 +12,8 @@
     "src/intrusive.wat": "4bc6c4acfd532af79c6ba99b17df955f6cc65e6ea26f57ed99be5746c976748f",
     "tools/build-host.mjs": "6d50dc32f2547be36dbaca396da70f4de6c5c77f83605ae3f564df84d247c0db",
     "tools/import-contract.mjs": "fe09b54c9c84fb3b3c14b30a7f33af5d4e46645b9c5cc0c082c1831d3a1fc614",
-    "package.json": "25c711e8ae47dbc5c8a4247fecef4af1dd017f330769fd3e63375efaa4353fba",
-    "pnpm-lock.yaml": "0a6dc6db3845da5f63f71aaf97d052cfe00251c1527ad3f292e01ce5a1d4395d"
+    "package.json": "eafb9269b70f25869db9ff53c53a74f4659b02cadcb0bc90598b5c1aa68c47a9",
+    "pnpm-lock.yaml": "e720aed95868804440e6f3e4b1d3757ab09038f66dc8d7e93de734c8f224505e"
   },
   "assets": {
     "taraba.mjs": "741a202dd568b320ba9375fe8ddf772557122ffc0fc340f4863e1a8caf75e9ce",

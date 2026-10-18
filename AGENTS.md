@@ -12,3 +12,5 @@
 - JSPI scalar profile は同一 instance の guest entry を直列化し、host reject / Wasm trap で instance を閉じる。既存の Future/cancel 契約と同一視しない。
 - 同一 instance の並行 JSPI は `experiments/jspi-concurrent` の未採用実験。snapshot の復元は JSPI 再開後の同期 Wasm trampoline で行い、Promise reaction から復元しない。製品へ暗黙に適用しない。
 - npm/crates.io 公開は別の明示的な依頼があるまで行わない。
+- WIT native async / Canonical ABI は `--component`、npm 配布は独立した `--npm-name`。標準 Component の型・async ABI を独自に置換せず wit-bindgen / jco に委ねる。Core の opaque Promise payload は TS でも unknown とする。
+- ライブラリの変更は `just library-check` / `just package-check` で pack・別アプリへの install・strict TS・共通実装を確認する。Component validate は native host 実行の証拠とは扱わない。

@@ -175,6 +175,9 @@ importers:
       prettier:
         specifier: 3.9.10
         version: 3.9.10
+      typescript:
+        specifier: 7.0.2
+        version: 7.0.2
       wrangler:
         specifier: 4.151.1
         version: 4.151.1

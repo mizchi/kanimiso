@@ -1,6 +1,6 @@
 # taraba
 
-A small Promise-first executor for Rust on non-shared, single-agent wasm32.
+The optional Core Future backend for taraba libraries: a small Promise-first executor for Rust on non-shared, single-agent wasm32.
 Provides `spawn_local`, `future_to_promise`, `JsPromise`, and `JsValue` for JavaScript hosts.
 
 The crate is being prepared for its first crates.io release. After publication:
@@ -23,3 +23,5 @@ Larger Futures or an exhausted task pool cause a fatal OOM. Dropping a JoinHandl
 explicit cancellation drops a task. Fatal errors close the instance and preserve the first exception.
 
 The CLI defaults to a scalar WIT JSPI profile for Safari 27+ / JSPI-capable V8. Select `--future` on both `taraba new` and `taraba build` to use this existing executor. The default profile calls synchronous guest functions through JSPI and does not depend on this Future executor. See the repository documentation for its serialized-entry and fatal-error contract.
+
+For a WIT-first library with typed async results, records, lists and strings, use `taraba new --component` and the standard wit-bindgen Component API. That path uses the Component toolchain executor and does not depend on this Core runtime crate. `taraba build --npm-name ...` packages either execution contract for npm; the Component path includes jco-generated TypeScript. See the root README for use cases.

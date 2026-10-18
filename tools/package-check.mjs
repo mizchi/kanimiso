@@ -242,6 +242,13 @@ try {
     }
   }
   result.all_passed = true;
+  run(process.execPath, ["tools/check-library.mjs"], root, {
+    ...env,
+    TARABA_LIBRARY_CLI: cli,
+    TARABA_LIBRARY_RUNTIME: `${temp}/taraba-0.1.0`,
+    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-0.1.0`,
+  });
+  result.npm_libraries_verified_from_archived_cli = true;
   mkdirSync(".cache", { recursive: true });
   writeFileSync(
     ".cache/package-check.json",

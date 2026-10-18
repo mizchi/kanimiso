@@ -119,3 +119,75 @@ fn missing_command_inputs_report_errors_without_panicking() {
         assert!(String::from_utf8(output.stderr).unwrap().contains(expected));
     }
 }
+
+#[test]
+fn component_projects_use_native_wit_async_without_the_core_runtime() {
+    let root = tempfile::tempdir().unwrap();
+    let path = root.path().join("component-library");
+    let output = Command::new(env!("CARGO_BIN_EXE_taraba"))
+        .arg("new")
+        .arg(&path)
+        .args(["--component", "--no-std"])
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let manifest = fs::read_to_string(path.join("Cargo.toml")).unwrap();
+    assert!(manifest.contains("\"async\", \"async-spawn\""));
+    assert!(!manifest.contains("\ntaraba ="));
+    let source = fs::read_to_string(path.join("src/lib.rs")).unwrap();
+    assert!(source.contains("async fn run"));
+    assert!(source.contains("add(a, b).await"));
+    assert!(!source.contains("unsafe"));
+    let wit = fs::read_to_string(path.join("wit/app.wit")).unwrap();
+    assert!(wit.contains("import add: async func"));
+    assert!(wit.contains("export run: async func"));
+    let tasks = fs::read_to_string(path.join("justfile")).unwrap();
+    assert!(tasks.contains("--component"));
+    assert!(tasks.contains("--npm-name"));
+}
+
+#[test]
+fn component_profile_conflicts_fail_before_creating_a_project() {
+    let root = tempfile::tempdir().unwrap();
+    for other in ["--jspi", "--future"] {
+        let path = root.path().join("invalid");
+        let output = Command::new(env!("CARGO_BIN_EXE_taraba"))
+            .arg("new")
+            .arg(&path)
+            .args(["--component", other])
+            .output()
+            .unwrap();
+        assert!(!output.status.success());
+        assert!(String::from_utf8_lossy(&output.stderr).contains("cannot combine"));
+        assert!(!path.exists());
+    }
+}
+
+#[test]
+fn invalid_package_options_fail_without_writing_artifacts() {
+    let root = tempfile::tempdir().unwrap();
+    let out = root.path().join("pkg");
+    for flags in [
+        vec!["--npm-name", "BadName"],
+        vec!["--npm-version", "1.0.0"],
+        vec!["--component", "--debug"],
+        vec!["--jco", "jco"],
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_taraba"))
+            .args(["build", "missing.wasm", "--wit", "missing.wit", "--out-dir"])
+            .arg(&out)
+            .args(flags)
+            .output()
+            .unwrap();
+        assert!(!output.status.success());
+        assert!(!out.exists());
+        assert!(
+            !String::from_utf8_lossy(&output.stderr).contains("Binaryen"),
+            "options should fail before running tools"
+        );
+    }
+}

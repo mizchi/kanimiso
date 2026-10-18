@@ -30,6 +30,24 @@ const FEATURES: &[&str] = &[
     "extended-const",
     "multimemory",
 ];
+pub(crate) fn optimization_flags() -> Vec<String> {
+    let mut flags: Vec<String> = [
+        "-Oz",
+        "--strip-debug",
+        "--strip-producers",
+        "--strip-target-features",
+    ]
+    .into_iter()
+    .map(Into::into)
+    .collect();
+    flags.extend(FEATURES.iter().map(|f| format!("--enable-{f}")));
+    flags.extend(
+        ["--flatten", "--rereloop", "-Oz", "--converge"]
+            .into_iter()
+            .map(Into::into),
+    );
+    flags
+}
 fn run(bin: &Path, args: &[String]) -> Result<()> {
     let output = Command::new(bin).args(args).output()?;
     if !output.status.success() {
@@ -151,22 +169,9 @@ pub fn build(o: &BuildOptions) -> Result<()> {
         ]);
         run(&tool("wasm-metadce"), &dce)?;
     }
-    let mut opt = vec![
-        text(&path("linked.wasm")),
-        "-Oz".into(),
-        "--strip-debug".into(),
-        "--strip-producers".into(),
-        "--strip-target-features".into(),
-    ];
-    opt.extend(features);
-    opt.extend([
-        "--flatten".into(),
-        "--rereloop".into(),
-        "-Oz".into(),
-        "--converge".into(),
-        "-o".into(),
-        text(&path("optimized.wasm")),
-    ]);
+    let mut opt = vec![text(&path("linked.wasm"))];
+    opt.extend(optimization_flags());
+    opt.extend(["-o".into(), text(&path("optimized.wasm"))]);
     run(&tool("wasm-opt"), &opt)?;
     let optimized = fs::read(path("optimized.wasm"))?;
     let names = serde_json::from_str(include_str!("../assets/private-imports.json"))?;

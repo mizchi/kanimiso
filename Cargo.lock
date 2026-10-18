@@ -133,44 +133,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
-name = "taraba"
-version = "0.1.0"
-
-[[package]]
-name = "taraba-allocator"
-version = "0.1.0"
-dependencies = [
- "memory_units",
-]
-
-[[package]]
-name = "taraba-cli"
-version = "0.1.0"
-dependencies = [
- "serde_json",
- "tempfile",
- "walrus",
- "wat",
- "wit-parser",
-]
-
-[[package]]
-name = "taraba-jspi-promise"
-version = "0.1.0"
-dependencies = [
- "taraba-allocator",
- "wit-bindgen",
-]
-
-[[package]]
-name = "taraba-promise"
-version = "0.1.0"
-dependencies = [
- "taraba",
- "taraba-allocator",
-]
-
-[[package]]
 name = "leb128"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -306,6 +268,7 @@ version = "1.0.150"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8014e44b4736ed0538adeecded0fce2a272f22dc9578a7eb6b2d9993c74cfb9"
 dependencies = [
+ "indexmap",
  "itoa",
  "memchr",
  "serde",
@@ -339,6 +302,44 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "taraba"
+version = "0.1.0"
+
+[[package]]
+name = "taraba-allocator"
+version = "0.1.0"
+dependencies = [
+ "memory_units",
+]
+
+[[package]]
+name = "taraba-cli"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "tempfile",
+ "walrus",
+ "wat",
+ "wit-parser",
+]
+
+[[package]]
+name = "taraba-jspi-promise"
+version = "0.1.0"
+dependencies = [
+ "taraba-allocator",
+ "wit-bindgen",
+]
+
+[[package]]
+name = "taraba-promise"
+version = "0.1.0"
+dependencies = [
+ "taraba",
+ "taraba-allocator",
 ]
 
 [[package]]

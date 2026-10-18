@@ -1,4 +1,4 @@
-//! Explicit ABI lowering for this experiment; not a general Rust binding generator.
+//! Private Core ABI lowering. Standard Components bypass this module.
 use walrus::{ExportItem, FunctionBuilder, FunctionKind, ImportKind, Module, RefType, ValType};
 
 #[derive(Clone, Copy)]

@@ -5,6 +5,7 @@ setup:
     pnpm install --frozen-lockfile
     rustup target add wasm32-unknown-unknown
     node tools/install-binaryen.mjs
+    node tools/install-wasm-tools.mjs
 
 build-host:
     pnpm build
@@ -27,6 +28,11 @@ check: build test
     rustfmt --edition 2021 --check verification/kani/harnesses/*.rs
     node tools/check.mjs
     node tools/check-jspi.mjs
+    node tools/check-library.mjs
+
+library-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-library.mjs
 
 fmt:
     pnpm format

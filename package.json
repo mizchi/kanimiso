@@ -23,6 +23,7 @@
     "@bytecodealliance/jco": "1.39.0",
     "esbuild": "0.28.2",
     "prettier": "3.9.10",
+    "typescript": "7.0.2",
     "wrangler": "4.151.1"
   }
 }

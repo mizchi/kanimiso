@@ -36,6 +36,8 @@ jobs:
             .cache/stress.json
             .cache/package-check.json
             .cache/package-check-error.log
+            .cache/library-check.json
+            .cache/library-check-error.log
             .cache/workers.json
             .cache/workers/log.txt
           include-hidden-files: true

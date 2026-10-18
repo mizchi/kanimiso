@@ -2,109 +2,150 @@
 
 [English](README.md) | 日本語
 
-旧名は `kanimiso` です。crate・CLI・生成ファイル・WIT の名前空間を `taraba` に統一しました。
+**WIT を契約として Rust/Wasm ライブラリを作り、Component または型定義付き npm パッケージとして配布するためのツールキット**です。async 関数に対応し、軽量な JSPI 構成と既存の Rust Future ランタイムも選択できます。旧名は `kanimiso` です。
 
-JavaScript ホスト向けの小さな Rust/Wasm ランタイムです。実験環境の前提は **Safari 27 以降、JSPI 対応 V8** です。Safari 27 の JSPI 対応は [WebKit の公式発表](https://webkit.org/blog/18325/webkit-features-for-safari-27-0/#webassembly)で確認しています。
+## 用途ごとの選び方
 
-公開インターフェースは **WIT**、Rust の型・Guest・import/export は公式 **wit-bindgen** で生成します。実行基盤は JSPI を既定とし、Future 対応は明示的に選択します。
+| 用途 | 実行方式 | 配布形式 | 書くもの・得られるもの |
+|---|---|---|---|
+| async 対応 Component host 向けのライブラリ | `--component` | npm 指定なし | WIT `async func` と Rust `async fn`。Canonical ABI の `app.component.wasm` |
+| async・ドメインモデルに型のある npm ライブラリ | `--component` | `--npm-name @scope/library` | 公式 wit-bindgen と jco による JS/TS。record / string / list / result と型付き async 戻り値 |
+| 数値 API を持つ省サイズな JS ライブラリ | 既定 / `--jspi` | `--npm-name @scope/library` | Rust は同期形。Promise 待機は JSPI が担当。WIT から `Promise<number>` などの TS 型を生成 |
+| Rust Future の並行タスク・spawn_local・明示的キャンセル | `--future` | 必要なら `--npm-name` | 既存の Core Promise/resource ランタイム。opaque resource の中身は TS では `unknown` |
 
-- **JSPI scalar** (既定。`--jspi` でも明示可能): 同期 WIT 関数の I/O を native Promise に接続し、エンジンで Wasm を suspend / resume します。Rust executor・task pool を持たない省サイズ構成です。
-- **Future** (`--future`): `spawn_local`、Rust Future、JS Promise の await、キャンセルを提供する既存構成です。`std` / `no_std + alloc` に対応し、JS オブジェクトはホスト側に保持します。
+**WIT から async を含むアプリ用ライブラリを作る場合は Component を選びます。** サイズを優先し、s32 / u32 / f64 の境界で足りるなら Core/JSPI を選びます。CLI の既定値は引き続き Core/JSPI です。`new` と `build` で同じ実行方式を指定してください。
 
-両者の Core lowering は Component Model の Canonical ABI とは異なります。標準 Component native async を含む比較は [測定結果](docs/wit-comparison.md)、エンジンの前提は [engine-baseline.md](docs/engine-baseline.md) にあります。
+`--component` は標準の Component Model / Canonical ABI を使います。二つの Core 構成は JS 向けの独自 ABI で、成果物の契約は異なります。npm 化は実行方式とは別の選択肢です。
 
-JSPI で Rust Future を駆動する別の[アダプター実験](experiments/jspi-future/README.md)もあります。将来は JSPI 上の追加機能として Future 対応を提供する方針です。このアダプターは引き続き実験扱いで、製品 API には含めません。並行実行・キャンセルと Drop・同時実行時のメモリと速度の検証を終えるまでは既存 Future バックエンドも維持します。[採用方針](docs/jspi-adoption.md)を参照してください。
+## インストール
 
-[同一インスタンスの並行実行実験](experiments/jspi-concurrent/README.md)では、直接 JSPI と bounded Future アダプターの両方に spill stack の snapshot と Wasm トランポリンを追加し、一つの I/O が停止している間も別の呼び出しを進めます。製品には未採用で、既定の JSPI は引き続き直列実行です。配信サイズ・即時／遅延時間・Node のプロセスメモリは[測定結果](docs/jspi-concurrent.md)を参照してください。
-
-## インストールと利用
-
-`taraba`、`taraba-allocator`、`taraba-cli` の初回 crates.io 公開を準備中です。以下は公開後の利用手順です。まだレジストリからのインストール成功は保証していません。公開自体は実施していません。
+`taraba-cli`、`taraba`、`taraba-allocator` の初回 crates.io 公開を準備しています。レジストリ公開・レジストリからのインストールはまだ実施していません。以下は公開後の利用手順で、現在は .crate アーカイブとリポジトリ外の利用アプリで検証しています。
 
 ```sh
 rustup target add wasm32-unknown-unknown
 cargo install taraba-cli --version 0.1.0 --locked
-# Binaryen 133 の wasm-opt / wasm-as / wasm-merge / wasm-metadce を PATH に置く
-taraba new hello --no-std
-cd hello
-cargo build --release --target wasm32-unknown-unknown
-taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg
+# Binaryen 133 をインストールし、各ツールを PATH に配置する
+# --binaryen /path/to/bin または TARABA_BINARYEN でも指定可能
 ```
 
-CLI はビルド済み JS と intrusive pool の WAT を内包します。利用者によるこのリポジトリの checkout や Node/esbuild でのホスト生成は不要です。Binaryen は外部ツールです。PATH の代わりに `TARABA_BINARYEN=/path/to/bin` または `--binaryen /path/to/bin` を指定できます。
+Component ビルドには `wasm-tools 1.245.1`、Component の **npm ビルド**にはさらに Node.js 24+ と `@bytecodealliance/jco@1.39.0` が必要です。jco のパスは `--jco /path/to/jco` で指定します。Core 用 JS は CLI に内包し、Core の生成には Node / jco は不要です。利用者によるこのリポジトリの checkout や esbuild での生成は必要ありません。
 
-`new` はレジストリのバージョン依存を使う独立した Cargo プロジェクトを生成します。生成例の stack は 64 KiB、memory 上限は 1 MiB で、`.cargo/config.toml` から変更できます。JSPI の生成例は `wit-bindgen` と allocator のみを依存に持ちます。既存の Future 構成を使うプロジェクトでは次の依存と `export_runtime!()` を利用します。
+## WIT から async Component を作る
 
 ```sh
-cargo add taraba@0.1.0 --no-default-features
-cargo add taraba-allocator@0.1.0 --no-default-features
-cargo add wit-bindgen@=0.58.0 --no-default-features --features macros
+taraba new orders --component --no-std
+cd orders
 ```
 
-`--no-std` を付けない `new` は std 構成です。既存 Future 構成は `new` と `build` の両方で `--future` を指定します。従来の Future 用 build コマンドにも、このフラグを追加してください。WIT から実行系を暗黙に切り替えることはありません。`--jspi` も引き続き指定でき、`--future` との併用はエラーにします。JS 用 allocator はアプリ側で選択します。`taraba-allocator` は `wee_alloc` 由来の MPL-2.0 の fork で、以前の実験名 `wee-port` から改名しています。最小構成は size classes を無効にします。
-
-生成された `pkg/app.wasm` と `pkg/taraba.mjs` を一緒に配信します。ブラウザーでは Wasm を fetch して ArrayBuffer にし、Node.js では次のように使えます。
-
-```js
-import { readFile } from 'node:fs/promises';
-import { instantiate } from './pkg/taraba.mjs';
-
-const host = await instantiate(await readFile('./pkg/app.wasm'), {
-  bindings: { add: async (a, b) => (a + b) | 0 },
-});
-console.log(await host.promise('run', 20, 21)); // 42: await add(20,21), await add(41,1)
-```
-
-`--debug` は説明付きエラーを含む JS を出力します。release は短いエラーコードを使い、`pkg/error-codes.json` で説明を確認できます。型宣言とビルド情報も pkg に出力します。
-
-## JSPI scalar の WIT と実行契約
+公開契約は、生成される `wit/app.wit` です。
 
 ```wit
-package example:app@0.1.0;
+package taraba:app@0.1.0;
 world app {
-  import add: func(a: s32, b: s32) -> s32;
-  export run: func(a: s32, b: s32) -> s32;
+  import add: async func(a: s32, b: s32) -> s32;
+  export run: async func(a: s32, b: s32) -> s32;
 }
 ```
 
-Rust からは同期関数として呼びます。JS の `bindings.add` が返した Promise を `WebAssembly.Suspending` が待機し、エクスポートは `WebAssembly.promising` で Promise に変換します。s32 / u32 / f64 と戻り値なしの関数が対象です。resource、string、list、record、WIT native async はこの省サイズ構成では未対応です。
+Rust の型・import・Guest trait は公式 `wit-bindgen` が生成します。利用者はハンドル変換やランタイム ABI の export を書きません。
 
-同じインスタンスの呼び出しは I/O 待機も含めて直列化し、遅い呼び出しが後続を待たせます。これは LLVM が線形メモリーに置くスタックを、待機中の再入で壊さないためです。binding から同じインスタンスを await する再入、キャンセル、任意の Rust Future を poll する executor は提供しません。ホストの reject / Wasm trap は最初の理由を保って instance を閉じ、キュー中の呼び出しも同じ理由で reject します。JS 例外で Rust の Drop が実行されるとは仮定しません。
+```rust
+wit_bindgen::generate!({ path: "wit", world: "app" });
 
-JSPI のないエンジンでは `RT15` で失敗し、互換フォールバックは行いません。アプリ呼び出しは `host.call` / `host.promise` のどちらも Promise を返します。`taraba.d.mts` はこの構成専用の型を含みます。
-
-## Future 構成の WIT と所有権
-
-`taraba new hello --no-std --future` と `taraba build ... --wit wit --future` で従来の Future 構成を使います。一つのタスクが I/O を待つ間も、独立した別のタスクを進められます。WIT は `resource promise` を import し、`add: func(a:s32,b:s32)->promise` と `run: func(a:s32,b:s32)->promise` を定義します。
-
-Future 構成は s32 / u32 / f64 と、JS に実体を置く imported resource の own / borrow を扱います。borrow は import 引数のみです。string、list、record、exported resource、WIT native async は未対応としてビルドを失敗させます。resource は `undefined` 以外の JS 参照を表し（`promise` は Promise を返す契約）、WIT の `promise` resource を返す同期境界の内側で Rust async を動かします。アプリ import は `bindings` に渡し、同名の関数を複数 interface から import する構成は拒否します。
-
-生成された resource の handle と `JsPromise` の間の変換は、この Core プロファイル内でのみ有効です。別の Component host にそのまま渡せる canonical resource handle ではありません。raw ポインター・root ID・`rt_*` は非公開 ABI です。アプリ関数は host の `call` / `promise` 経由で呼び出してください。
-
-## 検証と制約
-
-single-agent、非共有 wasm32 memory を対象にします。Future 構成は `alloc` を使い、固定 pool は 128 B × 1,024 slots、Future の大きさ・alignment に上限があります。大きな Future に対応する汎用 executor ではありません。JS roots は参照保持だけを行い、JS オブジェクトを線形メモリーへコピーしません。fatal 時は最初のエラーで停止し、JS roots を解放します。壊れた Rust Drop は再試行しません。
-
-V8 と system JavaScriptCore shell、および local workerd で検証します。JSC shell の queueMicrotask は Promise job で補います。手元の古い system JSC は JSPI の前提外として記録します。JSPI の std/no_std は local workerd でも共通3,507ケースと二回の待機を通過しています。Safari 27 実ブラウザーと Cloudflare 本番への deploy は未検証です。js-string / exnref / typed funcref / GC の機能検証と、通常ランタイムがそれら全てを使うことは別です。Kani は native 64-bit の限定されたモデル・部品の検証で、JS・エンジン・Wasm 全体の証明ではありません。
-
-抽出時点の過去の結果は [verification.md](docs/verification.md) と [JSON](docs/verification.json)、来歴は [provenance.json](provenance.json) にあります。パス変更前のハッシュやサイズは現在の測定値として流用しません。
-
-## 開発者向け
-
-```sh
-git clone https://github.com/mizchi/taraba.git
-cd taraba
-just setup
-just check
-just package-check  # .crate を展開・インストールし、repo 外の利用アプリを std/no_std で実行
-just compare-wit
-just modern
-just stress 60
-just workers
-just miri
-just kani
+struct App;
+impl Guest for App {
+    async fn run(a: i32, b: i32) -> i32 {
+        let first = add(a, b).await;
+        add(first, 1).await
+    }
+}
+export!(App);
 ```
 
-Node.js 24+、pnpm、Rust、just が必要です。WIT 比較には `wasm-tools 1.245.1`（`cargo install wasm-tools --version 1.245.1 --locked`）も必要です。`package-check` は未公開の依存を展開した .crate へ patch して検証します。レジストリ経由のインストール確認とは区別しています。実際の crates.io / npm への publish は行いません。
+雛形には allocator、no_std の panic handler、async binding の feature、release 設定を含みます。std 版は `--no-std` を省きます。WIT と実装を編集し、ビルドします。
 
-ライセンスは runtime / CLI / JS が MIT、allocator が MPL-2.0。[THIRD_PARTY.md](THIRD_PARTY.md) を参照してください。
+```sh
+cargo build --release --target wasm32-unknown-unknown
+taraba build target/wasm32-unknown-unknown/release/orders.wasm \
+  --wit wit --component --out-dir pkg
+# 生成された justfile から: just build
+```
+
+`pkg/app.component.wasm` を最適化・Component 化・validate し、選択した WIT world との適合も検査します。`app.wit` は生成された Component の契約、`build.json` は ABI 情報です。複数の world は `--world` で選択します。Canonical ABI のメタデータを保ち、Core 用の externref lowering は適用しません。
+
+ドメイン契約には WIT の record / list / string / result を使えます。interface や resource の所有権も標準ツールが生成します。native async の実行にはその proposal に対応した Component host が必要です。今回のライブラリ検証は validate と jco 出力の実行であり、全 native host での動作確認ではありません。WASI 実装や Preview 1 adapter は自動で付与しません。宣言した import はホスト側から提供します。
+
+## TypeScript 型定義込みの npm ライブラリ
+
+上の Component プロジェクトから次を実行します。
+
+```sh
+pnpm add -D @bytecodealliance/jco@1.39.0
+taraba build target/wasm32-unknown-unknown/release/orders.wasm \
+  --wit wit --component --jco node_modules/.bin/jco \
+  --npm-name @example/orders --npm-version 0.1.0 --license MIT --out-dir pkg
+cd pkg
+pnpm pack
+```
+
+ESM exports、`types` 条件、配布ファイルの明示的な `files` 一覧を持つ `package.json` と、実行に必要な JS / Wasm / 型定義を生成します。jco が WIT からアプリ固有の型、`Promise<T>`、ドメイン型を生成します。元の Component は `@example/orders/component.wasm`、その WIT は `@example/orders/wit` からも参照できます。jco / wasm-tools / taraba はビルド時のツールで、生成パッケージの実行時依存には入りません。ビルド処理は publish を行いません。`--license` の既定値は `UNLICENSED` で、配布時にはアプリのライセンスを指定します。
+
+Node の利用側では tarball（公開後はパッケージ）をインストールし、import と core module loader を渡します。
+
+```js
+import { readFile } from 'node:fs/promises';
+import { instantiate } from '@example/orders';
+
+const base = new URL(import.meta.resolve('@example/orders/package.json'));
+const api = await instantiate(
+  async name => WebAssembly.compile(await readFile(new URL(name, base))),
+  { add: { default: async (a, b) => (a + b) | 0 } },
+);
+console.log(await api.run(20, 21)); // 42。型は Promise<number>
+```
+
+ブラウザーでは生成された各 core `.wasm` を fetch する loader を渡します。全 core ファイルを配信してください。動的な loader のパスを bundler が自動収集するとは限りません。Instantiation mode により host import を明示し、複数 instance を作れます。[jco の契約](https://bytecodealliance.github.io/jco/transpiling.html)を参照してください。
+
+## 数値 API に絞った軽量 npm ライブラリ
+
+```sh
+taraba new tiny --no-std
+cd tiny
+cargo build --release --target wasm32-unknown-unknown
+taraba build target/wasm32-unknown-unknown/release/tiny.wasm --wit wit \
+  --npm-name @example/tiny --npm-version 0.1.0 --license MIT
+```
+
+```js
+import { readFile } from 'node:fs/promises';
+import { instantiate } from '@example/tiny';
+
+const host = await instantiate(
+  await readFile(new URL(import.meta.resolve('@example/tiny/app.wasm'))),
+  { bindings: { add: async (a, b) => (a + b) | 0 } },
+);
+console.log(await host.exports.run(20, 21)); // 型は Promise<number>
+```
+
+Core では WIT から `AppBindings`、`AppExports`、`AppHost` を生成し、関数名と引数を TypeScript で検査します。`--npm-name` を省いたビルドは従来の `taraba.mjs` / `taraba.d.mts` を出力します。どちらも `--debug` で説明付きエラーを選べ、release では短いコードと外部辞書に分離します。
+
+Core/JSPI は I/O 待ちも含めて instance ごとに直列化します。host reject / trap は instance を閉じ、キャンセルやその経路での Rust Drop は保証しません。任意の Rust Future や native WIT async を駆動する executor ではありません。既存 executor の独立タスク進行・キャンセルが必要なら `--future` を選びます。こちらの WIT Promise resource には中身の型がないため、TS も正確に `Promise<unknown>` とします。WIT から async 戻り値まで型を付ける場合は Component を使います。[Core ランタイムの詳細](docs/core-runtime.ja.md)に所有権・task 上限・エラー契約を分離しています。
+
+## サイズ・互換性・検証
+
+JavaScript の async 実行環境は Safari 27+ / JSPI 対応 V8 を前提とします。Safari 27 実ブラウザーは未検証です。Component async / jco は upstream でも実験扱いです。その scheduler・所有権・キャンセルの契約は Component toolchain のもので、Core Future の契約とは区別します。
+
+サイズの比較は [WIT / Core / Component](docs/wit-comparison.md)、[並行 JSPI 実験](docs/jspi-concurrent.md)にあります。これらは測定時点の値で、すべての npm 出力のサイズではありません。npm の `build.json` には JS、型定義、配布する Wasm のサイズを分けて記録します。Component container も配布に含めるため、tarball 全体と実際の実行時ダウンロード量は異なります。
+
+JSPI Future adapter と stack snapshot による並行 JSPI は `experiments/` に残し、ライブラリの通常ビルドには組み込みません。[採用条件](docs/jspi-adoption.md)を参照してください。
+
+```sh
+just setup
+just check          # npm pack/install、strict TS、共通アルゴリズムの実行を含む
+just library-check  # 3 構成 × std/no_std、WIT のドメイン型とエラー
+just package-check  # 展開した .crate の CLI でも利用側の検証を繰り返す
+```
+
+開発には Node.js 24+、pnpm、Rust、just が必要です。`just setup` は固定版の Binaryen / wasm-tools を取得します。3 構成に同じ 3,507 ケースと外部から解決する非同期待機を適用します。Component では Unicode を含む record、typed array / list、u32 境界、型付きアプリエラーと復帰も確認します。strict TypeScript は誤った引数・export・async 戻り値の利用を拒否します。`package-check` は未公開の依存を .crate の展開先へ patch して検証し、公開は実施しません。
+
+runtime / CLI / JS は MIT、任意で使う `taraba-allocator` は wee_alloc 由来の MPL-2.0 です。配布時も allocator のライセンスとソースに関する条件を維持してください。[THIRD_PARTY.md](THIRD_PARTY.md)。

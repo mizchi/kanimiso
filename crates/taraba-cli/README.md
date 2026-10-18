@@ -1,27 +1,32 @@
 # taraba-cli
 
-Native build tool for [taraba](https://github.com/mizchi/taraba). The first crates.io release is being prepared; the commands below describe usage after publication.
+Build WIT-based Rust/Wasm **libraries**, as standard Components or npm packages with JavaScript and TypeScript declarations. Native WIT async uses official wit-bindgen and jco; Core profiles provide size/concurrency alternatives.
+
+| Requirement | Options |
+|---|---|
+| Component Model / Canonical ABI / WIT async | `new --component`, `build --component` |
+| npm library with typed async/domain values | `build --component --npm-name @scope/library` |
+| Small numeric JSPI npm library | `build --npm-name @scope/library` (default Core/JSPI) |
+| Existing concurrent Future/spawn_local/cancel runtime | `new --future`, `build --future`; npm optional |
+
+The first crates.io release is being prepared. After publication:
 
 ```sh
 cargo install taraba-cli --version 0.1.0 --locked
-taraba new hello --no-std
+taraba new hello --component --no-std
 cd hello
 cargo build --release --target wasm32-unknown-unknown
-taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --out-dir pkg
+taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --component
 ```
 
-The default is scalar WIT/Core JSPI for Safari 27+ / JSPI-capable V8. Rust calls synchronous imports; native Promises suspend and resume execution through JSPI. Supported boundaries are s32/u32/f64 and functions without results. There is no Rust executor, task pool, cancellation, or resource handle support in this profile. Missing JSPI is rejected without a fallback. Safari 27 has not been verified in a real browser.
+This emits a validated `app.component.wasm`, encoded WIT and build metadata. Add `--npm-name @scope/library --npm-version 0.1.0 --license MIT` to generate JS, application-specific TS, all core Wasm files, and `package.json` with ESM/types exports and an explicit file list. `pnpm pack` creates a distributable tarball. No command publishes a package. Opaque Core resource payloads stay `unknown`; Component bindings retain WIT types and `Promise<T>` results.
 
-Calls, including I/O waits, serialize per instance to protect LLVM's linear-memory stack. A slow call blocks later calls on that instance. Bindings must not await same-instance reentry. Host rejection or a Wasm trap permanently closes the instance with the first reason; Rust Drop is not guaranteed on that path.
+The generated justfile contains library and npm build tasks. Select an execution contract explicitly on both `new` and `build`; WIT does not silently select it.
 
-Use `--future` on both `new` and `build` for the optional existing Rust Future / spawn_local / cancel backend. It allows independent tasks to advance while another task waits for I/O and supports imported resource own/borrow handles (borrow only on import arguments). Existing Future commands must add this flag. `--jspi` explicitly selects the default and cannot be combined with `--future`. Backend selection is explicit; WIT does not silently switch it.
+Requires Rust's wasm32-unknown-unknown target and Binaryen 133. Component builds also need wasm-tools 1.245.1 (`--wasm-tools` selects its path). Component npm builds need Node.js 24+ and jco 1.39.0 (`--jco` selects its path). Core JS assets are embedded: no checkout, Node/esbuild, or jco is needed to build Core artifacts. JSPI needs wasm-opt; Future also needs wasm-as, wasm-merge and wasm-metadce. Set TARABA_BINARYEN or --binaryen for a non-PATH installation.
 
-Install the Rust wasm32-unknown-unknown target and Binaryen 133. JSPI needs wasm-opt; Future also needs wasm-as, wasm-merge, and wasm-metadce. Set TARABA_BINARYEN to its bin directory if it is not on PATH.
+JavaScript async targets Safari 27+ / JSPI-capable V8; real Safari execution is unverified. Default Core/JSPI serializes instance entry including I/O, treats reject/trap as fatal, and provides no arbitrary Future executor or cancellation. The Future profile has its own ownership/cancellation contract. Native Component async follows the Component toolchain contract; it is not an implementation of the Core runtime. The scaffold does not supply WASI implementations or Preview 1 adapters.
 
-JS, declarations, error codes, and pool WAT are embedded. No repository checkout, Node, or esbuild is required to build a consumer. Deploy pkg/app.wasm with its matching pkg/taraba.mjs. Use --debug for descriptive JS errors. The emitted declarations describe the selected profile.
+See the [English guide](https://github.com/mizchi/taraba#readme), [日本語ガイド](https://github.com/mizchi/taraba/blob/main/README.ja.md), and [Core runtime reference](https://github.com/mizchi/taraba/blob/main/docs/core-runtime.md).
 
-WIT is parsed with official wit-parser; Rust bindings use official wit-bindgen. This Core lowering is not the Component Model Canonical ABI. Native WIT async is measured separately in the repository's Component experiment.
-
-The intended Future extension on JSPI remains experimental. The existing Future backend stays available until concurrency, cancellation/Drop, and concurrent memory/performance checks pass. See the [adoption decision](https://github.com/mizchi/taraba/blob/main/docs/jspi-adoption.md).
-
-Full documentation is available in English and Japanese in the repository. MIT license; the separately distributed allocator is MPL-2.0.
+MIT. The optional taraba-allocator is separately licensed MPL-2.0.

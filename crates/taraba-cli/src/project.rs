@@ -1,14 +1,25 @@
 use std::{error::Error, fs, path::Path};
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ProjectKind {
+    Jspi,
+    Future,
+    Component,
+}
 pub fn new_project(path: &Path, no_std: bool) -> Result<(), Box<dyn Error>> {
     new_jspi_project(path, no_std)
 }
 pub fn new_future_project(path: &Path, no_std: bool) -> Result<(), Box<dyn Error>> {
-    scaffold(path, no_std, false)
+    scaffold(path, no_std, ProjectKind::Future)
 }
 pub fn new_jspi_project(path: &Path, no_std: bool) -> Result<(), Box<dyn Error>> {
-    scaffold(path, no_std, true)
+    scaffold(path, no_std, ProjectKind::Jspi)
 }
-fn scaffold(path: &Path, no_std: bool, jspi: bool) -> Result<(), Box<dyn Error>> {
+pub fn new_component_project(path: &Path, no_std: bool) -> Result<(), Box<dyn Error>> {
+    scaffold(path, no_std, ProjectKind::Component)
+}
+fn scaffold(path: &Path, no_std: bool, kind: ProjectKind) -> Result<(), Box<dyn Error>> {
+    let jspi = kind == ProjectKind::Jspi;
+    let component = kind == ProjectKind::Component;
     if path.exists() {
         return Err("destination already exists".into());
     }
@@ -44,15 +55,24 @@ std = [{std_feature}]
 [dependencies]
 {runtime_dependency}
 taraba-allocator = {{version = "0.1.0", default-features = false}}
-wit-bindgen = {{version = "=0.58.0", default-features = false, features = ["macros"]}}
+wit-bindgen = {{version = "=0.58.0", default-features = false, features = [{wit_features}]}}
 [profile.release]
 opt-level = "z"
 lto = true
 panic = "abort"
 codegen-units = 1
 "#,
-            std_feature = if jspi { "" } else { "\"taraba/std\"" },
-            runtime_dependency = if jspi {
+            wit_features = if component {
+                "\"macros\", \"async\", \"async-spawn\""
+            } else {
+                "\"macros\""
+            },
+            std_feature = if jspi || component {
+                ""
+            } else {
+                "\"taraba/std\""
+            },
+            runtime_dependency = if jspi || component {
                 ""
             } else {
                 "taraba = {version = \"0.1.0\", default-features = false}"
@@ -62,7 +82,9 @@ codegen-units = 1
     )?;
     fs::write(
         path.join("src/lib.rs"),
-        if jspi {
+        if component {
+            include_str!("templates/component.rs")
+        } else if jspi {
             include_str!("templates/jspi.rs")
         } else {
             include_str!("templates/app.rs")
@@ -70,7 +92,9 @@ codegen-units = 1
     )?;
     fs::write(
         path.join("wit/app.wit"),
-        if jspi {
+        if component {
+            include_str!("templates/component.wit")
+        } else if jspi {
             include_str!("templates/jspi.wit")
         } else {
             include_str!("templates/app.wit")
@@ -82,12 +106,26 @@ codegen-units = 1
         "[target.wasm32-unknown-unknown]\nrustflags = [\"-C\", \"link-arg=-zstack-size=65536\", \"-C\", \"link-arg=--max-memory=1048576\"]\n",
     )?;
     fs::write(path.join(".gitignore"), "/target/\n/pkg/\n")?;
+    let profile = if component {
+        " --component"
+    } else if jspi {
+        ""
+    } else {
+        " --future"
+    };
+    let artifact = name.replace('-', "_");
+    fs::write(
+        path.join("justfile"),
+        format!(
+            "# Build the library for its selected execution contract.\nbuild:\n    cargo build --release --target wasm32-unknown-unknown\n    taraba build target/wasm32-unknown-unknown/release/{artifact}.wasm --wit wit{profile}\n\n# Prepare a publishable package; inspect it with pnpm pack before publishing.\nnpm name version=\"0.1.0\" license=\"UNLICENSED\":\n    cargo build --release --target wasm32-unknown-unknown\n    pnpm exec taraba build target/wasm32-unknown-unknown/release/{artifact}.wasm --wit wit{profile} --npm-name {{{{name}}}} --npm-version {{{{version}}}} --license \"{{{{license}}}}\"\n"
+        ),
+    )?;
     println!(
         "Created {} ({}). Build with cargo build --release --target wasm32-unknown-unknown, then taraba build target/wasm32-unknown-unknown/release/{}.wasm --wit wit{}",
         path.display(),
         if no_std { "no_std" } else { "std" },
         name.replace('-', "_"),
-        if jspi { "" } else { " --future" }
+        profile
     );
     Ok(())
 }
