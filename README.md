@@ -1,21 +1,23 @@
 # kanimiso
 
-JavaScript の Promise を利用する、小さな Rust/Wasm 向け single-agent runtime。
-`std` / `no_std` の両方に対応し、`wasm-bindgen` や Tokio を必要としない。
+**English** | [日本語](README.ja.md)
 
-Rust crate は `kanimiso`、JS パッケージ名は `@mizchi/kanimiso`。
-現在は Git checkout から使う実験版で、npm / crates.io には公開していない。
+A small Rust/Wasm runtime that uses JavaScript Promises to run local futures.
+Supports both `std` and `no_std`, without requiring `wasm-bindgen` or Tokio.
+
+The Rust crate is `kanimiso`; the JS package is `@mizchi/kanimiso`.
+This is an experimental project used from a Git checkout. It has not been published to npm or crates.io.
 
 ```sh
 just setup
 just check
 ```
 
-必要環境: Node.js 24+、pnpm 12.11.2、just、Rust 1.98.0。
-`just setup` が Wasm target と SHA-256 を照合した Binaryen 133 を用意する。
-元の wasm-battleground の checkout、ビルド成果物、結果 JSON は不要。
+Requirements: Node.js 24+, pnpm 12.11.2, just, and Rust 1.98.0.
+`just setup` installs the Wasm target and Binaryen 133, verifying its SHA-256 checksum.
+The build is independent of the original wasm-battleground checkout, artifacts, and result files.
 
-## 使い方
+## Usage
 
 ```js
 import { readFile } from "node:fs/promises";
@@ -25,15 +27,15 @@ const runtime = await instantiate(
   await readFile("dist/examples/no_std-minimal.wasm"),
   { deferredAdd: (a, b) => Promise.resolve((a + b) | 0) },
 );
-console.log(await runtime.promise("start", 7, 9)); // 17（2段の await）
+console.log(await runtime.promise("start", 7, 9)); // 17 (two awaits)
 ```
 
-`deferredAdd` は移植元テストとの互換用サンプル I/O。アプリ独自の import は
-`bindings: { fetchData: (...) => ... }` のように指定し、Wasm の `app` モジュールから参照する。
-返された runtime の `call` / `promise` を通して Wasm を呼ぶ。
-生の `instance.exports` を直接呼ぶと fatal guard の契約を迂回する。
-JS の型は [src/index.d.ts](src/index.d.ts)、エラーコードは [src/error-codes.json](src/error-codes.json)。
-`./dist/index-debug.mjs` では同じコードに説明メッセージが付く。
+`deferredAdd` is an example I/O hook retained for compatibility with the original tests.
+Define application imports with `bindings: { fetchData: (...) => ... }` and import them
+from the Wasm `app` module. Call Wasm through the returned runtime's `call` or `promise` methods.
+Calling raw `instance.exports` directly bypasses the fatal-error guards.
+See [src/index.d.ts](src/index.d.ts) for JS types and [src/error-codes.json](src/error-codes.json) for error codes.
+`./dist/index-debug.mjs` adds descriptive messages to the same error codes.
 
 ```rust
 use kanimiso::{future_to_promise, JsPromise, spawn_local};
@@ -46,18 +48,19 @@ fn launch(promise: JsPromise) -> JsPromise {
 }
 
 fn detached() {
-    let _handle = spawn_local(async { /* Rust の Future */ });
+    let _handle = spawn_local(async { /* Rust future */ });
 }
 ```
 
-Rust のアプリは `wasm32-unknown-unknown` 向け cdylib とし、
-`rt_poll` / `rt_drop` / `rt_settle` を提供する。[examples/promise](examples/promise) に完全な実装がある。
-`no_std` ではアプリが panic handler と allocator を選ぶ。
-同梱の `wee-port` は任意の汎用 allocator。タスク自身は固定領域から確保する。
+Build the Rust application as a `cdylib` for `wasm32-unknown-unknown` and provide
+`rt_poll`, `rt_drop`, and `rt_settle`. See [examples/promise](examples/promise) for a complete implementation.
+A `no_std` application chooses its own panic handler and allocator.
+The included `wee-port` is an optional general-purpose allocator; tasks use a fixed storage region.
 
-## アプリのビルド
+## Building an application
 
-アプリの参照境界を明示した ABI manifest を渡す。任意の関数名を利用できる。
+Provide an ABI manifest that declares reference ownership at the application boundary.
+Application functions can use arbitrary names.
 
 ```json
 {
@@ -75,68 +78,70 @@ node tools/build-wasm.mjs target/wasm32-unknown-unknown/release/app.wasm \
   --abi abi.json --output dist/app.wasm
 ```
 
-`i32` / `f64` は scalar、`own` は所有する JsValue/JsPromise root の受け渡し、
-`borrow` は import の引数だけで使える借用。`own` の生 Rust 型は `u32`、変換後は `externref`。
-manifest と実際の Wasm signature が違う場合はビルドを失敗させる。
-`rt_*` と `jsrt` は予約済み。アプリの import は `app` namespace に分離する。
-`own` / `borrow` を使う未宣言の関数を自動推測しない。
+`i32` and `f64` are scalars. `own` transfers an owned JsValue/JsPromise root;
+`borrow` borrows a reference and is supported only for import parameters.
+An `own` value is a `u32` in the raw Rust ABI and an `externref` after conversion.
+The build fails if a declared signature does not match the Wasm signature.
+`rt_*` and `jsrt` are reserved; application imports use the separate `app` namespace.
+The tool does not infer `own` or `borrow` boundaries for undeclared functions.
 
-ビルドツールは externref ABI 変換 → intrusive pool 結合 → 不要 export 除去 →
-`wasm-opt -Oz --flatten --rereloop -Oz --converge` → private import 名変換を行う。
-Wasm と JS は同時にビルドした組み合わせを使う。minifier の import map を別バージョンと混ぜない。
-この版の binder は `i32` / `f64` と参照の明示的な境界のみを扱い、一般的な Rust binding generator ではない。
+The build pipeline converts the externref ABI, links the intrusive pool, removes helper exports,
+then runs `wasm-opt -Oz --flatten --rereloop -Oz --converge` and renames private imports.
+Use Wasm and JS built together; do not mix minifier import maps across versions.
+The binder handles explicit scalar (`i32` / `f64`) and reference boundaries; it is not a general Rust binding generator.
 
-## 実行契約
+## Runtime contract
 
-- `spawn_local` の最初の poll は microtask まで遅延し、重複 wake をまとめる。
-- JoinHandle の Drop は detach。明示的な cancel で Future と購読を破棄する。
-- 成功結果は Rust Drop の完了後に Promise へ確定する。
-- 致命的な import 例外・Wasm trap では最初の例外を保持し、全タスクを reject、JS roots を解放する。
-  fatal 後に Rust の Drop を再実行せず、instance を再利用しない。
-- 外部の reject 値はオブジェクト同一性を維持し、別の Error で包まない。
-- token ID を再利用せず、遅延した Promise 解決や古い Waker が別タスクに届くことを防ぐ。
-- 非共有メモリー、single-agent のみ。JS の worker 間で runtime を共有しない。
+- `spawn_local` defers its first poll to a microtask and coalesces duplicate wakes.
+- Dropping a JoinHandle detaches the task. Explicit cancellation drops its Future and subscriptions.
+- A successful result is committed to its Promise only after Rust Drop completes.
+- A fatal import exception or Wasm trap preserves the first exception, rejects all tasks, and releases JS roots.
+  After a fatal error, the host does not retry Rust Drop or reuse the instance.
+- External rejection values retain object identity and are not wrapped in another Error.
+- Token IDs are never reused, preventing late Promise settlements or stale Wakers from reaching another task.
+- The runtime requires non-shared memory and a single JS agent. Do not share it between JS workers.
 
-タスク領域は **128 KiB / 128 B × 1024 slots / alignment ≤ 64**。
-Future 本体・header 等を合わせて slot を超える場合や同時タスク上限は fatal OOM となる。
-これは汎用の無制限 executor ではない。線形メモリーの初期値はサンプルで 256 KiB、最大 1 MiB。
-`no_std` 最小サンプルには汎用 allocator のコードがリンクされない。
+Task storage is **128 KiB / 128 B × 1024 slots / alignment ≤ 64**.
+Exceeding either a slot's capacity, including the Future and its header, or the concurrent task limit causes a fatal OOM.
+This is a bounded executor. The examples use 256 KiB of initial linear memory with a 1 MiB maximum.
+The minimal `no_std` example does not link general-purpose allocator code.
 
-対象は V8 / Safari。`Promise.withResolvers`、`externref`、`queueMicrotask` を使う。
-新しい Wasm 機能は `just modern` で動作を確認する。Safari 実ブラウザーの検証は未完了で、
-macOS の system JavaScriptCore shell での確認とは区別する。
+The targets are V8 and Safari. The runtime uses `Promise.withResolvers`, `externref`, and `queueMicrotask`.
+Run `just modern` to probe newer Wasm features. Testing in the Safari browser is still pending;
+checks in the macOS system JavaScriptCore shell are recorded separately.
 
-## 検証
+## Verification
 
 ```sh
-just check       # Node unit、native Rust、実際の std/no_std Wasm、回帰・OOM・fuzz
-just stress 60   # 60秒以上、同一 seed の std/no_std を差分比較
-just miri       # Waker・型・storage layout・汎用 allocator
-just kani-setup # optional: Kani 0.67.0
-just kani       # Waker / allocator 実装の限定された proof と ID モデル
-just workers    # local workerd。Cloudflare 本番へは deploy しない
-just modern     # js-string / exnref / typed funcref / GC の機能プローブ
+just check       # Node unit tests, native Rust, real std/no_std Wasm, regressions, OOM, fuzz
+just stress 60   # At least 60 seconds; compare std/no_std with identical seeds
+just miri       # Waker, types, storage layout, general-purpose allocator
+just kani-setup # Optional: Kani 0.67.0
+just kani       # Bounded proofs of Waker/allocator components and an ID model
+just workers    # Local workerd; no deployment to Cloudflare production
+just modern     # Feature probes for js-string, exnref, typed funcref, and GC
 ```
 
-Kani は native 64-bit の限定された部品・モデルの検証であり、JS engine や intrusive WAT、
-Wasm コード生成、runtime 全体の形式証明ではない。
-エラー・Drop・再入・stale Waker・OOM は実際の Wasm を使うテストでも確認する。
-結果は `.cache/check.json` / `stress.json` / `workers.json` / `modern.json` へ保存する。
-抽出時の確認結果は [docs/verification.md](docs/verification.md)。
+Kani verifies selected components and models on native 64-bit targets. It does not prove
+the JS engine, intrusive WAT, Wasm code generation, or the entire runtime.
+Errors, Drop, reentrancy, stale Wakers, and OOM are also tested with real Wasm instances.
+Results are saved to `.cache/check.json`, `stress.json`, `workers.json`, and `modern.json`.
+See [docs/verification.md](docs/verification.md) for verification results at extraction time.
 
-## 構成と来歴
+## Layout and provenance
 
-- `crates/kanimiso`: Rust API、Promise Future、Waker、固定 backing storage。
-- `src`: JS host、エラーコード、intrusive WAT allocator、JS / TypeScript API。
-- `tools/bridge`: ABI manifest を使う externref 変換器。
-- `examples/promise`: std/no_std の同一アルゴリズムと別ビルドの probe。
-- `tests`: unit と実 Wasm の回帰・失敗・差分 fuzz。
-- `verification/kani`: 部品の proof harness と ID モデル。
-- `crates/wee-port`: wasm32 向け汎用 allocator。MPL-2.0。
+- `crates/kanimiso`: Rust API, Promise Future, Waker, and fixed backing storage.
+- `src`: JS host, error codes, intrusive WAT allocator, and JS/TypeScript API.
+- `tools/bridge`: Manifest-driven externref ABI converter.
+- `examples/promise`: The same algorithm in std/no_std builds, with separately built probes.
+- `tests`: Unit tests and real-Wasm regression, failure, and differential fuzz tests.
+- `verification/kani`: Component proof harnesses and the ID model.
+- `crates/wee-port`: General-purpose wasm32 allocator, licensed under MPL-2.0.
 
-wasm-battleground の作業ツリーから抽出した。元の比較実験・計測履歴は元リポジトリに残す。
-`provenance.json` は抽出元ファイルの SHA-256 を記録する。
-抽出後の変更はローカル依存の解消、公開名、ABI manifest、guarded application bindings、
-パッケージ loader と検証タスクの追加。元の測定値を抽出後のサイズとして流用しない。
+Extracted from the working tree of wasm-battleground. The original comparison experiments and
+measurement history remain in that repository. `provenance.json` records SHA-256 hashes of the source files.
+Changes made during extraction include removing external path dependencies, naming the public packages,
+adding ABI manifests and guarded application bindings, and adding the package loader and verification tasks.
+Original measurements are not reused as the sizes of the extracted runtime.
 
-本体は MIT、`crates/wee-port` は MPL-2.0。[THIRD_PARTY.md](THIRD_PARTY.md) を参照。
+The runtime is MIT-licensed; `crates/wee-port` remains MPL-2.0. See [THIRD_PARTY.md](THIRD_PARTY.md).
