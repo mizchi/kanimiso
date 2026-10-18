@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 // Never mark WIT imports, public API/diagnostics or builtin properties this way.
 export const privateProperties = /_$/;
 
-export async function bundleHost({ mangle = true } = {}) {
+export async function bundleHost({ mangle = true, debug = false } = {}) {
   const result = await esbuild.build({
     entryPoints: [fileURLToPath(new URL("./host.mjs", import.meta.url))],
     bundle: true,
@@ -15,6 +15,7 @@ export async function bundleHost({ mangle = true } = {}) {
     platform: "neutral",
     target: "es2022",
     write: false,
+    define: { __JF_DEBUG__: String(debug) },
   });
   return {
     bytes: result.outputFiles[0].contents,

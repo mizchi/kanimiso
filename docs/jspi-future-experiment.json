@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-10-18T15:46:09.036Z",
+  "created_at": "2026-10-18T16:17:36.664Z",
   "adopted": false,
   "engine": "Node v24.21.0 / V8 13.6.233.17-node.53",
   "machine": {
@@ -23,6 +23,7 @@
     "timing": "4096 warmup per host, 11 samples × 4096 tasks, 512 JS submissions; mangled/unmangled hosts alternate sample order after both warmups; bounded/adapter/direct serialize guest entry",
     "contract": "common signed i32 arithmetic and two host requests only; no claim of identical cancellation/fatal/concurrency contracts",
     "deployment": "core/app.wasm + host.mjs only; probe exports excluded from size comparison",
+    "debug_release": "same optimized Wasm; release has stable Error.code and code-only message, no stats/counters; debug adds descriptions and diagnostics; both run all behavioral probes, debug also asserts internal cleanup; foreign exceptions retain identity",
     "property_mangling": "bounded/adapter: trailing-underscore private properties only, one bundle; same Wasm and complete tests also run with host-unmangled.mjs; public API, WIT and builtins preserved"
   },
   "bounded_std_matches_no_std": true,
@@ -31,13 +32,13 @@
       "id": "bounded-no_std",
       "backend": "bounded",
       "mode": "no_std",
-      "cold_build_ms": 6719.601208,
+      "cold_build_ms": 9136.236417,
       "warm_build_ms": [
-        42.27924999999959,
-        41.40900000000056,
-        40.834084000000075
+        46.444917000000714,
+        43.87479100000019,
+        43.36387500000092
       ],
-      "transform_ms": 322.2670420000004,
+      "transform_ms": 523.106291,
       "files": [
         {
           "file": "core/app.wasm",
@@ -49,31 +50,32 @@
         },
         {
           "file": "host.mjs",
-          "bytes": 2700,
-          "raw": 2700,
-          "gzip": 1245,
-          "brotli": 1148,
-          "sha256": "25f79abbbc59179dc96c90fd463490cca1434e339edbda445372254e5384153c"
+          "bytes": 2394,
+          "raw": 2394,
+          "gzip": 1120,
+          "brotli": 1018,
+          "sha256": "32d1a43c6c564ae575aaf77df859bfef7881f8139666a0a29ca3e6e7008638f9"
         }
       ],
       "wasm_bytes": 1842,
-      "js_bytes": 2700,
-      "total_bytes": 4542,
-      "gzip_bytes": 2277,
+      "js_bytes": 2394,
+      "total_bytes": 4236,
+      "gzip_bytes": 2152,
       "property_mangling": {
         "pattern": "_$",
         "mapping": {
           "close_": "c",
-          "gate_": "h",
+          "gate_": "l",
           "notified_": "t",
           "open_": "i",
           "park_": "f",
+          "parks_": "h",
           "ready_": "r",
           "reject_": "n",
           "resolve_": "a",
           "retire_": "u",
           "signal_": "s",
-          "stats_": "l",
+          "stats_": "d",
           "value_": "o",
           "waiter_": "e"
         },
@@ -81,14 +83,14 @@
       },
       "unmangled": {
         "file": "host-unmangled.mjs",
-        "sha256": "7b06858e0144fa22f080738406bd7dcad80d08a60edc6314315fbd9ae9684a9f",
-        "js_bytes": 2919,
-        "total_bytes": 4761,
-        "gzip_bytes": 2336,
+        "sha256": "889ffea3726e2304142617e6f00aec0bd1e638bb3857c04551feabbf7b59bc78",
+        "js_bytes": 2601,
+        "total_bytes": 4443,
+        "gzip_bytes": 2202,
         "js_sizes": {
-          "raw": 2919,
-          "gzip": 1304,
-          "brotli": 1191
+          "raw": 2601,
+          "gzip": 1170,
+          "brotli": 1071
         },
         "common": {
           "all_passed": true,
@@ -108,6 +110,7 @@
         },
         "probes": {
           "all_passed": true,
+          "diagnostics": false,
           "self_wakes": 1089,
           "join_reverse_completion": true,
           "futures_unordered_child_wakers": null,
@@ -123,6 +126,7 @@
         },
         "heap_probes": {
           "all_passed": true,
+          "diagnostics": false,
           "self_wakes": 1089,
           "join_reverse_completion": true,
           "futures_unordered_child_wakers": true,
@@ -140,21 +144,122 @@
           "unit": "microseconds/task (two host awaits)",
           "tasks_per_sample": 4096,
           "samples": [
-            1.6150104980479085,
-            1.6338500976562642,
-            1.3713684082024002,
-            1.3703205566404364,
-            1.3408916015631434,
-            1.3259987792970662,
-            1.3182880859385904,
-            1.2915749511730468,
-            1.3142597656248256,
-            1.2715656738286896,
-            1.2550964355462213
+            1.2988688964838957,
+            1.1623535156282117,
+            1.1966247558596876,
+            1.156921386716192,
+            1.2371928710948055,
+            1.2669982910189503,
+            1.1830749511716476,
+            1.1930642089836851,
+            1.1685893554691518,
+            1.1789042968750607,
+            1.5888977050764197
           ],
-          "median": 1.3259987792970662,
-          "min": 1.2550964355462213,
-          "max": 1.6338500976562642
+          "median": 1.1930642089836851,
+          "min": 1.156921386716192,
+          "max": 1.5888977050764197
+        }
+      },
+      "debug": {
+        "file": "host-debug.mjs",
+        "sha256": "76e995af090c0e507a41099e8173d98d155a1783af384c097232b85a1f87232f",
+        "js_bytes": 3005,
+        "total_bytes": 4847,
+        "gzip_bytes": 2469,
+        "js_sizes": {
+          "raw": 3005,
+          "gzip": 1437,
+          "brotli": 1295
+        },
+        "same_wasm": true,
+        "common": {
+          "all_passed": true,
+          "tasks": 3507,
+          "host_requests": 7014,
+          "controlled_io": [
+            [
+              7,
+              9
+            ],
+            [
+              16,
+              1
+            ]
+          ],
+          "actual_suspensions": 2
+        },
+        "probes": {
+          "all_passed": true,
+          "diagnostics": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": null,
+          "fixed_capacity": 16,
+          "overflow_before_io": true,
+          "coded_borrow_failure": true,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "heap_probes": {
+          "all_passed": true,
+          "diagnostics": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": true,
+          "fixed_capacity": 16,
+          "overflow_before_io": true,
+          "coded_borrow_failure": true,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "paired_release_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.1797077636721554,
+            1.5179748535132376,
+            1.0793457031255116,
+            1.095947265625341,
+            1.4179687500011084,
+            1.1423950195315058,
+            1.3048198242202602,
+            1.1030983886719525,
+            1.2346293945313391,
+            1.075897216797017,
+            1.2098183593778344
+          ],
+          "median": 1.1797077636721554,
+          "min": 1.075897216797017,
+          "max": 1.5179748535132376
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.2822368164044917,
+            1.3093972167972368,
+            1.2451274414075897,
+            1.3710632324226424,
+            1.3758850097644881,
+            1.473205566405511,
+            1.2418007812513565,
+            1.3487446289062177,
+            1.1728923339866526,
+            1.2931418457000632,
+            1.1492309570328985
+          ],
+          "median": 1.2931418457000632,
+          "min": 1.1492309570328985,
+          "max": 1.473205566405511
         }
       },
       "probes_wasm_bytes": 4444,
@@ -180,6 +285,7 @@
       },
       "probes": {
         "all_passed": true,
+        "diagnostics": false,
         "self_wakes": 1089,
         "join_reverse_completion": true,
         "futures_unordered_child_wakers": null,
@@ -195,6 +301,7 @@
       },
       "heap_probes": {
         "all_passed": true,
+        "diagnostics": false,
         "self_wakes": 1089,
         "join_reverse_completion": true,
         "futures_unordered_child_wakers": true,
@@ -212,34 +319,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.5775351562492546,
-          2.0021972656252274,
-          3.094411376952877,
-          1.395935058592812,
-          1.3609416503914673,
-          1.3402607421877377,
-          1.3634338378913924,
-          1.400512695314049,
-          1.3313598632809232,
-          1.2762653808593427,
-          1.2868041992177837
+          1.3482460937481733,
+          1.151641845702045,
+          1.2112019042973543,
+          1.2376403808609382,
+          1.1841430664070174,
+          1.3837990722649351,
+          1.2002971191407141,
+          1.1142983398428896,
+          1.1990051269528124,
+          1.1930847167960223,
+          1.1725158691398008
         ],
-        "median": 1.3634338378913924,
-        "min": 1.2762653808593427,
-        "max": 3.094411376952877
+        "median": 1.1990051269528124,
+        "min": 1.1142983398428896,
+        "max": 1.3837990722649351
       }
     },
     {
       "id": "adapter-no_std",
       "backend": "adapter",
       "mode": "no_std",
-      "cold_build_ms": 6767.427125,
+      "cold_build_ms": 6754.256125000002,
       "warm_build_ms": [
-        46.92625000000044,
-        41.07324999999946,
-        41.19050000000061
+        46.67766699999993,
+        42.54766699999891,
+        41.3526669999992
       ],
-      "transform_ms": 67.16254200000003,
+      "transform_ms": 69.671875,
       "files": [
         {
           "file": "core/app.wasm",
@@ -251,31 +358,32 @@
         },
         {
           "file": "host.mjs",
-          "bytes": 2700,
-          "raw": 2700,
-          "gzip": 1245,
-          "brotli": 1148,
-          "sha256": "25f79abbbc59179dc96c90fd463490cca1434e339edbda445372254e5384153c"
+          "bytes": 2394,
+          "raw": 2394,
+          "gzip": 1120,
+          "brotli": 1018,
+          "sha256": "32d1a43c6c564ae575aaf77df859bfef7881f8139666a0a29ca3e6e7008638f9"
         }
       ],
       "wasm_bytes": 3291,
-      "js_bytes": 2700,
-      "total_bytes": 5991,
-      "gzip_bytes": 3017,
+      "js_bytes": 2394,
+      "total_bytes": 5685,
+      "gzip_bytes": 2892,
       "property_mangling": {
         "pattern": "_$",
         "mapping": {
           "close_": "c",
-          "gate_": "h",
+          "gate_": "l",
           "notified_": "t",
           "open_": "i",
           "park_": "f",
+          "parks_": "h",
           "ready_": "r",
           "reject_": "n",
           "resolve_": "a",
           "retire_": "u",
           "signal_": "s",
-          "stats_": "l",
+          "stats_": "d",
           "value_": "o",
           "waiter_": "e"
         },
@@ -283,14 +391,14 @@
       },
       "unmangled": {
         "file": "host-unmangled.mjs",
-        "sha256": "7b06858e0144fa22f080738406bd7dcad80d08a60edc6314315fbd9ae9684a9f",
-        "js_bytes": 2919,
-        "total_bytes": 6210,
-        "gzip_bytes": 3076,
+        "sha256": "889ffea3726e2304142617e6f00aec0bd1e638bb3857c04551feabbf7b59bc78",
+        "js_bytes": 2601,
+        "total_bytes": 5892,
+        "gzip_bytes": 2942,
         "js_sizes": {
-          "raw": 2919,
-          "gzip": 1304,
-          "brotli": 1191
+          "raw": 2601,
+          "gzip": 1170,
+          "brotli": 1071
         },
         "common": {
           "all_passed": true,
@@ -310,6 +418,7 @@
         },
         "probes": {
           "all_passed": true,
+          "diagnostics": false,
           "self_wakes": 1089,
           "join_reverse_completion": true,
           "futures_unordered_child_wakers": true,
@@ -327,21 +436,106 @@
           "unit": "microseconds/task (two host awaits)",
           "tasks_per_sample": 4096,
           "samples": [
-            1.3432514648439309,
-            1.1295979003893564,
-            1.1107890624995065,
-            1.2133688964848233,
-            1.0972900390626705,
-            1.230082275391453,
-            1.3042397460942823,
-            1.3128559570301235,
-            1.1553039550786792,
-            1.2725932617190239,
-            1.156758544922809
+            1.1712238769554517,
+            1.1849670410164492,
+            1.1517944335963648,
+            1.2282307128899106,
+            1.2201538085925279,
+            1.1175026855454462,
+            1.2350158691418756,
+            1.110300537106923,
+            1.2386779785167334,
+            1.124206542968409,
+            1.2291259765611073
           ],
-          "median": 1.2133688964848233,
-          "min": 1.0972900390626705,
-          "max": 1.3432514648439309
+          "median": 1.1849670410164492,
+          "min": 1.110300537106923,
+          "max": 1.2386779785167334
+        }
+      },
+      "debug": {
+        "file": "host-debug.mjs",
+        "sha256": "76e995af090c0e507a41099e8173d98d155a1783af384c097232b85a1f87232f",
+        "js_bytes": 3005,
+        "total_bytes": 6296,
+        "gzip_bytes": 3209,
+        "js_sizes": {
+          "raw": 3005,
+          "gzip": 1437,
+          "brotli": 1295
+        },
+        "same_wasm": true,
+        "common": {
+          "all_passed": true,
+          "tasks": 3507,
+          "host_requests": 7014,
+          "controlled_io": [
+            [
+              7,
+              9
+            ],
+            [
+              16,
+              1
+            ]
+          ],
+          "actual_suspensions": 2
+        },
+        "probes": {
+          "all_passed": true,
+          "diagnostics": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": true,
+          "fixed_capacity": null,
+          "overflow_before_io": null,
+          "coded_borrow_failure": null,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "paired_release_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.1563210449239136,
+            1.10160327148634,
+            1.1492512207027517,
+            1.1874899902331038,
+            1.3779804687530373,
+            1.209411621093892,
+            1.4763693847683612,
+            1.1966552734357094,
+            1.8093771972651496,
+            1.1868286132781236,
+            1.3379008789087266
+          ],
+          "median": 1.1966552734357094,
+          "min": 1.10160327148634,
+          "max": 1.8093771972651496
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.3959145507840276,
+            1.318267822263408,
+            1.4032592773425279,
+            1.192158935545251,
+            1.2105507812485428,
+            1.2074279785139197,
+            1.1973776855498386,
+            1.1967163085948584,
+            1.2876484375006214,
+            1.2346191406251705,
+            1.2505187988267608
+          ],
+          "median": 1.2346191406251705,
+          "min": 1.192158935545251,
+          "max": 1.4032592773425279
         }
       },
       "probes_wasm_bytes": 9192,
@@ -363,6 +557,7 @@
       },
       "probes": {
         "all_passed": true,
+        "diagnostics": false,
         "self_wakes": 1089,
         "join_reverse_completion": true,
         "futures_unordered_child_wakers": true,
@@ -380,34 +575,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.2642722167974796,
-          1.2329101562507105,
-          1.199635986328218,
-          1.0944824218750426,
-          1.206024169920994,
-          1.5629169921869135,
-          1.4828288574211257,
-          1.197855712891993,
-          1.3102927246109175,
-          1.2267761230457808,
-          1.3359882812498114
+          1.3650715332005348,
+          1.4654438476568998,
+          1.313679931637779,
+          1.1092834472670177,
+          1.2201538085925279,
+          1.22194409179599,
+          1.123962402342471,
+          1.220550537109233,
+          1.1177673339837213,
+          1.2200725097670784,
+          1.1205139160139765
         ],
-        "median": 1.2329101562507105,
-        "min": 1.0944824218750426,
-        "max": 1.5629169921869135
+        "median": 1.2201538085925279,
+        "min": 1.1092834472670177,
+        "max": 1.4654438476568998
       }
     },
     {
       "id": "jspi-no_std",
       "backend": "jspi",
       "mode": "no_std",
-      "cold_build_ms": 6998.457041,
+      "cold_build_ms": 6663.835791000001,
       "warm_build_ms": [
-        44.4175839999989,
-        39.93920799999978,
-        40.65599999999904
+        43.72466700000223,
+        40.33387500000026,
+        41.290666999997484
       ],
-      "transform_ms": 46.26800000000003,
+      "transform_ms": 47.29095800000141,
       "files": [
         {
           "file": "core/app.wasm",
@@ -450,34 +645,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          0.6663410644538459,
-          0.7591857910149713,
-          0.5903217773433056,
-          0.5721232910165241,
-          0.7887368164070097,
-          0.5771789550781392,
-          0.573181152343949,
-          0.7356872558599292,
-          0.5646667480476708,
-          0.5658059082023215,
-          0.7350666503906922
+          0.6545410156242326,
+          0.9426777343755077,
+          0.5965881347655966,
+          0.586842773437013,
+          0.5784912109376705,
+          0.5788269042952265,
+          0.5723876953140916,
+          0.8533120117171222,
+          0.5622153320317125,
+          0.5700073242209669,
+          0.5664062499981526
         ],
-        "median": 0.5903217773433056,
-        "min": 0.5646667480476708,
-        "max": 0.7887368164070097
+        "median": 0.5788269042952265,
+        "min": 0.5622153320317125,
+        "max": 0.9426777343755077
       }
     },
     {
       "id": "core-no_std",
       "backend": "core",
       "mode": "no_std",
-      "cold_build_ms": 6652.012500000001,
+      "cold_build_ms": 7782.023832999999,
       "warm_build_ms": [
-        42.42020799999955,
-        40.10137500000201,
-        39.6385420000006
+        61.70787500000006,
+        52.788000000000466,
+        47.917083000000275
       ],
-      "transform_ms": 149.3402500000011,
+      "transform_ms": 158.98520799999824,
       "files": [
         {
           "file": "core/app.wasm",
@@ -520,34 +715,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.3934631347645166,
-          1.3136799316413317,
-          1.227884765626186,
-          1.271779296875053,
-          1.1943459472654183,
-          1.2216186523428263,
-          1.1971943359387893,
-          1.2047932128922412,
-          1.2467041015611358,
-          1.2258503417967859,
-          1.24372338867218
+          1.3490090332055615,
+          1.244852539063146,
+          1.261515380857503,
+          1.1972351074192034,
+          1.1863198242174633,
+          1.1835632324235235,
+          1.2217307128921107,
+          1.1846923828109368,
+          1.2425637207016393,
+          1.1834106445327564,
+          1.1930336914076634
         ],
-        "median": 1.227884765626186,
-        "min": 1.1943459472654183,
-        "max": 1.3934631347645166
+        "median": 1.1972351074192034,
+        "min": 1.1834106445327564,
+        "max": 1.3490090332055615
       }
     },
     {
       "id": "bounded-std",
       "backend": "bounded",
       "mode": "std",
-      "cold_build_ms": 7535.100167000004,
+      "cold_build_ms": 8937.010957999999,
       "warm_build_ms": [
-        55.97716600000422,
-        42.05629200000112,
-        41.38008300000365
+        58.78520900000149,
+        51.37649999999849,
+        47.25050000000192
       ],
-      "transform_ms": 65.01116699999693,
+      "transform_ms": 96.01745800000208,
       "files": [
         {
           "file": "core/app.wasm",
@@ -559,31 +754,32 @@
         },
         {
           "file": "host.mjs",
-          "bytes": 2700,
-          "raw": 2700,
-          "gzip": 1245,
-          "brotli": 1148,
-          "sha256": "25f79abbbc59179dc96c90fd463490cca1434e339edbda445372254e5384153c"
+          "bytes": 2394,
+          "raw": 2394,
+          "gzip": 1120,
+          "brotli": 1018,
+          "sha256": "32d1a43c6c564ae575aaf77df859bfef7881f8139666a0a29ca3e6e7008638f9"
         }
       ],
       "wasm_bytes": 1842,
-      "js_bytes": 2700,
-      "total_bytes": 4542,
-      "gzip_bytes": 2277,
+      "js_bytes": 2394,
+      "total_bytes": 4236,
+      "gzip_bytes": 2152,
       "property_mangling": {
         "pattern": "_$",
         "mapping": {
           "close_": "c",
-          "gate_": "h",
+          "gate_": "l",
           "notified_": "t",
           "open_": "i",
           "park_": "f",
+          "parks_": "h",
           "ready_": "r",
           "reject_": "n",
           "resolve_": "a",
           "retire_": "u",
           "signal_": "s",
-          "stats_": "l",
+          "stats_": "d",
           "value_": "o",
           "waiter_": "e"
         },
@@ -591,14 +787,14 @@
       },
       "unmangled": {
         "file": "host-unmangled.mjs",
-        "sha256": "7b06858e0144fa22f080738406bd7dcad80d08a60edc6314315fbd9ae9684a9f",
-        "js_bytes": 2919,
-        "total_bytes": 4761,
-        "gzip_bytes": 2336,
+        "sha256": "889ffea3726e2304142617e6f00aec0bd1e638bb3857c04551feabbf7b59bc78",
+        "js_bytes": 2601,
+        "total_bytes": 4443,
+        "gzip_bytes": 2202,
         "js_sizes": {
-          "raw": 2919,
-          "gzip": 1304,
-          "brotli": 1191
+          "raw": 2601,
+          "gzip": 1170,
+          "brotli": 1071
         },
         "common": {
           "all_passed": true,
@@ -618,6 +814,7 @@
         },
         "probes": {
           "all_passed": true,
+          "diagnostics": false,
           "self_wakes": 1089,
           "join_reverse_completion": true,
           "futures_unordered_child_wakers": null,
@@ -633,6 +830,7 @@
         },
         "heap_probes": {
           "all_passed": true,
+          "diagnostics": false,
           "self_wakes": 1089,
           "join_reverse_completion": true,
           "futures_unordered_child_wakers": true,
@@ -650,21 +848,122 @@
           "unit": "microseconds/task (two host awaits)",
           "tasks_per_sample": 4096,
           "samples": [
-            1.3209228515620453,
-            1.302337646485796,
-            1.1200561523434516,
-            1.4174907226554012,
-            1.348653076171047,
-            1.1138916015625,
-            1.6016948242185691,
-            1.1302592773443365,
-            1.4265136718751847,
-            1.1832072753907852,
-            1.1855671386715727
+            1.3227844238272723,
+            1.1647644042973582,
+            1.328755859375974,
+            1.0870666503883797,
+            1.2976481933613115,
+            1.1105957031247726,
+            1.1076252441419854,
+            1.0823264160144674,
+            1.0893757324232922,
+            1.0737812499996835,
+            1.0875549316402555
           ],
-          "median": 1.302337646485796,
-          "min": 1.1138916015625,
-          "max": 1.6016948242185691
+          "median": 1.1076252441419854,
+          "min": 1.0737812499996835,
+          "max": 1.328755859375974
+        }
+      },
+      "debug": {
+        "file": "host-debug.mjs",
+        "sha256": "76e995af090c0e507a41099e8173d98d155a1783af384c097232b85a1f87232f",
+        "js_bytes": 3005,
+        "total_bytes": 4847,
+        "gzip_bytes": 2469,
+        "js_sizes": {
+          "raw": 3005,
+          "gzip": 1437,
+          "brotli": 1295
+        },
+        "same_wasm": true,
+        "common": {
+          "all_passed": true,
+          "tasks": 3507,
+          "host_requests": 7014,
+          "controlled_io": [
+            [
+              7,
+              9
+            ],
+            [
+              16,
+              1
+            ]
+          ],
+          "actual_suspensions": 2
+        },
+        "probes": {
+          "all_passed": true,
+          "diagnostics": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": null,
+          "fixed_capacity": 16,
+          "overflow_before_io": true,
+          "coded_borrow_failure": true,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "heap_probes": {
+          "all_passed": true,
+          "diagnostics": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": true,
+          "fixed_capacity": 16,
+          "overflow_before_io": true,
+          "coded_borrow_failure": true,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "paired_release_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.1954040527335508,
+            1.100290771486101,
+            1.2978110351582473,
+            1.0491027832024713,
+            1.2358703613273292,
+            1.2563576660156173,
+            1.081461425783914,
+            1.2656452636718996,
+            1.086059570312159,
+            1.066690917969737,
+            1.0689697265640064
+          ],
+          "median": 1.100290771486101,
+          "min": 1.0491027832024713,
+          "max": 1.2978110351582473
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.5715637207023292,
+            1.2828776855471347,
+            1.217295410153696,
+            1.1663310546872196,
+            1.1875202636701943,
+            1.2540791015602792,
+            1.185414550782582,
+            1.1866252441379288,
+            1.1873779296891485,
+            1.3588969726541222,
+            1.176564453125195
+          ],
+          "median": 1.1875202636701943,
+          "min": 1.1663310546872196,
+          "max": 1.5715637207023292
         }
       },
       "probes_wasm_bytes": 8476,
@@ -690,6 +989,7 @@
       },
       "probes": {
         "all_passed": true,
+        "diagnostics": false,
         "self_wakes": 1089,
         "join_reverse_completion": true,
         "futures_unordered_child_wakers": null,
@@ -705,6 +1005,7 @@
       },
       "heap_probes": {
         "all_passed": true,
+        "diagnostics": false,
         "self_wakes": 1089,
         "join_reverse_completion": true,
         "futures_unordered_child_wakers": true,
@@ -722,34 +1023,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.2294208984382493,
-          1.1849873046880788,
-          1.253682373047127,
-          1.2090861816407283,
-          1.2386677246087885,
-          1.306111572265678,
-          1.4113259277355183,
-          1.2364196777348013,
-          1.3353474121089448,
-          1.3224182128901418,
-          1.6415507812492791
+          1.1602783203095157,
+          1.2693989257783755,
+          1.1298930664054296,
+          1.1171772460940588,
+          1.0978698730461645,
+          1.1239318847664492,
+          1.3028259277341192,
+          1.0899658203129547,
+          1.2733256835950613,
+          1.0949096679695458,
+          1.3082480468753488
         ],
-        "median": 1.253682373047127,
-        "min": 1.1849873046880788,
-        "max": 1.6415507812492791
+        "median": 1.1298930664054296,
+        "min": 1.0899658203129547,
+        "max": 1.3082480468753488
       }
     },
     {
       "id": "adapter-std",
       "backend": "adapter",
       "mode": "std",
-      "cold_build_ms": 7152.637499999997,
+      "cold_build_ms": 8240.37025,
       "warm_build_ms": [
-        45.97791699999652,
-        41.11912499999744,
-        41.65375000000495
+        46.08062500000233,
+        41.25841699999728,
+        41.480374999999185
       ],
-      "transform_ms": 87.7566250000018,
+      "transform_ms": 89.43608300000051,
       "files": [
         {
           "file": "core/app.wasm",
@@ -761,31 +1062,32 @@
         },
         {
           "file": "host.mjs",
-          "bytes": 2700,
-          "raw": 2700,
-          "gzip": 1245,
-          "brotli": 1148,
-          "sha256": "25f79abbbc59179dc96c90fd463490cca1434e339edbda445372254e5384153c"
+          "bytes": 2394,
+          "raw": 2394,
+          "gzip": 1120,
+          "brotli": 1018,
+          "sha256": "32d1a43c6c564ae575aaf77df859bfef7881f8139666a0a29ca3e6e7008638f9"
         }
       ],
       "wasm_bytes": 7528,
-      "js_bytes": 2700,
-      "total_bytes": 10228,
-      "gzip_bytes": 5199,
+      "js_bytes": 2394,
+      "total_bytes": 9922,
+      "gzip_bytes": 5074,
       "property_mangling": {
         "pattern": "_$",
         "mapping": {
           "close_": "c",
-          "gate_": "h",
+          "gate_": "l",
           "notified_": "t",
           "open_": "i",
           "park_": "f",
+          "parks_": "h",
           "ready_": "r",
           "reject_": "n",
           "resolve_": "a",
           "retire_": "u",
           "signal_": "s",
-          "stats_": "l",
+          "stats_": "d",
           "value_": "o",
           "waiter_": "e"
         },
@@ -793,14 +1095,14 @@
       },
       "unmangled": {
         "file": "host-unmangled.mjs",
-        "sha256": "7b06858e0144fa22f080738406bd7dcad80d08a60edc6314315fbd9ae9684a9f",
-        "js_bytes": 2919,
-        "total_bytes": 10447,
-        "gzip_bytes": 5258,
+        "sha256": "889ffea3726e2304142617e6f00aec0bd1e638bb3857c04551feabbf7b59bc78",
+        "js_bytes": 2601,
+        "total_bytes": 10129,
+        "gzip_bytes": 5124,
         "js_sizes": {
-          "raw": 2919,
-          "gzip": 1304,
-          "brotli": 1191
+          "raw": 2601,
+          "gzip": 1170,
+          "brotli": 1071
         },
         "common": {
           "all_passed": true,
@@ -820,6 +1122,7 @@
         },
         "probes": {
           "all_passed": true,
+          "diagnostics": false,
           "self_wakes": 1089,
           "join_reverse_completion": true,
           "futures_unordered_child_wakers": true,
@@ -837,21 +1140,106 @@
           "unit": "microseconds/task (two host awaits)",
           "tasks_per_sample": 4096,
           "samples": [
-            1.2495524902345068,
-            1.211212158203523,
-            1.2530722656247661,
-            1.8729145507805356,
-            1.2888793945311505,
-            1.1171875000002274,
-            1.2667644042974047,
-            1.111826660157078,
-            1.074391601562752,
-            1.1413879394535087,
-            1.049062011720281
+            1.1717426757833493,
+            1.0748291015616473,
+            1.043741943359322,
+            1.235402343752412,
+            1.0634968261697963,
+            1.0633950195320097,
+            1.070953369140426,
+            1.0633137207030074,
+            1.0773720703092238,
+            1.073354248045888,
+            1.0728149414056531
           ],
-          "median": 1.211212158203523,
-          "min": 1.049062011720281,
-          "max": 1.8729145507805356
+          "median": 1.0728149414056531,
+          "min": 1.043741943359322,
+          "max": 1.235402343752412
+        }
+      },
+      "debug": {
+        "file": "host-debug.mjs",
+        "sha256": "76e995af090c0e507a41099e8173d98d155a1783af384c097232b85a1f87232f",
+        "js_bytes": 3005,
+        "total_bytes": 10533,
+        "gzip_bytes": 5391,
+        "js_sizes": {
+          "raw": 3005,
+          "gzip": 1437,
+          "brotli": 1295
+        },
+        "same_wasm": true,
+        "common": {
+          "all_passed": true,
+          "tasks": 3507,
+          "host_requests": 7014,
+          "controlled_io": [
+            [
+              7,
+              9
+            ],
+            [
+              16,
+              1
+            ]
+          ],
+          "actual_suspensions": 2
+        },
+        "probes": {
+          "all_passed": true,
+          "diagnostics": true,
+          "self_wakes": 1089,
+          "join_reverse_completion": true,
+          "futures_unordered_child_wakers": true,
+          "fixed_capacity": null,
+          "overflow_before_io": null,
+          "coded_borrow_failure": null,
+          "select_drops_loser": true,
+          "late_completion_isolated": true,
+          "pinned_stack_tasks": 32,
+          "pinned_stack_bytes": 1024,
+          "rejection_reasons": 2,
+          "post_suspension_trap": true
+        },
+        "paired_release_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.1926574707032955,
+            1.1090900878905074,
+            1.2509460449230403,
+            1.085123535155219,
+            1.268544433592922,
+            1.249114990233835,
+            1.0337016601553728,
+            1.19939184570228,
+            1.029896972656985,
+            1.0639240722660759,
+            1.0601401367189567
+          ],
+          "median": 1.1090900878905074,
+          "min": 1.029896972656985,
+          "max": 1.268544433592922
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.4643044433597652,
+            1.1879475097664738,
+            1.1707561035123604,
+            1.1568500976579799,
+            1.147979736327187,
+            1.157511230470476,
+            1.0927429199227845,
+            1.0953776855480157,
+            1.1162414550760502,
+            1.4196777343755684,
+            1.171132324220281
+          ],
+          "median": 1.157511230470476,
+          "min": 1.0927429199227845,
+          "max": 1.4643044433597652
         }
       },
       "probes_wasm_bytes": 14934,
@@ -873,6 +1261,7 @@
       },
       "probes": {
         "all_passed": true,
+        "diagnostics": false,
         "self_wakes": 1089,
         "join_reverse_completion": true,
         "futures_unordered_child_wakers": true,
@@ -890,34 +1279,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.3825786132812823,
-          1.5393779296886123,
-          1.1533508300782813,
-          1.1393127441401418,
-          1.2364399414064309,
-          1.0981140136721024,
-          1.069376464844396,
-          1.0982360839850713,
-          1.2735493164068856,
-          1.2415161132803831,
-          1.0588479003903473
+          1.3459167480469603,
+          1.0737407226564244,
+          1.2400817871096592,
+          1.0781452636727806,
+          1.2783103027373954,
+          1.267720703125974,
+          1.0633647460949192,
+          1.2379455566389197,
+          1.0584716796877558,
+          1.2588806152322718,
+          1.0906166992192823
         ],
-        "median": 1.1533508300782813,
-        "min": 1.0588479003903473,
-        "max": 1.5393779296886123
+        "median": 1.2379455566389197,
+        "min": 1.0584716796877558,
+        "max": 1.3459167480469603
       }
     },
     {
       "id": "jspi-std",
       "backend": "jspi",
       "mode": "std",
-      "cold_build_ms": 7292.858374999996,
+      "cold_build_ms": 7200.158708000003,
       "warm_build_ms": [
-        44.91712499999994,
-        40.570499999994354,
-        39.64812499999971
+        43.13950000000477,
+        41.188874999999825,
+        40.25666700000147
       ],
-      "transform_ms": 82.27091599999403,
+      "transform_ms": 82.31983300000138,
       "files": [
         {
           "file": "core/app.wasm",
@@ -960,34 +1349,34 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          0.6020812988278834,
-          0.5650024414070032,
-          0.5923156738276703,
-          0.5356040039057319,
-          0.7032165527345313,
-          0.5458576660153369,
-          0.5388386230471554,
-          0.5212607421878346,
-          0.5434670410160436,
-          0.5390014648440911,
-          0.8155517578138927
+          0.650604248047415,
+          0.6038513183597161,
+          0.5692443847635786,
+          0.5533347167947511,
+          0.7662963867183237,
+          0.5487263183603375,
+          0.5569965820306777,
+          0.6263222656244238,
+          0.5778300781216217,
+          0.5659382324232354,
+          0.868550537109769
         ],
-        "median": 0.5458576660153369,
-        "min": 0.5212607421878346,
-        "max": 0.8155517578138927
+        "median": 0.5778300781216217,
+        "min": 0.5487263183603375,
+        "max": 0.868550537109769
       }
     },
     {
       "id": "core-std",
       "backend": "core",
       "mode": "std",
-      "cold_build_ms": 6671.358542000002,
+      "cold_build_ms": 7248.765500000009,
       "warm_build_ms": [
-        48.60299999999552,
-        41.326458000003186,
-        41.07383399999526
+        42.5399999999936,
+        42.73383300000569,
+        39.97966599999927
       ],
-      "transform_ms": 188.65333400000236,
+      "transform_ms": 182.79870800000208,
       "files": [
         {
           "file": "core/app.wasm",
@@ -1030,21 +1419,21 @@
         "unit": "microseconds/task (two host awaits)",
         "tasks_per_sample": 4096,
         "samples": [
-          1.3776550292980971,
-          1.2323608398432384,
-          1.1620585937492933,
-          1.1431884765631395,
-          1.174031494139527,
-          1.1256611328125388,
-          1.2687175292960262,
-          1.405792236328196,
-          1.2961120605474719,
-          1.24576831054668,
-          1.2303569335951892
+          1.3647155761695728,
+          1.3159790039054542,
+          1.2094521484371512,
+          1.1877441406227263,
+          1.361582519532334,
+          1.1474609374992895,
+          1.1658427734388965,
+          1.1395976562518229,
+          1.3248596191388629,
+          1.1994426269517078,
+          1.2083435058585223
         ],
-        "median": 1.2323608398432384,
-        "min": 1.1256611328125388,
-        "max": 1.405792236328196
+        "median": 1.2083435058585223,
+        "min": 1.1395976562518229,
+        "max": 1.3647155761695728
       }
     }
   ],
@@ -1086,14 +1475,17 @@
     "experiments/jspi-future/adapter/src/bounded_tests.rs": "f5171076173a448b537d625e6c30862dd33fe7212e0e07f7f9c9ec9855e7a185",
     "experiments/jspi-future/adapter/src/lib.rs": "dbde1b343dac04ada2bff3655014c4ac3a3b87e5d87c26a9e14b7cf154db1068",
     "experiments/jspi-future/adapter/src/tests.rs": "181f0fb436b38e7560ea6ceaf15e5a1d1f294082e349d8fe1264551da22ae5ba",
-    "experiments/jspi-future/bundle.mjs": "e6cc977c57143ed7285afc2f30fe6dc2225f9ad0d22077d1b1aabbc161470e2b",
-    "experiments/jspi-future/bundle.test.mjs": "34efb601e1ca069ae981d96ec69b509742a8654f1e32c54ef424552e65c10a66",
-    "experiments/jspi-future/gates.mjs": "db34db098920d0923fa4d861cdcf14322f841d175d7d40cb7e87b01705c688e1",
-    "experiments/jspi-future/gates.test.mjs": "084a6f10c705972791caa187450b1d2c1ca96a6df15f5ddbc5348700816f6a6a",
-    "experiments/jspi-future/host.mjs": "3bd5c5d432acb7b154dcb91fda51ad68fa10f8bcd07d4e0398ab68a79a8b4d87",
+    "experiments/jspi-future/bundle.mjs": "1d8cf1e912f1d2139d3b4a1e5f33ae7db4567bbe1f449a919191e6819ec87a1e",
+    "experiments/jspi-future/bundle.test.mjs": "46b2d2e5c076d4a8e6de085ac583e745c39e3e932dc5d558193da485ed897999",
+    "experiments/jspi-future/error-codes.json": "0df2bb4b33da286f61115610b20e5f6c516df7bc03e4f2c8147c2e8627a555a1",
+    "experiments/jspi-future/errors.mjs": "84b74d406e4b64c0c11f99f55470623f93b48b46df6d589a6b6ef7fb2cfeda14",
+    "experiments/jspi-future/gates.mjs": "0e965e223f500bcd958fff952f4dacbb6eb5f7b688ee6d4873a3415d6210cd0e",
+    "experiments/jspi-future/gates.test.mjs": "95c7ef747e0616179c8f14a215ed9cf42c1c4e0074cc478b0fb4be9c6d8275e0",
+    "experiments/jspi-future/host.mjs": "86f82064c35c59f2e0fda7d120a26016d2bc1b0456cc449ec2d4cf56a7f4299c",
+    "experiments/jspi-future/profiles.test.mjs": "11c1a68dd45b7a25e7a513cfad62d3e62d12015bbda40503c1de4637b90c47c8",
     "experiments/jspi-future/src/lib.rs": "027fedf8a6d58332d54f64d4c2ba0d6734f943e1b97e6cefd14ca2927412cc1e",
     "experiments/jspi-future/timing.test.mjs": "336e3b03da447fe5ef5cd285c17917c1b1b2d7f8580bd946eda28b44e555f48c",
-    "experiments/jspi-future/verify.mjs": "2d7661c47d5518d4818c689d0d6bcf954dd03147c31e77fc12ca6cbdaca9296f",
+    "experiments/jspi-future/verify.mjs": "f0db86af9ba3a0bd949a600e06529d81d87826096dea8d27cf9c831b42bda587",
     "experiments/jspi-future/wit/app.wit": "e3f47dc6fbaab64dd93cbcd1517484147edd896e3606701a72894d2abff201ee",
     "experiments/wit/core/Cargo.lock": "9eba3d4fd9d665bb701a9baaf677e32c420f5eba45804c50dca40eba0dab6f15",
     "experiments/wit/core/Cargo.toml": "053615cc95fd8e7f6e9e05a62ee6977b1fab9f734f36a04a974ce97bfb3d8317",
@@ -1114,7 +1506,7 @@
     "tests/support/async-contract.mjs": "6ec8416a13d55b8623d2a69e34a16275668664cc5e9906ddaabb0d82856ddfce",
     "tests/support/metrics.mjs": "8e00d852b079470d4b2554dae8d21efb8b5a1493ae3b8cc78387c3389006d5de",
     "tests/support/wit-contract.mjs": "e9e8db4af3aadea1b423dafac9e32ba54480e92c8694c3dc052e5aea76d20589",
-    "tools/experiment-jspi-future.mjs": "902b2d777749875d19dcff89e8237b59819842302f9d89ecdb19ad2c147a3cf4",
+    "tools/experiment-jspi-future.mjs": "14c6e508a7a512a2bfaf8fdace30763d9d8c2e5cf2b40dcc191aa3c966c8a318",
     "tools/wasm-opt-contract.mjs": "d0a3bce52aaa74fd71e22d1d0509c479b81f95fd49f347dd71ae2707899a5cba"
   }
 }

@@ -5,31 +5,46 @@ const tick = async (condition) => {
   for (let i = 0; i < 200 && !condition(); i++) await Promise.resolve();
   check(condition(), "driver did not progress");
 };
-export async function verifyDriver(
+async function verifyDriverContract(
   instantiate,
   bytes,
-  { unordered = true, bounded = false } = {},
+  { unordered = true, bounded = false, debug = false } = {},
 ) {
-  let host = await instantiate(bytes, {
+  const dropCounts = new WeakMap();
+  const create = async (options) => {
+    let drops = 0;
+    const host = await instantiate(bytes, {
+      bindings: { ...options.bindings, dropped: () => drops++ },
+    });
+    dropCounts.set(host, () => drops);
+    return host;
+  };
+  const dropped = (host) => dropCounts.get(host)();
+  const flush = async () => {
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+  };
+  let host = await create({
     bindings: { add: async (a, b) => (a + b) | 0 },
   });
   check(
-    JSON.stringify(Object.keys(host).sort()) === '["call","promise","stats"]',
+    JSON.stringify(Object.keys(host).sort()) ===
+      (debug ? '["call","promise","stats"]' : '["call","promise"]'),
     "public host API was renamed",
   );
   check(host.call === host.promise, "public promise alias changed");
-  check(
-    JSON.stringify(Object.keys(host.stats()).sort()) ===
-      '["completion_queues","dead","drops","gates","jobs","parks","polls","queued"]',
-    "public diagnostics were renamed",
-  );
+  if (debug)
+    check(
+      JSON.stringify(Object.keys(host.stats()).sort()) ===
+        '["completion_queues","dead","drops","gates","jobs","parks","polls","queued"]',
+      "public diagnostics were renamed",
+    );
   for (const count of [0, 1, 64, 1024])
     check((await host.call("self-wake", count)) === count, "self wake lost");
-  check(host.stats().parks === 1089, "unexpected self-wake polls");
-  check(host.stats().gates === 0, "self-wake gate leak");
+  if (debug) check(host.stats().parks === 1089, "unexpected self-wake polls");
+  if (debug) check(host.stats().gates === 0, "self-wake gate leak");
 
   const pending = [];
-  host = await instantiate(bytes, {
+  host = await create({
     bindings: {
       add: (a, b) => new Promise((resolve) => pending.push({ a, b, resolve })),
     },
@@ -41,30 +56,34 @@ export async function verifyDriver(
   });
   await tick(() => pending.length === 2);
   check(!done, "join did not suspend");
-  const before = host.stats().polls;
+  const before = debug ? host.stats().polls : 0;
   pending[1].resolve(22);
-  await tick(() => host.stats().polls > before);
+  if (debug) await tick(() => host.stats().polls > before);
+  else await flush();
   check(!done, "join completed before both I/O");
   pending[0].resolve(11);
   check((await joined) === 33, "join result");
-  check(host.stats().jobs === 0 && host.stats().gates === 0, "join leaked");
+  if (debug)
+    check(host.stats().jobs === 0 && host.stats().gates === 0, "join leaked");
 
   if (unordered) {
     pending.length = 0;
     const unorderedResult = host.call("unordered", 10, 20);
     await tick(() => pending.length === 2);
-    const polled = host.stats().polls;
+    const polled = debug ? host.stats().polls : 0;
     pending[1].resolve(22);
-    await tick(() => host.stats().polls > polled);
+    if (debug) await tick(() => host.stats().polls > polled);
+    else await flush();
     pending[0].resolve(11);
     check(
       (await unorderedResult) === 33,
       "FuturesUnordered child Waker did not progress",
     );
-    check(
-      host.stats().jobs === 0 && host.stats().gates === 0,
-      "unordered leaked",
-    );
+    if (debug)
+      check(
+        host.stats().jobs === 0 && host.stats().gates === 0,
+        "unordered leaked",
+      );
   }
   pending.length = 0;
   const raced = host.call("raced", 30, 40);
@@ -72,27 +91,32 @@ export async function verifyDriver(
   const loser = pending[0];
   pending[1].resolve(42);
   check((await raced) === 42, "select winner");
-  check(
-    host.stats().jobs === 0 && host.stats().gates === 0,
-    "loser Future::drop did not release job",
-  );
+  if (debug)
+    check(
+      host.stats().jobs === 0 && host.stats().gates === 0,
+      "loser Future::drop did not release job",
+    );
   // Deliver the old completion while a new invocation is suspended. Never reuse IDs.
   pending.length = 0;
   const after = host.call("held", 50, 1);
   await tick(() => pending.length === 1);
-  const parks = host.stats().parks;
+  const parks = debug ? host.stats().parks : 0;
   loser.resolve(31);
   for (let i = 0; i < 20; i++) await Promise.resolve();
-  check(host.stats().parks === parks, "stale completion woke a different task");
-  check(!host.stats().dead, "stale completion poisoned host");
+  if (debug)
+    check(
+      host.stats().parks === parks,
+      "stale completion woke a different task",
+    );
+  if (debug) check(!host.stats().dead, "stale completion poisoned host");
   pending[0].resolve(51);
   check((await after) === 101, "late-completion followup");
-  check(host.stats().drops === 1, "normal Rust Drop skipped");
+  check(dropped(host) === 1, "normal Rust Drop skipped");
 
   let active = 0,
     peak = 0;
   pending.length = 0;
-  host = await instantiate(bytes, {
+  host = await create({
     bindings: {
       add: (a, b) => {
         peak = Math.max(peak, ++active);
@@ -118,19 +142,21 @@ export async function verifyDriver(
     "pinned 1 KiB Future stack changed",
   );
   check(
-    peak === 1 && host.stats().drops === 32,
+    peak === 1 && dropped(host) === 32,
     "entry serialization/Drop mismatch",
   );
-  check(
-    host.stats().jobs === 0 &&
-      host.stats().gates === 0 &&
-      host.stats().queued === 0,
-    "held leaked",
-  );
+  if (debug)
+    check(
+      host.stats().jobs === 0 &&
+        host.stats().gates === 0 &&
+        host.stats().queued === 0 &&
+        host.stats().drops === 32,
+      "held leaked",
+    );
 
   for (const reason of [undefined, { failed: true }]) {
     let requests = 0;
-    const h = await instantiate(bytes, {
+    const h = await create({
       bindings: {
         add: () => {
           requests++;
@@ -150,16 +176,17 @@ export async function verifyDriver(
       result.every((r) => r.rejected && r.error === reason),
       "first-fatal rejection changed",
     );
+    if (debug)
+      check(
+        h.stats().dead && h.stats().jobs === 0 && h.stats().gates === 0,
+        "fatal cleanup incomplete",
+      );
     check(
-      h.stats().dead && h.stats().jobs === 0 && h.stats().gates === 0,
-      "fatal cleanup incomplete",
-    );
-    check(
-      requests === 1 && h.stats().drops === 0,
+      requests === 1 && dropped(h) === 0,
       "failed guest reentered or unwound Rust Drop",
     );
   }
-  const trapped = await instantiate(bytes, {
+  const trapped = await create({
     bindings: { add: async (a, b) => (a + b) | 0 },
   });
   let trap;
@@ -178,16 +205,18 @@ export async function verifyDriver(
   } catch (error) {
     later = error;
   }
-  check(later === trap && trapped.stats().dead, "trap first-fatal changed");
-  check(
-    trapped.stats().gates === 0 &&
-      trapped.stats().jobs === 0 &&
-      trapped.stats().completion_queues === 0,
-    "trap leaked host state",
-  );
+  check(later === trap, "trap first-fatal changed");
+  if (debug) check(trapped.stats().dead, "trap did not close host");
+  if (debug)
+    check(
+      trapped.stats().gates === 0 &&
+        trapped.stats().jobs === 0 &&
+        trapped.stats().completion_queues === 0,
+      "trap leaked host state",
+    );
   if (bounded) {
     let borrowedCalls = 0;
-    const borrowed = await instantiate(bytes, {
+    const borrowed = await create({
       bindings: {
         add: async () => {
           borrowedCalls++;
@@ -202,17 +231,28 @@ export async function verifyDriver(
       borrowError = error;
     }
     check(
-      borrowError?.message === "JF2" &&
-        borrowedCalls === 0 &&
-        borrowed.stats().dead,
+      borrowError?.code === "JF2" && borrowedCalls === 0,
       "borrow conflict must use JF2 before I/O",
     );
-    check(
-      borrowed.stats().jobs === 0 && borrowed.stats().gates === 0,
-      "borrow failure cleanup",
+    const afterBorrowFailure = await borrowed.call("held", 1, 2).then(
+      () => ({ resolved: true }),
+      (error) => ({ error }),
     );
+    check(
+      !afterBorrowFailure.resolved &&
+        afterBorrowFailure.error === borrowError &&
+        borrowedCalls === 0,
+      "borrow conflict did not close the instance",
+    );
+    if (debug)
+      check(
+        borrowed.stats().dead &&
+          borrowed.stats().jobs === 0 &&
+          borrowed.stats().gates === 0,
+        "borrow failure cleanup",
+      );
     const requests = [];
-    const full = await instantiate(bytes, {
+    const full = await create({
       bindings: {
         add: (a, b) =>
           new Promise((resolve) => requests.push({ a, b, resolve })),
@@ -222,30 +262,32 @@ export async function verifyDriver(
     await tick(() => requests.length === 16);
     for (const p of requests.toReversed()) p.resolve(p.a + p.b);
     check((await capacity) === 136, "full table reverse completion");
-    check(
-      full.stats().jobs === 0 && full.stats().gates === 0,
-      "completed table leaked",
-    );
+    if (debug)
+      check(
+        full.stats().jobs === 0 && full.stats().gates === 0,
+        "completed table leaked",
+      );
     requests.length = 0;
     check(
       (await full.call("drop-capacity", 16)) === 0,
       "full capacity Drop probe",
     );
-    check(
-      requests.length === 16 &&
-        full.stats().jobs === 0 &&
-        full.stats().gates === 0,
-      "full table did not release jobs/Wakers",
-    );
+    if (debug)
+      check(
+        full.stats().jobs === 0 && full.stats().gates === 0,
+        "full table did not release jobs/Wakers",
+      );
+    check(requests.length === 16, "full table did not start 16 requests");
     requests.forEach((p) => p.resolve(p.a + p.b));
     for (let i = 0; i < 20; i++) await Promise.resolve();
-    check(
-      !full.stats().dead,
-      "late completion after full-table Drop poisoned host",
-    );
+    if (debug)
+      check(
+        !full.stats().dead,
+        "late completion after full-table Drop poisoned host",
+      );
     check((await full.call("self-wake", 1)) === 1, "table reuse after Drop");
     let started = 0;
-    const overflow = await instantiate(bytes, {
+    const overflow = await create({
       bindings: {
         add: () => {
           started++;
@@ -264,19 +306,21 @@ export async function verifyDriver(
     check(
       outcomes.every((o) => o.rejected) &&
         outcomes[0].error === outcomes[1].error &&
-        outcomes[0].error.message === "JF1",
+        outcomes[0].error.code === "JF1",
       "capacity first-fatal",
     );
     check(started === 16, "overflow must fail BEFORE starting the 17th I/O");
-    check(
-      overflow.stats().dead &&
-        overflow.stats().jobs === 0 &&
-        overflow.stats().gates === 0,
-      "overflow cleanup",
-    );
+    if (debug)
+      check(
+        overflow.stats().dead &&
+          overflow.stats().jobs === 0 &&
+          overflow.stats().gates === 0,
+        "overflow cleanup",
+      );
   }
   return {
     all_passed: true,
+    diagnostics: debug,
     self_wakes: 1089,
     join_reverse_completion: true,
     futures_unordered_child_wakers: unordered ? true : null,
@@ -290,4 +334,23 @@ export async function verifyDriver(
     rejection_reasons: 2,
     post_suspension_trap: true,
   };
+}
+
+// A broken child-Waker path must fail explicitly, rather than leave an unsettled
+// top-level await or a hung Worker request.
+export async function verifyDriver(...args) {
+  let timer;
+  try {
+    return await Promise.race([
+      verifyDriverContract(...args),
+      new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(Error("driver verification timed out")),
+          5000,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }

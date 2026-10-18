@@ -1,3 +1,5 @@
+import { runtimeError } from "./errors.mjs";
+
 // Single-agent JS latch. A wake may arrive before or after park; neither is lost.
 // IDs never wrap/reuse, so late completions cannot wake an unrelated invocation.
 export class Gates {
@@ -6,13 +8,20 @@ export class Gates {
   #dead = false;
   #fatal;
   #limit;
-  #parks = 0;
   constructor(limit = 0x7fffffff) {
     this.#limit = limit;
+    if (__JF_DEBUG__) {
+      this.parks_ = 0;
+      this.stats_ = () => ({
+        gates: this.#gates.size,
+        parks: this.parks_,
+        dead: this.#dead,
+      });
+    }
   }
   open_() {
     if (this.#dead) throw this.#fatal;
-    if (this.#next === this.#limit) throw Error("gate IDs exhausted");
+    if (this.#next === this.#limit) throw runtimeError(11);
     const id = ++this.#next;
     this.#gates.set(id, { notified_: false, waiter_: null });
     return id;
@@ -29,9 +38,9 @@ export class Gates {
   park_(id) {
     if (this.#dead) throw this.#fatal;
     const gate = this.#gates.get(id);
-    if (!gate) throw Error("unknown gate");
-    if (gate.waiter_) throw Error("already parked");
-    this.#parks++;
+    if (!gate) throw runtimeError(5);
+    if (gate.waiter_) throw runtimeError(12);
+    if (__JF_DEBUG__) this.parks_++;
     if (gate.notified_) {
       gate.notified_ = false;
       return Promise.resolve();
@@ -43,7 +52,7 @@ export class Gates {
   close_(id) {
     const gate = this.#gates.get(id);
     this.#gates.delete(id);
-    gate?.waiter_?.reject_(Error("gate closed"));
+    gate?.waiter_?.reject_(runtimeError(13));
   }
   retire_(reason) {
     if (this.#dead) return;
@@ -51,8 +60,5 @@ export class Gates {
     this.#fatal = reason;
     for (const gate of this.#gates.values()) gate.waiter_?.reject_(reason);
     this.#gates.clear();
-  }
-  stats_() {
-    return { gates: this.#gates.size, parks: this.#parks, dead: this.#dead };
   }
 }

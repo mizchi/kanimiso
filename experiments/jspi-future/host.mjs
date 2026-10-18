@@ -1,17 +1,19 @@
 import { Gates } from "./gates.mjs";
+import { runtimeError } from "./errors.mjs";
 
 // Experimental only. Sync bookkeeping imports NEVER suspend or enter the guest.
 // Only park suspends, after Rust Future::poll has returned Pending.
 export async function instantiate(
   source,
-  { bindings: { add } } = { bindings: {} },
+  { bindings: { add, dropped = () => {} } } = { bindings: {} },
 ) {
   if (
     typeof WebAssembly.promising !== "function" ||
     typeof WebAssembly.Suspending !== "function"
   )
-    throw Error("JSPI required");
-  if (typeof add !== "function") throw TypeError("add binding required");
+    throw runtimeError(3);
+  if (typeof add !== "function") throw runtimeError(4, TypeError);
+  if (typeof dropped !== "function") throw runtimeError(14, TypeError);
   const gates = new Gates(),
     completed = new Map(),
     jobs = new Map(),
@@ -48,7 +50,7 @@ export async function instantiate(
     };
   const imports = {
     fail: sync((code) => {
-      throw Error("JF" + code);
+      throw runtimeError(code);
     }),
     open: sync(() => {
       const id = gates.open_();
@@ -62,7 +64,7 @@ export async function instantiate(
     }),
     drain: sync((id) => {
       const queue = completed.get(id);
-      if (!queue) throw Error("unknown gate");
+      if (!queue) throw runtimeError(5);
       return queue.shift() ?? 0;
     }),
     park: new WebAssembly.Suspending(async (id) => {
@@ -75,7 +77,7 @@ export async function instantiate(
       }
     }),
     begin: sync((gate, a, b) => {
-      if (next === 0x7fffffff) throw Error("job IDs exhausted");
+      if (next === 0x7fffffff) throw runtimeError(6);
       const id = ++next,
         job = { gate_: gate, ready_: false, value_: 0 };
       jobs.set(id, job);
@@ -94,21 +96,24 @@ export async function instantiate(
       return id;
     }),
     ready: sync((id) => {
-      polls++;
+      if (__JF_DEBUG__) polls++;
       const job = jobs.get(id);
-      if (!job) throw Error("unknown job");
+      if (!job) throw runtimeError(7);
       return +job.ready_;
     }),
     take: sync((id) => {
       const job = jobs.get(id);
-      if (!job?.ready_) throw Error("job pending");
+      if (!job?.ready_) throw runtimeError(8);
       jobs.delete(id);
       return job.value_;
     }),
     cancel: sync((id) => jobs.delete(id)),
-    dropped: sync(() => {
-      drops++;
-    }),
+    dropped: __JF_DEBUG__
+      ? sync(() => {
+          drops++;
+          dropped();
+        })
+      : sync(dropped),
   };
   const loaded = await WebAssembly.instantiate(source, { app: imports });
   const instance =
@@ -117,7 +122,7 @@ export async function instantiate(
     typeof SharedArrayBuffer !== "undefined" &&
     instance.exports.memory?.buffer instanceof SharedArrayBuffer
   )
-    throw Error("shared memory unsupported");
+    throw runtimeError(9);
   for (const [name, value] of Object.entries(instance.exports))
     if (
       typeof value === "function" &&
@@ -127,35 +132,37 @@ export async function instantiate(
       functions[name] = WebAssembly.promising(value);
   let tail = Promise.resolve();
   const call = (name, ...args) => {
-    queued++;
-    const result = tail
-      .then(async () => {
+    if (__JF_DEBUG__) queued++;
+    let result = tail.then(async () => {
+      alive();
+      if (typeof functions[name] !== "function") throw runtimeError(10);
+      try {
+        const value = await functions[name](...args);
         alive();
-        if (typeof functions[name] !== "function")
-          throw Error("unknown export");
-        try {
-          const value = await functions[name](...args);
-          alive();
-          return value;
-        } catch (e) {
-          throw poison(e);
-        }
-      })
-      .finally(() => queued--);
+        return value;
+      } catch (e) {
+        throw poison(e);
+      }
+    });
+    if (__JF_DEBUG__) result = result.finally(() => queued--);
     tail = result.catch(() => {});
     return result;
   };
   return {
     call,
     promise: call,
-    stats: () => ({
-      ...gates.stats_(),
-      jobs: jobs.size,
-      completion_queues: completed.size,
-      queued,
-      polls,
-      drops,
-      dead,
-    }),
+    ...(__JF_DEBUG__
+      ? {
+          stats: () => ({
+            ...gates.stats_(),
+            jobs: jobs.size,
+            completion_queues: completed.size,
+            queued,
+            polls,
+            drops,
+            dead,
+          }),
+        }
+      : {}),
   };
 }

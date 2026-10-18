@@ -59,17 +59,45 @@ host reject / Wasm trap / JF1 / JF2 は instance を閉じ、Rust Drop / unwind 
 
 最初の Arc + Vec 版は no_std の Wasm 3,291 Bのうち allocator 関数群が1,288 Bを占めていた。Future 本体を stack に置くだけでは、Arc / Vec 由来の allocator が残る。今回の固定版はその動的確保を除去する一方、登録上限という制約が加わる。比較 host には JF1/JF2 用 import を追加したため、前回の JS 2,848 Bから2,881 Bになっている。
 
-最新の測定では bounded は Wasm 1,842 B + JS 2,700 B = **4,542 B**。std/no_std の Wasm バイト列も一致した。同じ host を使う Arc + Vec 版は no_std 5,991 B / std 10,228 B。時間の比較は[測定表](../../docs/jspi-future-measurements.md)を参照。汎用的な速度優位は主張しない。
+最新の測定では bounded は Wasm 1,842 B + release JS 2,394 B = **4,236 B**。std/no_std の Wasm バイト列も一致した。同じ Wasm に debug JS 3,005 Bを合わせると4,847 B。時間の比較は[測定表](../../docs/jspi-future-measurements.md)を参照。
 
-採用判断は保留する。固定表の制約と同一 instance の直列実行を既存版と同じ契約とは扱わない。現時点の残りは JS host が2,700 Bを占める。
+採用判断は保留する。固定表の制約と同一 instance の直列実行を既存版と同じ契約とは扱わない。
 
+## Debug / Release の分離
+
+`bundleHost()` は release、`bundleHost({ debug: true })` は debug を生成する。`just experiment-jspi-future` / `just check-jspi-future` は各構成に `host.mjs` と `host-debug.mjs` を出力する。**JS loader のビルド条件の違いであり、Wasm は両版とも同じ Rust release 最適化済みバイト列**を使う。
+
+| 機能 | release | debug |
+|---|---|---|
+| `call` / `promise` | あり | あり |
+| `stats()` と内部カウンター | 含まない | あり |
+| ランタイム自身の `error.code` | `JF1` など | 同じコード |
+| ランタイム自身の `error.message` | コードのみ | コードと説明文 |
+| first-fatal / 容量・借用・ID上限・共有memoryの検査 | あり | あり |
+| hostのreject理由 / Wasm trap | 元のオブジェクト | 元のオブジェクト |
+
+`__JF_DEBUG__` を esbuild の define で固定し、release では説明辞書・診断用closure・カウンター更新・queued計数用のfinallyを削除する。安全性に関わる検査・解放処理は両版に残す。任意のエラーをコードで包まず、ホストがrejectした`undefined`やオブジェクト、Wasm trapの同一性を維持する。
+
+エラー対応表は [error-codes.json](error-codes.json)。JF1 は16件の登録容量、JF2 は借用競合。例えばreleaseは`error.code === error.message === "JF1"`、debugは`error.code === "JF1"`と`error.message === "JF1: waiter capacity exceeded"`になる。説明辞書はrelease JSの実行に不要で、bundleへ含めない。JFコードは実験hostのもので、製品runtimeのRTコードと分ける。
+
+動作probesは**同じWasmと同じ検証関数をrelease/debugの双方に実行する**。自己wake、join/select、FuturesUnordered、逆順完了、Drop、古い完了、1 KiB Future、reject/trap、JF1/JF2を確認する。`stats()`でしか観測できない内部の解放数・poll回数はdebugで追加検証する。
+
+Dropをreleaseでも直接検証するため、WIT probesの`dropped` importを任意の`bindings.dropped`へ転送する（既定no-op、非関数ならJF14）。検証側で外から回数を数え、releaseへ診断カウンターを戻さない。通常の最小app Wasmはこのimportを持たないが、JS loaderは同じものを使う。
+
+前回のJS 2,700 Bに対しreleaseは306 B減った。一時試算のコード文字列置換版とは異なり、安定した`error.code`とDrop callbackの転送・検査も含めた実測値。gate/完了キューの統合など、別の構造変更は今回に含めない。
 
 ## JS の private property mangling
 
-`bundle.mjs` は minify に加え、末尾 `_` を内部 property の目印として esbuild で短縮する。job の `ready_` / `value_`、gate の `notified_` / `waiter_`、waiter の `resolve_` / `reject_`、Gates の補助メソッドが対象。Gates は bundle 内部の補助クラスで、短縮されたメソッド名を外部から参照する契約はない。host と Gates は必ず同じ bundle で処理し、別 bundle 間で短縮名を共有しない。
+`bundle.mjs` は minify に加え、末尾 `_` を内部propertyの目印として短縮する。jobの`ready_` / `value_`、gateの`notified_` / `waiter_`、waiterの`resolve_` / `reject_`、Gatesの補助メソッドが対象。hostとGatesを同じbundleで処理する。
 
-WIT の `ready` / `park` / `cancel` などの import 名、`bindings.add`、公開 `call` / `promise` / `stats` と全診断キー、`Promise.resolve` / `then` / `catch` などの標準 API は対象外。外部とやりとりする property にこの private 目印を付けない。
+WIT import名、`bindings.add` / `bindings.dropped`、公開`call` / `promise` / `stats`と診断キー、`error.code`、標準APIは短縮しない。外部とやりとりするpropertyにこのprivate目印を付けない。
 
-private 命名前の minify JS は2,881 B。命名後の同じソースは minify のみ2,919 B、property mangling 有効2,700 B（219 B削減）。従来の配信 JS に対する削減は181 B、約6.3%。これは property 名だけの変更で、object の割り当て件数やレコードの構造、Wasm は変えていない。
+計測スクリプトはreleaseの`host.mjs`と`host-unmangled.mjs`も比較する。同じWasmと全動作probesを通し、各ファイルのSHA-256と短縮名の対応表をJSONへ保存する。サイズは配信する一方のJSだけを加算する。各hostを4,096 task暖機後、各4,096 taskの11サンプルを交互順で測る。release/debugの時間比較も別の交互測定で保存する。Nodeとlocal workerdで両版の生成物を検証する。Safari 27実ブラウザーは未検証。
 
-計測スクリプトは `host.mjs` と `host-unmangled.mjs` を出力し、**同じ Wasm バイト列**に対して双方で共通ケースと全 probes、公開 API / 診断キーを検証する。サイズは各構成で配信する一方の JS だけを加算する。速度は両 host を各4,096 task 暖機後、各4,096 task の11サンプルを交互順で測る。暖機回数・測定順はテストでも確認する。各ファイルの SHA-256 と短縮名の対応表も JSON に保存する。local workerd でも実際に生成した短縮済み host を読む。
+## Debug and release builds (English)
+
+This unadopted JSPI Future experiment emits `host.mjs` (release) and `host-debug.mjs` from the same source, using `bundleHost({ debug: true })` to select debug. Both loaders use the exact same optimized Rust/Wasm binary. Release excludes `stats()`, diagnostic counters and the error-description table; debug includes all three. Runtime-owned errors have the same stable `error.code` in both builds. Release messages contain only the code, while debug messages also describe it. Foreign rejection reasons and Wasm traps retain their identity.
+
+Both builds run the same 3,507 cases and behavioral probes, including Drop, cancellation effects, child Wakers, rejection/trap handling and capacity/borrow failures. Debug additionally inspects internal counters and cleanup. The optional WIT probe binding `bindings.dropped` forwards Drop notifications to the test harness without adding release counters. Safety checks and fatal cleanup remain enabled in both builds.
+
+The bounded sample is 1,842 B Wasm plus 2,394 B release JS (4,236 B total), or 3,005 B debug JS (4,847 B total). Measurement JSON records hashes, all probe results and paired timings. Both variants are tested on Node and local workerd; Safari 27 has not been tested in a real browser.

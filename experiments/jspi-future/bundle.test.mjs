@@ -65,6 +65,9 @@ test("host bundle shrinks using private properties without changing its module A
       `data:text/javascript;base64,${Buffer.from(bytes).toString("base64")}`
     );
     assert.deepEqual(Object.keys(mod), ["instantiate"]);
-    await assert.rejects(mod.instantiate(null), /add binding required/);
+    await assert.rejects(mod.instantiate(null), {
+      code: "JF4",
+      message: "JF4",
+    });
   }
 });
