@@ -10,11 +10,13 @@ import {
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { rustEnvironment } from "./rust-toolchain.mjs";
 import { verifyWit } from "../tests/support/wit-contract.mjs";
 import { asyncCases } from "../tests/support/async-contract.mjs";
 const root = resolve("."),
   temp = mkdtempSync(join(tmpdir(), "kanimiso-package-"));
-const run = (bin, args, cwd = root, env = process.env) =>
+const rustEnv = rustEnvironment(root);
+const run = (bin, args, cwd = root, env = rustEnv) =>
   execFileSync(bin, args, {
     cwd,
     env,
@@ -62,7 +64,7 @@ try {
   }
   const install = join(temp, "installed");
   const env = {
-    ...process.env,
+    ...rustEnv,
     CARGO_TARGET_DIR: resolve(".cache/package-install-target"),
     KANIMISO_BINARYEN: resolve(".cache/toolchains/binaryen-version_133/bin"),
   };
