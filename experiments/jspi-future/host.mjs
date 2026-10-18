@@ -1,3 +1,4 @@
+import { createStacks } from "../jspi-concurrent/stack.mjs";
 import { Gates } from "./gates.mjs";
 import { runtimeError } from "./errors.mjs";
 
@@ -27,10 +28,12 @@ export async function instantiate(
   const alive = () => {
     if (dead) throw fatal;
   };
+  if (__JF_CONCURRENT__) gates.stacks_ = createStacks(alive);
   const poison = (error) => {
     if (!dead) {
       dead = true;
       fatal = error;
+      if (__JF_CONCURRENT__) gates.stacks_.close();
       gates.retire_(error);
       jobs.clear();
       completed.clear();
@@ -115,7 +118,12 @@ export async function instantiate(
         })
       : sync(dropped),
   };
-  const loaded = await WebAssembly.instantiate(source, { app: imports });
+  const loaded = await WebAssembly.instantiate(
+    source,
+    __JF_CONCURRENT__
+      ? { app: imports, "taraba:jspi-stack": gates.stacks_.imports }
+      : { app: imports },
+  );
   const instance =
     loaded instanceof WebAssembly.Instance ? loaded : loaded.instance;
   if (
@@ -123,6 +131,7 @@ export async function instantiate(
     instance.exports.memory?.buffer instanceof SharedArrayBuffer
   )
     throw runtimeError(9);
+  if (__JF_CONCURRENT__) gates.stacks_.attach(instance.exports);
   for (const [name, value] of Object.entries(instance.exports))
     if (
       typeof value === "function" &&
@@ -133,19 +142,21 @@ export async function instantiate(
   let tail = Promise.resolve();
   const call = (name, ...args) => {
     if (__JF_DEBUG__) queued++;
-    let result = tail.then(async () => {
-      alive();
-      if (typeof functions[name] !== "function") throw runtimeError(10);
-      try {
-        const value = await functions[name](...args);
+    let result = (__JF_CONCURRENT__ ? Promise.resolve() : tail).then(
+      async () => {
         alive();
-        return value;
-      } catch (e) {
-        throw poison(e);
-      }
-    });
+        if (typeof functions[name] !== "function") throw runtimeError(10);
+        try {
+          const value = await functions[name](...args);
+          alive();
+          return value;
+        } catch (e) {
+          throw poison(e);
+        }
+      },
+    );
     if (__JF_DEBUG__) result = result.finally(() => queued--);
-    tail = result.catch(() => {});
+    if (!__JF_CONCURRENT__) tail = result.catch(() => {});
     return result;
   };
   return {
@@ -155,6 +166,7 @@ export async function instantiate(
       ? {
           stats: () => ({
             ...gates.stats_(),
+            ...(__JF_CONCURRENT__ ? { stack: gates.stacks_.stats() } : {}),
             jobs: jobs.size,
             completion_queues: completed.size,
             queued,

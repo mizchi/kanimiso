@@ -98,3 +98,17 @@ miri-jspi-future:
 
 kani-jspi-future:
     cargo kani --manifest-path experiments/jspi-future/adapter/Cargo.toml --no-default-features --features bounded --lib --output-format terse -Z unstable-options --harness-timeout 60s
+
+prepare-jspi-concurrent: check-jspi-future
+    cargo fetch --locked --manifest-path experiments/jspi-concurrent/Cargo.toml
+    cargo test --locked --manifest-path experiments/jspi-concurrent/Cargo.toml --bin transform
+    cargo build --locked --manifest-path experiments/jspi-concurrent/Cargo.toml --bin transform
+    node --test experiments/jspi-concurrent/*.test.mjs
+    cargo fmt --manifest-path experiments/jspi-concurrent/Cargo.toml --all -- --check
+    pnpm exec prettier --check experiments/jspi-concurrent/*.mjs
+
+check-jspi-concurrent: prepare-jspi-concurrent
+    node tools/experiment-jspi-concurrent.mjs --check
+
+experiment-jspi-concurrent: prepare-jspi-concurrent
+    node tools/experiment-jspi-concurrent.mjs

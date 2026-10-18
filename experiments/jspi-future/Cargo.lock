@@ -104,13 +104,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "taraba-allocator"
-version = "0.1.0"
-dependencies = [
- "memory_units",
-]
-
-[[package]]
 name = "leb128fmt"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -242,6 +235,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "taraba-allocator"
+version = "0.1.0"
+dependencies = [
+ "memory_units",
 ]
 
 [[package]]

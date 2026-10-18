@@ -15,6 +15,8 @@ Their Core lowering is distinct from the Component Model Canonical ABI. See the 
 
 A separate [experimental adapter](experiments/jspi-future/README.md) drives Rust Futures through JSPI. The intended extension is optional Future support on top of JSPI. This adapter is still experimental and is not part of the product API. The existing Future backend remains available until concurrency, cancellation/Drop, and concurrent memory/performance gates pass; see the [adoption decision](docs/jspi-adoption.md).
 
+The [concurrent JSPI experiment](experiments/jspi-concurrent/README.md) adds spill-stack snapshots and Wasm trampolines to both direct JSPI and the bounded Future adapter. Independent calls can progress while another waits for I/O. It remains opt-in research; the product still serializes JSPI entry. See the [measurements](docs/jspi-concurrent.md) for distribution size, immediate/delayed timings, and Node process memory.
+
 ## Install and use
 
 The first crates.io releases of `taraba`, `taraba-allocator`, and `taraba-cli` are being prepared. The following is the intended workflow after publication. Registry installation has not yet been verified; no registry publish has been performed.

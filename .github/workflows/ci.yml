@@ -18,11 +18,11 @@ jobs:
       - uses: extractions/setup-just@v4
       - run: just setup
       - run: just check
-      - run: just check-jspi-future
+      - run: just check-jspi-concurrent
       - run: just package-check
       - run: just modern
       - run: just stress 60
-      - run: just workers --jspi-future
+      - run: just workers --jspi-concurrent
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -31,6 +31,8 @@ jobs:
             .cache/check.json
             .cache/jspi-check.json
             .cache/jspi-future-experiment/check.json
+            .cache/jspi-concurrent/check.json
+            .cache/jspi-concurrent/failure.log
             .cache/stress.json
             .cache/package-check.json
             .cache/package-check-error.log

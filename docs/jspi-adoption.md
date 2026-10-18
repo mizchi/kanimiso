@@ -45,6 +45,12 @@ JSPI の reject / trap で Rust の Drop が走るとは仮定しない。Promis
 
 ## 既存バックエンドを削除する条件
 
+並行性については [実験](../experiments/jspi-concurrent/README.md)を追加した。直接 JSPI と bounded Future アダプターで stack snapshot を Wasm 内から同期的に復元し、同一 instance の別 root を進める。V8 / local workerd の probes と[測定](jspi-concurrent.md)で検証する。前掲の表は製品と従来アダプターの契約を示しており、この並行版を既定へ採用したことは意味しない。Safari 実機・root cancel・公開 API の移行条件は引き続き未達。
+
+この実験の no_std / V8 測定では、直接並行 JSPI は合計2,756 Bだが、512件投入の即時 Promise は4.15 μs/task、同じペアの既存 Future は1.18 μs/taskだった。二段5 msの I/O を16件投入した batch は両者とも約12 msまで進められる一方、1,024件を停止した追加 RSS の中央値は約20 MiBと4.9 MiBで差がある。RSS は task の厳密な stack サイズではないが、この構成で大量並行のコストを無視できる結果ではない。
+
+したがって、配信サイズの小ささだけを根拠に既存 Future を削除しない。直接 JSPI の小さな既定構成を維持し、多数の独立した待機や細かい Future の進行には引き続き `--future` を選べるようにする。並行版は、同時 root 数・snapshot の保持方法・一つの JSPI root 内で Future を多重化する構成などの比較対象に残す。これらの最適化は今回の測定結果には含めない。
+
 以下を満たすまで `--future` と比較用 fixture を維持する。
 
 1. **同一 instance の独立した処理を進める。** A の I/O が停止していても B が開始・完了する。LLVM の stack 分離・保存復元だけでなく、共有状態の借用と再入のルールを定義する。Rust の実 spill を保持した複数呼び出しで、逆順・非 LIFO・同時完了・trap を検証する。

@@ -337,6 +337,7 @@ const inputPaths = [
   "tests/support/async-contract.mjs",
   "tests/support/metrics.mjs",
   "tests/support/scheduling.mjs",
+  "experiments/jspi-concurrent/stack.mjs",
   ...["core", "jspi"].flatMap((b) => paths(`experiments/wit/${b}`)),
   "src/jspi.mjs",
   "src/host.mjs",

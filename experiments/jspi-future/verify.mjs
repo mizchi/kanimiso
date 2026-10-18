@@ -8,7 +8,7 @@ const tick = async (condition) => {
 async function verifyDriverContract(
   instantiate,
   bytes,
-  { unordered = true, bounded = false, debug = false } = {},
+  { unordered = true, bounded = false, debug = false, concurrent = false } = {},
 ) {
   const dropCounts = new WeakMap();
   const create = async (options) => {
@@ -35,7 +35,9 @@ async function verifyDriverContract(
   if (debug)
     check(
       JSON.stringify(Object.keys(host.stats()).sort()) ===
-        '["completion_queues","dead","drops","gates","jobs","parks","polls","queued"]',
+        (concurrent
+          ? '["completion_queues","dead","drops","gates","jobs","parks","polls","queued","stack"]'
+          : '["completion_queues","dead","drops","gates","jobs","parks","polls","queued"]'),
       "public diagnostics were renamed",
     );
   for (const count of [0, 1, 64, 1024])
@@ -142,7 +144,7 @@ async function verifyDriverContract(
     "pinned 1 KiB Future stack changed",
   );
   check(
-    peak === 1 && dropped(host) === 32,
+    peak === (concurrent ? 32 : 1) && dropped(host) === 32,
     "entry serialization/Drop mismatch",
   );
   if (debug)
@@ -182,7 +184,7 @@ async function verifyDriverContract(
         "fatal cleanup incomplete",
       );
     check(
-      requests === 1 && dropped(h) === 0,
+      requests === (concurrent ? 2 : 1) && dropped(h) === 0,
       "failed guest reentered or unwound Rust Drop",
     );
   }

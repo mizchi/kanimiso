@@ -15,6 +15,8 @@ JavaScript ホスト向けの小さな Rust/Wasm ランタイムです。実験�
 
 JSPI で Rust Future を駆動する別の[アダプター実験](experiments/jspi-future/README.md)もあります。将来は JSPI 上の追加機能として Future 対応を提供する方針です。このアダプターは引き続き実験扱いで、製品 API には含めません。並行実行・キャンセルと Drop・同時実行時のメモリと速度の検証を終えるまでは既存 Future バックエンドも維持します。[採用方針](docs/jspi-adoption.md)を参照してください。
 
+[同一インスタンスの並行実行実験](experiments/jspi-concurrent/README.md)では、直接 JSPI と bounded Future アダプターの両方に spill stack の snapshot と Wasm トランポリンを追加し、一つの I/O が停止している間も別の呼び出しを進めます。製品には未採用で、既定の JSPI は引き続き直列実行です。配信サイズ・即時／遅延時間・Node のプロセスメモリは[測定結果](docs/jspi-concurrent.md)を参照してください。
+
 ## インストールと利用
 
 `taraba`、`taraba-allocator`、`taraba-cli` の初回 crates.io 公開を準備中です。以下は公開後の利用手順です。まだレジストリからのインストール成功は保証していません。公開自体は実施していません。

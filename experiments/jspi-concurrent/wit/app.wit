@@ -1,0 +1,14 @@
+package taraba:concurrent@0.1.0;
+world app {
+    import add: func(a: s32, b: s32) -> s32;
+    export run: func(a: s32, b: s32) -> s32;
+}
+world probes {
+    include app;
+    export hold: func(a: s32, b: s32) -> s32;
+    export overwrite: func(a: s32, b: s32) -> s32;
+    export grow: func(a: s32, b: s32) -> s32;
+    export trap: func(a: s32, b: s32) -> s32;
+    export borrowed: func(a: s32, b: s32) -> s32;
+    export counter: func() -> s32;
+}

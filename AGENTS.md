@@ -10,4 +10,5 @@
 - 実験環境の前提は Safari 27+ / JSPI 対応 V8。古い system JSC の未対応を最新 Safari の非対応と扱わない。Safari 実ブラウザーを実行していなければ未検証と明記する。
 - CLI の new/build は JSPI が既定。既存 Future fixture / consumer は `--future` を明示し、WIT から暗黙に実行系を推測しない。JSPI Future アダプターは実験扱いを維持し、削除条件は `docs/jspi-adoption.md` に従う。
 - JSPI scalar profile は同一 instance の guest entry を直列化し、host reject / Wasm trap で instance を閉じる。既存の Future/cancel 契約と同一視しない。
+- 同一 instance の並行 JSPI は `experiments/jspi-concurrent` の未採用実験。snapshot の復元は JSPI 再開後の同期 Wasm trampoline で行い、Promise reaction から復元しない。製品へ暗黙に適用しない。
 - npm/crates.io 公開は別の明示的な依頼があるまで行わない。

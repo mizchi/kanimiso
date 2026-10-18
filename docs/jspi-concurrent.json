@@ -1,0 +1,3780 @@
+{
+  "created_at": "2026-10-18T18:05:24.663Z",
+  "adopted": false,
+  "engine": "Node v24.21.0 / V8 13.6.233.17-node.53",
+  "cpu": "Apple M5",
+  "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "method": {
+    "algorithm": "experiments/wit/shared/compute.rs",
+    "rustflags": "-C link-arg=-zstack-size=65536 -C link-arg=--max-memory=1048576 -C link-arg=--export=__stack_pointer -C link-arg=--export=__stack_low -C link-arg=--export=__stack_high",
+    "binaryen": 133,
+    "stack_handoff": "synchronous Wasm import trampolines; snapshots restored after JSPI resumes, never in Promise reactions",
+    "memory": "parked_spills counts JS snapshots only; process_memory: three isolated Node --expose-gc processes per task count, 64 task warmup, GC before baseline/parked/after. RSS is coarse resident-process growth including engine/JIT pages; serial variants have one active I/O plus queued calls",
+    "safari": "Safari 27 real browser unverified",
+    "timing": "build/probes finish first; immediate: 512 JS submissions per batch, alternating paired 11x4096 tasks after warmup; delayed: 16 tasks, two 5ms timers, 2 warmups + 5 samples"
+  },
+  "profiles": [
+    {
+      "id": "jspi-serial-no_std",
+      "backend": "jspi",
+      "mode": "no_std",
+      "serialized": true,
+      "concurrent": false,
+      "wasm": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/jspi-no_std/core/app.wasm",
+      "loader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/jspi-no_std/host.mjs",
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ]
+        ],
+        "completed_while_a_blocked": [],
+        "completion_order": [
+          "A",
+          "B"
+        ]
+      },
+      "files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/jspi-no_std/core/app.wasm",
+          "bytes": 248,
+          "sha256": "f1162731bcafab1904c42e7ee6c0fb0f1c9ca0a1bf0a3022ad557875626af052",
+          "raw": 248,
+          "gzip": 201,
+          "brotli": 177
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/jspi-no_std/host.mjs",
+          "bytes": 1324,
+          "sha256": "6eb69c495deb02e293d68b41bff1dcad56beb7078a3466e6127e621c892ad3de",
+          "raw": 1324,
+          "gzip": 634,
+          "brotli": 560
+        }
+      ],
+      "wasm_bytes": 248,
+      "js_bytes": 1324,
+      "total_bytes": 1572,
+      "paired_immediate": {
+        "reference": "core-future-no_std",
+        "reference_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.5218405761718845,
+            1.4715778808593871,
+            1.2232565917968952,
+            1.2579445800779965,
+            1.207967285156153,
+            1.2979125976562145,
+            1.4175720214844034,
+            1.4867148437498479,
+            1.3272194824218708,
+            1.8246867675781875,
+            1.9359333496093978
+          ],
+          "median": 1.4175720214844034,
+          "min": 1.207967285156153,
+          "max": 1.9359333496093978
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            0.709879638671973,
+            0.5978393554686434,
+            0.6445820312499517,
+            0.636271240234354,
+            0.8550314941406789,
+            0.67372631835938,
+            0.5815532226562947,
+            0.7192893066405581,
+            0.5813496093751702,
+            0.61225390624986,
+            0.6336262207029542
+          ],
+          "median": 0.636271240234354,
+          "min": 0.5813496093751702,
+          "max": 0.8550314941406789
+        }
+      },
+      "delayed": {
+        "unit": "ms/batch",
+        "tasks": 16,
+        "host_delay_ms": 5,
+        "host_awaits_per_task": 2,
+        "samples": [
+          182.11837500000001,
+          181.85612500000025,
+          181.29591600000003,
+          179.86766699999953,
+          180.6264169999995
+        ],
+        "median": 181.29591600000003
+      },
+      "process_memory": [
+        {
+          "submitted": 128,
+          "active_io": 1,
+          "median_delta_rss": 163840,
+          "median_delta_heap_used": 106000,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54329344,
+                "heapTotal": 7421952,
+                "heapUsed": 4322480,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54493184,
+                "heapTotal": 7421952,
+                "heapUsed": 4428480,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 54575104,
+                "heapTotal": 7421952,
+                "heapUsed": 4352568,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 163840,
+                "heapTotal": 0,
+                "heapUsed": 106000,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54231040,
+                "heapTotal": 7159808,
+                "heapUsed": 4322480,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54460416,
+                "heapTotal": 7421952,
+                "heapUsed": 4428480,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 54525952,
+                "heapTotal": 7421952,
+                "heapUsed": 4352568,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 229376,
+                "heapTotal": 262144,
+                "heapUsed": 106000,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54280192,
+                "heapTotal": 7421952,
+                "heapUsed": 4322480,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54411264,
+                "heapTotal": 7421952,
+                "heapUsed": 4437936,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 54444032,
+                "heapTotal": 7421952,
+                "heapUsed": 4352568,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 131072,
+                "heapTotal": 0,
+                "heapUsed": 115456,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        },
+        {
+          "submitted": 1024,
+          "active_io": 1,
+          "median_delta_rss": 409600,
+          "median_delta_heap_used": 786632,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54329344,
+                "heapTotal": 7159808,
+                "heapUsed": 4322480,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54722560,
+                "heapTotal": 8208384,
+                "heapUsed": 5109112,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 57655296,
+                "heapTotal": 9256960,
+                "heapUsed": 4423448,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 393216,
+                "heapTotal": 1048576,
+                "heapUsed": 786632,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54280192,
+                "heapTotal": 7159808,
+                "heapUsed": 4322480,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54689792,
+                "heapTotal": 8208384,
+                "heapUsed": 5109112,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 57606144,
+                "heapTotal": 9256960,
+                "heapUsed": 4423448,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 409600,
+                "heapTotal": 1048576,
+                "heapUsed": 786632,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54394880,
+                "heapTotal": 7159808,
+                "heapUsed": 4322480,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54886400,
+                "heapTotal": 8208384,
+                "heapUsed": 5099656,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 57868288,
+                "heapTotal": 8994816,
+                "heapUsed": 4423448,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 491520,
+                "heapTotal": 1048576,
+                "heapUsed": 777176,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "core-future-no_std",
+      "backend": "core",
+      "mode": "no_std",
+      "serialized": false,
+      "concurrent": false,
+      "wasm": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/core-no_std/core/app.wasm",
+      "loader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/core-no_std/host.mjs",
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ],
+          [
+            20,
+            2
+          ]
+        ],
+        "completed_while_a_blocked": [
+          "B"
+        ],
+        "completion_order": [
+          "B",
+          "A"
+        ]
+      },
+      "files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/core-no_std/core/app.wasm",
+          "bytes": 1744,
+          "sha256": "d90bf461353a441c595968128965cd964c08303d1037aedd2eb23b91609247c2",
+          "raw": 1744,
+          "gzip": 1037,
+          "brotli": 991
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/core-no_std/host.mjs",
+          "bytes": 3874,
+          "sha256": "741a202dd568b320ba9375fe8ddf772557122ffc0fc340f4863e1a8caf75e9ce",
+          "raw": 3874,
+          "gzip": 1952,
+          "brotli": 1793
+        }
+      ],
+      "wasm_bytes": 1744,
+      "js_bytes": 3874,
+      "total_bytes": 5618,
+      "delayed": {
+        "unit": "ms/batch",
+        "tasks": 16,
+        "host_delay_ms": 5,
+        "host_awaits_per_task": 2,
+        "samples": [
+          10.630625000000691,
+          11.65204200000062,
+          11.752792000000227,
+          12.088291999999456,
+          11.961999999999534
+        ],
+        "median": 11.752792000000227
+      },
+      "process_memory": [
+        {
+          "submitted": 128,
+          "active_io": 128,
+          "median_delta_rss": 425984,
+          "median_delta_heap_used": 147728,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 53297152,
+                "heapTotal": 7159808,
+                "heapUsed": 4385008,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 53772288,
+                "heapTotal": 7421952,
+                "heapUsed": 4532736,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 55410688,
+                "heapTotal": 7684096,
+                "heapUsed": 4458064,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 475136,
+                "heapTotal": 262144,
+                "heapUsed": 147728,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 53379072,
+                "heapTotal": 7159808,
+                "heapUsed": 4385008,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 53788672,
+                "heapTotal": 7421952,
+                "heapUsed": 4532680,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 55279616,
+                "heapTotal": 7684096,
+                "heapUsed": 4458064,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 409600,
+                "heapTotal": 262144,
+                "heapUsed": 147672,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 53395456,
+                "heapTotal": 7159808,
+                "heapUsed": 4385008,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 53821440,
+                "heapTotal": 7421952,
+                "heapUsed": 4974848,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 55525376,
+                "heapTotal": 7684096,
+                "heapUsed": 4458064,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 425984,
+                "heapTotal": 262144,
+                "heapUsed": 589840,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        },
+        {
+          "submitted": 1024,
+          "active_io": 1024,
+          "median_delta_rss": 5128192,
+          "median_delta_heap_used": 1091936,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 53329920,
+                "heapTotal": 7159808,
+                "heapUsed": 4385008,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 58228736,
+                "heapTotal": 10043392,
+                "heapUsed": 5476816,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 62619648,
+                "heapTotal": 9781248,
+                "heapUsed": 4826584,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 4898816,
+                "heapTotal": 2883584,
+                "heapUsed": 1091808,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 53362688,
+                "heapTotal": 7421952,
+                "heapUsed": 4385008,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 58490880,
+                "heapTotal": 10305536,
+                "heapUsed": 5476944,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 62586880,
+                "heapTotal": 9781248,
+                "heapUsed": 4826680,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 5128192,
+                "heapTotal": 2883584,
+                "heapUsed": 1091936,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 53493760,
+                "heapTotal": 7159808,
+                "heapUsed": 4385008,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 58638336,
+                "heapTotal": 10043392,
+                "heapUsed": 5486224,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 62914560,
+                "heapTotal": 9781248,
+                "heapUsed": 4826704,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 5144576,
+                "heapTotal": 2883584,
+                "heapUsed": 1101216,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bounded-serial-no_std",
+      "backend": "bounded",
+      "mode": "no_std",
+      "serialized": true,
+      "concurrent": false,
+      "wasm": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/bounded-no_std/core/app.wasm",
+      "loader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/bounded-no_std/host.mjs",
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ]
+        ],
+        "completed_while_a_blocked": [],
+        "completion_order": [
+          "A",
+          "B"
+        ]
+      },
+      "files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/bounded-no_std/core/app.wasm",
+          "bytes": 1842,
+          "sha256": "9b6f1d84180f0e56dd75b94acabf6880edbc78a6ce052f4fe5cdbde4c1681bc8",
+          "raw": 1842,
+          "gzip": 1032,
+          "brotli": 949
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/bounded-no_std/host.mjs",
+          "bytes": 2394,
+          "sha256": "9c4c02cb46a6cd73127e9a1224d836be49985f19d8a5ff8c141b7de9ce470f2e",
+          "raw": 2394,
+          "gzip": 1118,
+          "brotli": 1026
+        }
+      ],
+      "wasm_bytes": 1842,
+      "js_bytes": 2394,
+      "total_bytes": 4236,
+      "paired_immediate": {
+        "reference": "core-future-no_std",
+        "reference_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.2046406250001418,
+            1.1576538085937838,
+            1.1349689941406726,
+            1.228485107422017,
+            1.1330668945312983,
+            1.1585895996093498,
+            1.1240031738282141,
+            1.2212932128907728,
+            1.1530354003905785,
+            1.1316223144530735,
+            1.1409506835937666
+          ],
+          "median": 1.1530354003905785,
+          "min": 1.1240031738282141,
+          "max": 1.228485107422017
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.2927958984374488,
+            1.270019531250055,
+            1.1383464355467776,
+            1.0462951660155095,
+            1.0652058105469209,
+            1.183054687500018,
+            1.0989890136718916,
+            1.0270385742188193,
+            1.0207316894532692,
+            1.0767517089844691,
+            1.085642333984227
+          ],
+          "median": 1.085642333984227,
+          "min": 1.0207316894532692,
+          "max": 1.2927958984374488
+        }
+      },
+      "delayed": {
+        "unit": "ms/batch",
+        "tasks": 16,
+        "host_delay_ms": 5,
+        "host_awaits_per_task": 2,
+        "samples": [
+          180.8960419999994,
+          178.39958399999887,
+          179.62258299999849,
+          180.64254099999926,
+          184.130165999999
+        ],
+        "median": 180.64254099999926
+      },
+      "process_memory": [
+        {
+          "submitted": 128,
+          "active_io": 1,
+          "median_delta_rss": 114688,
+          "median_delta_heap_used": 69840,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54706176,
+                "heapTotal": 7421952,
+                "heapUsed": 4363832,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54804480,
+                "heapTotal": 7421952,
+                "heapUsed": 4433672,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 54951936,
+                "heapTotal": 7421952,
+                "heapUsed": 4391592,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 98304,
+                "heapTotal": 0,
+                "heapUsed": 69840,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54788096,
+                "heapTotal": 7159808,
+                "heapUsed": 4363832,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54902784,
+                "heapTotal": 7159808,
+                "heapUsed": 4433672,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 55083008,
+                "heapTotal": 7159808,
+                "heapUsed": 4391592,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 114688,
+                "heapTotal": 0,
+                "heapUsed": 69840,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54902784,
+                "heapTotal": 7159808,
+                "heapUsed": 4363832,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 55017472,
+                "heapTotal": 7159808,
+                "heapUsed": 4433672,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 55181312,
+                "heapTotal": 7159808,
+                "heapUsed": 4391592,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 114688,
+                "heapTotal": 0,
+                "heapUsed": 69840,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        },
+        {
+          "submitted": 1024,
+          "active_io": 1,
+          "median_delta_rss": 540672,
+          "median_delta_heap_used": 458728,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54558720,
+                "heapTotal": 7159808,
+                "heapUsed": 4363832,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 55099392,
+                "heapTotal": 7421952,
+                "heapUsed": 4822560,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 59310080,
+                "heapTotal": 7684096,
+                "heapUsed": 4478840,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 540672,
+                "heapTotal": 262144,
+                "heapUsed": 458728,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54722560,
+                "heapTotal": 7159808,
+                "heapUsed": 4363832,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 55279616,
+                "heapTotal": 7421952,
+                "heapUsed": 4822560,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 59310080,
+                "heapTotal": 7684096,
+                "heapUsed": 4478840,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 557056,
+                "heapTotal": 262144,
+                "heapUsed": 458728,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54607872,
+                "heapTotal": 7159808,
+                "heapUsed": 4363832,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 55066624,
+                "heapTotal": 7684096,
+                "heapUsed": 4822560,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 59244544,
+                "heapTotal": 7684096,
+                "heapUsed": 4478840,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 458752,
+                "heapTotal": 524288,
+                "heapUsed": 458728,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jspi-concurrent-no_std",
+      "backend": "jspi",
+      "mode": "no_std",
+      "serialized": false,
+      "concurrent": true,
+      "wasm": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-no_std/core/app.wasm",
+      "probes": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-no_std/probes/app.wasm",
+      "unprotected": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-no_std/probes/unprotected.wasm",
+      "loader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-no_std/host.mjs",
+      "debugLoader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-no_std/host-debug.mjs",
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ],
+          [
+            20,
+            2
+          ]
+        ],
+        "completed_while_a_blocked": [
+          "B"
+        ],
+        "completion_order": [
+          "B",
+          "A"
+        ]
+      },
+      "files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-no_std/core/app.wasm",
+          "bytes": 499,
+          "sha256": "e88b5e7c0785c32687eac8980b3d8635049fb6af1c5f479f357af32babe37e94",
+          "raw": 499,
+          "gzip": 340,
+          "brotli": 312
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-no_std/host.mjs",
+          "bytes": 2257,
+          "sha256": "0bb475c25a5b89cd1b16a5542e5fe46a20accf1630037e6e59a86a09a7b93871",
+          "raw": 2257,
+          "gzip": 1065,
+          "brotli": 984
+        }
+      ],
+      "wasm_bytes": 499,
+      "js_bytes": 2257,
+      "total_bytes": 2756,
+      "verification_files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-no_std/probes/app.wasm",
+          "bytes": 1025,
+          "sha256": "3a7132712c17b8336a5be99175dbb9db3c525cbdd89b7938fec1bd919ed24fb7"
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-no_std/probes/unprotected.wasm",
+          "bytes": 738,
+          "sha256": "5695cf3d668dc11e5ee6ddfd7022d0639e719ea1f106cbbc7ff9748921629f3a"
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-no_std/host-debug.mjs",
+          "bytes": 2449,
+          "sha256": "4fa5d0e9bd2d6b503afaf6d5753e9971ea6a6ea82b93cfc6c9494694f2a52c3d"
+        }
+      ],
+      "release_probes": {
+        "all_passed": true,
+        "non_lifo": true,
+        "simultaneous_spills": 32,
+        "memory_grow": true,
+        "shared_borrow_conflict": true,
+        "binding_reentry": true,
+        "shared_data_preserved": true,
+        "instance_isolation": true,
+        "fatal_retires_parked": true
+      },
+      "debug_probes": {
+        "all_passed": true,
+        "non_lifo": true,
+        "simultaneous_spills": 32,
+        "memory_grow": true,
+        "shared_borrow_conflict": true,
+        "binding_reentry": true,
+        "shared_data_preserved": true,
+        "instance_isolation": true,
+        "fatal_retires_parked": true
+      },
+      "red_control": {
+        "stack_corruption_detected": true
+      },
+      "parked_spills": {
+        "task_count": 32,
+        "rust_array_bytes": 512,
+        "stats": {
+          "roots": 32,
+          "snapshot_bytes": 16896,
+          "copied_bytes": 16896,
+          "peak_snapshot_bytes": 16896,
+          "pending": 32,
+          "calls": 32,
+          "completions": 0,
+          "dead": false
+        }
+      },
+      "paired_immediate": {
+        "reference": "core-future-no_std",
+        "reference_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.2281494140624627,
+            1.1845600585937976,
+            1.1284179687498508,
+            1.1908771972655163,
+            1.1812438964844407,
+            1.137288330078201,
+            1.2669575195314309,
+            1.1321816406248963,
+            1.1326193847656096,
+            1.2533669433594241,
+            1.3976948242189202
+          ],
+          "median": 1.1845600585937976,
+          "min": 1.1284179687498508,
+          "max": 1.3976948242189202
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            4.195851562500019,
+            4.0449218750000515,
+            4.152242187499988,
+            4.533945800781147,
+            4.035522460937635,
+            3.961873535156313,
+            3.924581054687515,
+            4.31244921875007,
+            4.087890625000146,
+            4.383158447265778,
+            4.307952880859389
+          ],
+          "median": 4.152242187499988,
+          "min": 3.924581054687515,
+          "max": 4.533945800781147
+        }
+      },
+      "delayed": {
+        "unit": "ms/batch",
+        "tasks": 16,
+        "host_delay_ms": 5,
+        "host_awaits_per_task": 2,
+        "samples": [
+          12.5919159999994,
+          12.454042000001209,
+          10.615707999999358,
+          11.820084000000861,
+          11.563082999999097
+        ],
+        "median": 11.820084000000861
+      },
+      "process_memory": [
+        {
+          "submitted": 128,
+          "active_io": 128,
+          "median_delta_rss": 1212416,
+          "median_delta_heap_used": 304944,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 55574528,
+                "heapTotal": 7159808,
+                "heapUsed": 4342928,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 56786944,
+                "heapTotal": 7421952,
+                "heapUsed": 4647872,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 56885248,
+                "heapTotal": 7421952,
+                "heapUsed": 4400304,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1212416,
+                "heapTotal": 262144,
+                "heapUsed": 304944,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 55705600,
+                "heapTotal": 7159808,
+                "heapUsed": 4342928,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 56918016,
+                "heapTotal": 7421952,
+                "heapUsed": 4647872,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 57032704,
+                "heapTotal": 7684096,
+                "heapUsed": 4400304,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1212416,
+                "heapTotal": 262144,
+                "heapUsed": 304944,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 55508992,
+                "heapTotal": 7159808,
+                "heapUsed": 4343000,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 56688640,
+                "heapTotal": 7421952,
+                "heapUsed": 4647944,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 56770560,
+                "heapTotal": 7421952,
+                "heapUsed": 4400376,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1179648,
+                "heapTotal": 262144,
+                "heapUsed": 304944,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        },
+        {
+          "submitted": 1024,
+          "active_io": 1024,
+          "median_delta_rss": 20987904,
+          "median_delta_heap_used": 2407928,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 55541760,
+                "heapTotal": 7159808,
+                "heapUsed": 4342928,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 76529664,
+                "heapTotal": 16072704,
+                "heapUsed": 6750856,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 78004224,
+                "heapTotal": 13975552,
+                "heapUsed": 4684936,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 20987904,
+                "heapTotal": 8912896,
+                "heapUsed": 2407928,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 55558144,
+                "heapTotal": 7159808,
+                "heapUsed": 4342928,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 76398592,
+                "heapTotal": 16072704,
+                "heapUsed": 6750856,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 77840384,
+                "heapTotal": 13713408,
+                "heapUsed": 4678800,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 20840448,
+                "heapTotal": 8912896,
+                "heapUsed": 2407928,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 55558144,
+                "heapTotal": 7159808,
+                "heapUsed": 4342928,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 76660736,
+                "heapTotal": 15810560,
+                "heapUsed": 6750856,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 77905920,
+                "heapTotal": 13713408,
+                "heapUsed": 4684936,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 21102592,
+                "heapTotal": 8650752,
+                "heapUsed": 2407928,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bounded-concurrent-no_std",
+      "backend": "bounded",
+      "mode": "no_std",
+      "serialized": false,
+      "concurrent": true,
+      "wasm": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/core/app.wasm",
+      "probes": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/probes/app.wasm",
+      "heapProbes": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/heap-probes/app.wasm",
+      "unprotected": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/probes/unprotected.wasm",
+      "loader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/host.mjs",
+      "debugLoader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/host-debug.mjs",
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ],
+          [
+            20,
+            2
+          ]
+        ],
+        "completed_while_a_blocked": [
+          "B"
+        ],
+        "completion_order": [
+          "B",
+          "A"
+        ]
+      },
+      "files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/core/app.wasm",
+          "bytes": 2091,
+          "sha256": "24be78995c88dea00efe3c9862a555adb104e4e6928f953842a017fef2ec4f60",
+          "raw": 2091,
+          "gzip": 1184,
+          "brotli": 1097
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/host.mjs",
+          "bytes": 3474,
+          "sha256": "b2362ec0d7aecc7e8463ed82ee51d281b70d7090c3bf95f67ebdcc52cef6ee1b",
+          "raw": 3474,
+          "gzip": 1567,
+          "brotli": 1440
+        }
+      ],
+      "wasm_bytes": 2091,
+      "js_bytes": 3474,
+      "total_bytes": 5565,
+      "verification_files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/probes/app.wasm",
+          "bytes": 4819,
+          "sha256": "6d399419be0ccc1d499b548fe9ddbb3bd2dd84e38063ad8ac70bc57903dc5048"
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/probes/unprotected.wasm",
+          "bytes": 4504,
+          "sha256": "6b6b3bd51da5b76bd5c82ea1c78ebfe90ad81540af6a1f2e224f2f5c60ad8247"
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/host-debug.mjs",
+          "bytes": 4314,
+          "sha256": "edf030304c4073f39dc11abdf0f00a10c6f7d44ff70db7067e00281a891060ba"
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-no_std/heap-probes/app.wasm",
+          "bytes": 8983,
+          "sha256": "97b40566f32dfdddf855236cfb927252daec125e0d36f4f15a7eb55291aaacfb"
+        }
+      ],
+      "release_probes": {
+        "all_passed": true,
+        "diagnostics": false,
+        "self_wakes": 1089,
+        "join_reverse_completion": true,
+        "futures_unordered_child_wakers": null,
+        "fixed_capacity": 16,
+        "overflow_before_io": true,
+        "coded_borrow_failure": true,
+        "select_drops_loser": true,
+        "late_completion_isolated": true,
+        "pinned_stack_tasks": 32,
+        "pinned_stack_bytes": 1024,
+        "rejection_reasons": 2,
+        "post_suspension_trap": true
+      },
+      "release_heap_probes": {
+        "all_passed": true,
+        "diagnostics": false,
+        "self_wakes": 1089,
+        "join_reverse_completion": true,
+        "futures_unordered_child_wakers": true,
+        "fixed_capacity": 16,
+        "overflow_before_io": true,
+        "coded_borrow_failure": true,
+        "select_drops_loser": true,
+        "late_completion_isolated": true,
+        "pinned_stack_tasks": 32,
+        "pinned_stack_bytes": 1024,
+        "rejection_reasons": 2,
+        "post_suspension_trap": true
+      },
+      "release_overlap": {
+        "roots": 16,
+        "child_io": 32,
+        "join": true,
+        "unordered": true,
+        "select": true
+      },
+      "debug_probes": {
+        "all_passed": true,
+        "diagnostics": true,
+        "self_wakes": 1089,
+        "join_reverse_completion": true,
+        "futures_unordered_child_wakers": null,
+        "fixed_capacity": 16,
+        "overflow_before_io": true,
+        "coded_borrow_failure": true,
+        "select_drops_loser": true,
+        "late_completion_isolated": true,
+        "pinned_stack_tasks": 32,
+        "pinned_stack_bytes": 1024,
+        "rejection_reasons": 2,
+        "post_suspension_trap": true
+      },
+      "debug_heap_probes": {
+        "all_passed": true,
+        "diagnostics": true,
+        "self_wakes": 1089,
+        "join_reverse_completion": true,
+        "futures_unordered_child_wakers": true,
+        "fixed_capacity": 16,
+        "overflow_before_io": true,
+        "coded_borrow_failure": true,
+        "select_drops_loser": true,
+        "late_completion_isolated": true,
+        "pinned_stack_tasks": 32,
+        "pinned_stack_bytes": 1024,
+        "rejection_reasons": 2,
+        "post_suspension_trap": true
+      },
+      "debug_overlap": {
+        "roots": 16,
+        "child_io": 32,
+        "join": true,
+        "unordered": true,
+        "select": true
+      },
+      "parked_spills": {
+        "task_count": 32,
+        "rust_array_bytes": 1024,
+        "stats": {
+          "gates": 32,
+          "parks": 32,
+          "dead": false,
+          "stack": {
+            "roots": 32,
+            "snapshot_bytes": 41472,
+            "copied_bytes": 41472,
+            "peak_snapshot_bytes": 41472
+          },
+          "jobs": 32,
+          "completion_queues": 32,
+          "queued": 32,
+          "polls": 32,
+          "drops": 0
+        }
+      },
+      "paired_immediate": {
+        "reference": "core-future-no_std",
+        "reference_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.2237141113280448,
+            1.145416259765497,
+            1.1126303710937702,
+            1.1322224121093072,
+            1.1117451171875903,
+            1.1373901367188743,
+            1.29333496093742,
+            1.1258747558593463,
+            1.130778076172012,
+            1.2010292968751557,
+            1.156901123046783
+          ],
+          "median": 1.1373901367188743,
+          "min": 1.1117451171875903,
+          "max": 1.29333496093742
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            5.741343261718601,
+            6.251983642578063,
+            5.542124511718649,
+            5.502634521484584,
+            4.8681945800781445,
+            4.8550314941406825,
+            4.939504150390572,
+            4.73575854492192,
+            5.526184082031094,
+            4.919840576171897,
+            4.979685546875112
+          ],
+          "median": 4.979685546875112,
+          "min": 4.73575854492192,
+          "max": 6.251983642578063
+        }
+      },
+      "delayed": {
+        "unit": "ms/batch",
+        "tasks": 16,
+        "host_delay_ms": 5,
+        "host_awaits_per_task": 2,
+        "samples": [
+          12.59491700000035,
+          12.506791999998313,
+          11.906958000001396,
+          12.180250000001251,
+          12.384667000000263
+        ],
+        "median": 12.384667000000263
+      },
+      "process_memory": [
+        {
+          "submitted": 128,
+          "active_io": 128,
+          "median_delta_rss": 1687552,
+          "median_delta_heap_used": 368184,
+          "median_delta_array_buffers": 55296,
+          "samples": [
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 56344576,
+                "heapTotal": 7159808,
+                "heapUsed": 4373280,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 58048512,
+                "heapTotal": 7421952,
+                "heapUsed": 4741464,
+                "external": 2364287,
+                "arrayBuffers": 192779
+              },
+              "after": {
+                "rss": 58327040,
+                "heapTotal": 7421952,
+                "heapUsed": 4437520,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1703936,
+                "heapTotal": 262144,
+                "heapUsed": 368184,
+                "external": 55336,
+                "arrayBuffers": 55296
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 56377344,
+                "heapTotal": 7421952,
+                "heapUsed": 4373280,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 57786368,
+                "heapTotal": 7684096,
+                "heapUsed": 4740728,
+                "external": 2364287,
+                "arrayBuffers": 192779
+              },
+              "after": {
+                "rss": 58097664,
+                "heapTotal": 7421952,
+                "heapUsed": 4437520,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1409024,
+                "heapTotal": 262144,
+                "heapUsed": 367448,
+                "external": 55336,
+                "arrayBuffers": 55296
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 56279040,
+                "heapTotal": 7421952,
+                "heapUsed": 4373280,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 57966592,
+                "heapTotal": 7684096,
+                "heapUsed": 5180048,
+                "external": 2364287,
+                "arrayBuffers": 192779
+              },
+              "after": {
+                "rss": 58408960,
+                "heapTotal": 7421952,
+                "heapUsed": 4437520,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1687552,
+                "heapTotal": 262144,
+                "heapUsed": 806768,
+                "external": 55336,
+                "arrayBuffers": 55296
+              }
+            }
+          ]
+        },
+        {
+          "submitted": 1024,
+          "active_io": 1024,
+          "median_delta_rss": 21708800,
+          "median_delta_heap_used": 2922456,
+          "median_delta_array_buffers": 442368,
+          "samples": [
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 56573952,
+                "heapTotal": 7421952,
+                "heapUsed": 4373280,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 78102528,
+                "heapTotal": 16334848,
+                "heapUsed": 7295736,
+                "external": 2751359,
+                "arrayBuffers": 579851
+              },
+              "after": {
+                "rss": 82853888,
+                "heapTotal": 13975552,
+                "heapUsed": 4739200,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 21528576,
+                "heapTotal": 8912896,
+                "heapUsed": 2922456,
+                "external": 442408,
+                "arrayBuffers": 442368
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 56328192,
+                "heapTotal": 6897664,
+                "heapUsed": 4373280,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 78168064,
+                "heapTotal": 16596992,
+                "heapUsed": 7295736,
+                "external": 2751359,
+                "arrayBuffers": 579851
+              },
+              "after": {
+                "rss": 82968576,
+                "heapTotal": 13975552,
+                "heapUsed": 4739200,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 21839872,
+                "heapTotal": 9699328,
+                "heapUsed": 2922456,
+                "external": 442408,
+                "arrayBuffers": 442368
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 56311808,
+                "heapTotal": 7421952,
+                "heapUsed": 4373280,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 78020608,
+                "heapTotal": 16596992,
+                "heapUsed": 7295736,
+                "external": 2751359,
+                "arrayBuffers": 579851
+              },
+              "after": {
+                "rss": 82755584,
+                "heapTotal": 13975552,
+                "heapUsed": 4739200,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 21708800,
+                "heapTotal": 9175040,
+                "heapUsed": 2922456,
+                "external": 442408,
+                "arrayBuffers": 442368
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jspi-serial-std",
+      "backend": "jspi",
+      "mode": "std",
+      "serialized": true,
+      "concurrent": false,
+      "wasm": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/jspi-std/core/app.wasm",
+      "loader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/jspi-std/host.mjs",
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ]
+        ],
+        "completed_while_a_blocked": [],
+        "completion_order": [
+          "A",
+          "B"
+        ]
+      },
+      "files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/jspi-std/core/app.wasm",
+          "bytes": 5619,
+          "sha256": "0cb9c940fe20a7b0c356d73ac550ca2f1d8cfc571f0223d140cd378d665a20b3",
+          "raw": 5619,
+          "gzip": 2998,
+          "brotli": 2682
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/jspi-std/host.mjs",
+          "bytes": 1324,
+          "sha256": "6eb69c495deb02e293d68b41bff1dcad56beb7078a3466e6127e621c892ad3de",
+          "raw": 1324,
+          "gzip": 634,
+          "brotli": 560
+        }
+      ],
+      "wasm_bytes": 5619,
+      "js_bytes": 1324,
+      "total_bytes": 6943,
+      "paired_immediate": {
+        "reference": "core-future-std",
+        "reference_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.590454101562555,
+            1.4992370605468874,
+            1.7743835449217649,
+            1.2650959472655376,
+            1.1887614746093345,
+            1.3657939453124435,
+            1.1364033203125068,
+            1.1574707031249964,
+            1.1960144042968412,
+            1.1633911132811203,
+            1.1516010742187444
+          ],
+          "median": 1.1960144042968412,
+          "min": 1.1364033203125068,
+          "max": 1.7743835449217649
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            0.7876789550780305,
+            0.632537841796843,
+            0.6250407714842865,
+            0.5650329589843572,
+            0.560750488281192,
+            0.5263264160155767,
+            0.5833942871091846,
+            0.5471801757812589,
+            0.5312602539062627,
+            0.7422077636718427,
+            0.5747478027342545
+          ],
+          "median": 0.5747478027342545,
+          "min": 0.5263264160155767,
+          "max": 0.7876789550780305
+        }
+      },
+      "delayed": {
+        "unit": "ms/batch",
+        "tasks": 16,
+        "host_delay_ms": 5,
+        "host_awaits_per_task": 2,
+        "samples": [
+          180.56349999999838,
+          181.97100000000137,
+          182.02950000000055,
+          180.7938749999994,
+          178.39420900000005
+        ],
+        "median": 180.7938749999994
+      },
+      "process_memory": [
+        {
+          "submitted": 128,
+          "active_io": 1,
+          "median_delta_rss": 163840,
+          "median_delta_heap_used": 106000,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54411264,
+                "heapTotal": 7421952,
+                "heapUsed": 4324968,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54591488,
+                "heapTotal": 7421952,
+                "heapUsed": 4430968,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 54689792,
+                "heapTotal": 7421952,
+                "heapUsed": 4355056,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 180224,
+                "heapTotal": 0,
+                "heapUsed": 106000,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54312960,
+                "heapTotal": 7159808,
+                "heapUsed": 4324968,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54476800,
+                "heapTotal": 7159808,
+                "heapUsed": 4440424,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 54575104,
+                "heapTotal": 7159808,
+                "heapUsed": 4355056,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 163840,
+                "heapTotal": 0,
+                "heapUsed": 115456,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54263808,
+                "heapTotal": 7159808,
+                "heapUsed": 4324968,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54394880,
+                "heapTotal": 7159808,
+                "heapUsed": 4430968,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 54525952,
+                "heapTotal": 7421952,
+                "heapUsed": 4355056,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 131072,
+                "heapTotal": 0,
+                "heapUsed": 106000,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        },
+        {
+          "submitted": 1024,
+          "active_io": 1,
+          "median_delta_rss": 409600,
+          "median_delta_heap_used": 786632,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54345728,
+                "heapTotal": 7159808,
+                "heapUsed": 4324968,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54755328,
+                "heapTotal": 8208384,
+                "heapUsed": 5475200,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 57786368,
+                "heapTotal": 9256960,
+                "heapUsed": 4425936,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 409600,
+                "heapTotal": 1048576,
+                "heapUsed": 1150232,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54231040,
+                "heapTotal": 7421952,
+                "heapUsed": 4324968,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54640640,
+                "heapTotal": 8208384,
+                "heapUsed": 5111600,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 57589760,
+                "heapTotal": 9256960,
+                "heapUsed": 4425936,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 409600,
+                "heapTotal": 786432,
+                "heapUsed": 786632,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54263808,
+                "heapTotal": 7159808,
+                "heapUsed": 4324968,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54673408,
+                "heapTotal": 8208384,
+                "heapUsed": 5111600,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 57622528,
+                "heapTotal": 9256960,
+                "heapUsed": 4425936,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 409600,
+                "heapTotal": 1048576,
+                "heapUsed": 786632,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "core-future-std",
+      "backend": "core",
+      "mode": "std",
+      "serialized": false,
+      "concurrent": false,
+      "wasm": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/core-std/core/app.wasm",
+      "loader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/core-std/host.mjs",
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ],
+          [
+            20,
+            2
+          ]
+        ],
+        "completed_while_a_blocked": [
+          "B"
+        ],
+        "completion_order": [
+          "B",
+          "A"
+        ]
+      },
+      "files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/core-std/core/app.wasm",
+          "bytes": 7210,
+          "sha256": "4047e2b3895f38e1e4873ec754beef09ccde8fb5e8ebb1bd40034f984649e606",
+          "raw": 7210,
+          "gzip": 3878,
+          "brotli": 3463
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/core-std/host.mjs",
+          "bytes": 3874,
+          "sha256": "741a202dd568b320ba9375fe8ddf772557122ffc0fc340f4863e1a8caf75e9ce",
+          "raw": 3874,
+          "gzip": 1952,
+          "brotli": 1793
+        }
+      ],
+      "wasm_bytes": 7210,
+      "js_bytes": 3874,
+      "total_bytes": 11084,
+      "delayed": {
+        "unit": "ms/batch",
+        "tasks": 16,
+        "host_delay_ms": 5,
+        "host_awaits_per_task": 2,
+        "samples": [
+          11.868583999999828,
+          12.092874999998457,
+          11.708667000000787,
+          12.102875000000495,
+          11.787666000000172
+        ],
+        "median": 11.868583999999828
+      },
+      "process_memory": [
+        {
+          "submitted": 128,
+          "active_io": 128,
+          "median_delta_rss": 393216,
+          "median_delta_heap_used": 147728,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 53542912,
+                "heapTotal": 7159808,
+                "heapUsed": 4386640,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 53936128,
+                "heapTotal": 7421952,
+                "heapUsed": 4534368,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 55541760,
+                "heapTotal": 7421952,
+                "heapUsed": 4459696,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 393216,
+                "heapTotal": 262144,
+                "heapUsed": 147728,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 53428224,
+                "heapTotal": 7159808,
+                "heapUsed": 4386640,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 53854208,
+                "heapTotal": 7421952,
+                "heapUsed": 4534368,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 55427072,
+                "heapTotal": 7421952,
+                "heapUsed": 4459696,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 425984,
+                "heapTotal": 262144,
+                "heapUsed": 147728,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 53313536,
+                "heapTotal": 7421952,
+                "heapUsed": 4386640,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 53657600,
+                "heapTotal": 7421952,
+                "heapUsed": 4534312,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 55214080,
+                "heapTotal": 7421952,
+                "heapUsed": 4459696,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 344064,
+                "heapTotal": 0,
+                "heapUsed": 147672,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        },
+        {
+          "submitted": 1024,
+          "active_io": 1024,
+          "median_delta_rss": 5128192,
+          "median_delta_heap_used": 1090520,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 53362688,
+                "heapTotal": 7421952,
+                "heapUsed": 4386640,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 58507264,
+                "heapTotal": 10305536,
+                "heapUsed": 5472792,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 62554112,
+                "heapTotal": 9781248,
+                "heapUsed": 4828336,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 5144576,
+                "heapTotal": 2883584,
+                "heapUsed": 1086152,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 53231616,
+                "heapTotal": 7159808,
+                "heapUsed": 4386640,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 58310656,
+                "heapTotal": 10305536,
+                "heapUsed": 5478400,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 62586880,
+                "heapTotal": 9781248,
+                "heapUsed": 4828336,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 5079040,
+                "heapTotal": 3145728,
+                "heapUsed": 1091760,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 53493760,
+                "heapTotal": 7159808,
+                "heapUsed": 4386640,
+                "external": 2440019,
+                "arrayBuffers": 137479
+              },
+              "parked": {
+                "rss": 58621952,
+                "heapTotal": 10305536,
+                "heapUsed": 5477160,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "after": {
+                "rss": 62734336,
+                "heapTotal": 9781248,
+                "heapUsed": 4828384,
+                "external": 2440059,
+                "arrayBuffers": 137479
+              },
+              "delta": {
+                "rss": 5128192,
+                "heapTotal": 3145728,
+                "heapUsed": 1090520,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bounded-serial-std",
+      "backend": "bounded",
+      "mode": "std",
+      "serialized": true,
+      "concurrent": false,
+      "wasm": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/bounded-std/core/app.wasm",
+      "loader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/bounded-std/host.mjs",
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ]
+        ],
+        "completed_while_a_blocked": [],
+        "completion_order": [
+          "A",
+          "B"
+        ]
+      },
+      "files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/bounded-std/core/app.wasm",
+          "bytes": 1842,
+          "sha256": "9b6f1d84180f0e56dd75b94acabf6880edbc78a6ce052f4fe5cdbde4c1681bc8",
+          "raw": 1842,
+          "gzip": 1032,
+          "brotli": 949
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-future-experiment/bounded-std/host.mjs",
+          "bytes": 2394,
+          "sha256": "9c4c02cb46a6cd73127e9a1224d836be49985f19d8a5ff8c141b7de9ce470f2e",
+          "raw": 2394,
+          "gzip": 1118,
+          "brotli": 1026
+        }
+      ],
+      "wasm_bytes": 1842,
+      "js_bytes": 2394,
+      "total_bytes": 4236,
+      "paired_immediate": {
+        "reference": "core-future-std",
+        "reference_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.1956989746093605,
+            1.155426025390538,
+            1.1071064453125334,
+            1.1490275878904832,
+            1.1653442382812962,
+            1.2985839843751013,
+            1.141611572265555,
+            1.1516518554688382,
+            1.1398723144531164,
+            1.1375019531250086,
+            1.146738769531419
+          ],
+          "median": 1.1490275878904832,
+          "min": 1.1071064453125334,
+          "max": 1.2985839843751013
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.5012919921875145,
+            1.1903891601561245,
+            1.0824177246093747,
+            1.343200683593837,
+            1.0070290527344206,
+            1.0616354980468312,
+            1.0363361816405625,
+            1.0151977539063495,
+            1.1785073242187583,
+            1.025878906250055,
+            1.0296120605470804
+          ],
+          "median": 1.0616354980468312,
+          "min": 1.0070290527344206,
+          "max": 1.5012919921875145
+        }
+      },
+      "delayed": {
+        "unit": "ms/batch",
+        "tasks": 16,
+        "host_delay_ms": 5,
+        "host_awaits_per_task": 2,
+        "samples": [
+          183.33737499999916,
+          183.3541669999995,
+          179.9999169999992,
+          182.37566700000025,
+          182.77016600000024
+        ],
+        "median": 182.77016600000024
+      },
+      "process_memory": [
+        {
+          "submitted": 128,
+          "active_io": 1,
+          "median_delta_rss": 81920,
+          "median_delta_heap_used": 69840,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54657024,
+                "heapTotal": 7159808,
+                "heapUsed": 4363808,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54738944,
+                "heapTotal": 7159808,
+                "heapUsed": 4433648,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 54870016,
+                "heapTotal": 7159808,
+                "heapUsed": 4391568,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 81920,
+                "heapTotal": 0,
+                "heapUsed": 69840,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54722560,
+                "heapTotal": 7421952,
+                "heapUsed": 4363808,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54804480,
+                "heapTotal": 7421952,
+                "heapUsed": 4433648,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 54919168,
+                "heapTotal": 7421952,
+                "heapUsed": 4391568,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 81920,
+                "heapTotal": 0,
+                "heapUsed": 69840,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54755328,
+                "heapTotal": 7159808,
+                "heapUsed": 4363808,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 54902784,
+                "heapTotal": 7159808,
+                "heapUsed": 4433648,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 55050240,
+                "heapTotal": 7159808,
+                "heapUsed": 4391568,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 147456,
+                "heapTotal": 0,
+                "heapUsed": 69840,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        },
+        {
+          "submitted": 1024,
+          "active_io": 1,
+          "median_delta_rss": 475136,
+          "median_delta_heap_used": 458728,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54624256,
+                "heapTotal": 7421952,
+                "heapUsed": 4363808,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 55017472,
+                "heapTotal": 7684096,
+                "heapUsed": 4822536,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 59162624,
+                "heapTotal": 7684096,
+                "heapUsed": 4478816,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 393216,
+                "heapTotal": 262144,
+                "heapUsed": 458728,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54657024,
+                "heapTotal": 7159808,
+                "heapUsed": 4363808,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 55214080,
+                "heapTotal": 7684096,
+                "heapUsed": 4822536,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 59310080,
+                "heapTotal": 7684096,
+                "heapUsed": 4478816,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 557056,
+                "heapTotal": 524288,
+                "heapUsed": 458728,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1,
+              "warmup": 64,
+              "before": {
+                "rss": 54689792,
+                "heapTotal": 7421952,
+                "heapUsed": 4363808,
+                "external": 2308939,
+                "arrayBuffers": 137471
+              },
+              "parked": {
+                "rss": 55164928,
+                "heapTotal": 7684096,
+                "heapUsed": 4822536,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "after": {
+                "rss": 59244544,
+                "heapTotal": 7684096,
+                "heapUsed": 4478816,
+                "external": 2308979,
+                "arrayBuffers": 137471
+              },
+              "delta": {
+                "rss": 475136,
+                "heapTotal": 262144,
+                "heapUsed": 458728,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jspi-concurrent-std",
+      "backend": "jspi",
+      "mode": "std",
+      "serialized": false,
+      "concurrent": true,
+      "wasm": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-std/core/app.wasm",
+      "probes": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-std/probes/app.wasm",
+      "unprotected": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-std/probes/unprotected.wasm",
+      "loader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-std/host.mjs",
+      "debugLoader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-std/host-debug.mjs",
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ],
+          [
+            20,
+            2
+          ]
+        ],
+        "completed_while_a_blocked": [
+          "B"
+        ],
+        "completion_order": [
+          "B",
+          "A"
+        ]
+      },
+      "files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-std/core/app.wasm",
+          "bytes": 5870,
+          "sha256": "648a72844bea1c3ee8c563b759500b31ecd9c9fc9a44c0a73573f3549bf57967",
+          "raw": 5870,
+          "gzip": 3130,
+          "brotli": 2805
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-std/host.mjs",
+          "bytes": 2257,
+          "sha256": "0bb475c25a5b89cd1b16a5542e5fe46a20accf1630037e6e59a86a09a7b93871",
+          "raw": 2257,
+          "gzip": 1065,
+          "brotli": 984
+        }
+      ],
+      "wasm_bytes": 5870,
+      "js_bytes": 2257,
+      "total_bytes": 8127,
+      "verification_files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-std/probes/app.wasm",
+          "bytes": 6425,
+          "sha256": "84642d473797b1226f7171f38062e380117c2a80aad565a474dfff945abdffae"
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-std/probes/unprotected.wasm",
+          "bytes": 6138,
+          "sha256": "7682b7bc1476c0c9da834bf7ac4b40399526d1e2e5bc5e55682329bbe8326e34"
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/jspi-concurrent-std/host-debug.mjs",
+          "bytes": 2449,
+          "sha256": "4fa5d0e9bd2d6b503afaf6d5753e9971ea6a6ea82b93cfc6c9494694f2a52c3d"
+        }
+      ],
+      "release_probes": {
+        "all_passed": true,
+        "non_lifo": true,
+        "simultaneous_spills": 32,
+        "memory_grow": true,
+        "shared_borrow_conflict": true,
+        "binding_reentry": true,
+        "shared_data_preserved": true,
+        "instance_isolation": true,
+        "fatal_retires_parked": true
+      },
+      "debug_probes": {
+        "all_passed": true,
+        "non_lifo": true,
+        "simultaneous_spills": 32,
+        "memory_grow": true,
+        "shared_borrow_conflict": true,
+        "binding_reentry": true,
+        "shared_data_preserved": true,
+        "instance_isolation": true,
+        "fatal_retires_parked": true
+      },
+      "red_control": {
+        "stack_corruption_detected": true
+      },
+      "parked_spills": {
+        "task_count": 32,
+        "rust_array_bytes": 512,
+        "stats": {
+          "roots": 32,
+          "snapshot_bytes": 16896,
+          "copied_bytes": 16896,
+          "peak_snapshot_bytes": 16896,
+          "pending": 32,
+          "calls": 32,
+          "completions": 0,
+          "dead": false
+        }
+      },
+      "paired_immediate": {
+        "reference": "core-future-std",
+        "reference_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.1206562500001294,
+            1.1795349121093146,
+            1.1535034179686043,
+            1.135772705078253,
+            1.1133015136719493,
+            1.1874897460937284,
+            1.1278583984375423,
+            1.2010600585938835,
+            1.1440227050780738,
+            1.1266276855470547,
+            1.129994873046991
+          ],
+          "median": 1.135772705078253,
+          "min": 1.1133015136719493,
+          "max": 1.2010600585938835
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            4.535837646484353,
+            4.607615234375029,
+            4.241292236327965,
+            3.899353027343677,
+            4.137410644531325,
+            4.668751953124994,
+            4.112589599609251,
+            3.929697509765573,
+            4.136800292968701,
+            3.8179218750000743,
+            4.608784912109476
+          ],
+          "median": 4.137410644531325,
+          "min": 3.8179218750000743,
+          "max": 4.668751953124994
+        }
+      },
+      "delayed": {
+        "unit": "ms/batch",
+        "tasks": 16,
+        "host_delay_ms": 5,
+        "host_awaits_per_task": 2,
+        "samples": [
+          11.49791600000026,
+          11.471832999999606,
+          11.535040999999183,
+          11.1909169999999,
+          11.450957999999446
+        ],
+        "median": 11.471832999999606
+      },
+      "process_memory": [
+        {
+          "submitted": 128,
+          "active_io": 128,
+          "median_delta_rss": 1163264,
+          "median_delta_heap_used": 304944,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 55541760,
+                "heapTotal": 7159808,
+                "heapUsed": 4345456,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 56688640,
+                "heapTotal": 7421952,
+                "heapUsed": 4650400,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 56770560,
+                "heapTotal": 7684096,
+                "heapUsed": 4402832,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1146880,
+                "heapTotal": 262144,
+                "heapUsed": 304944,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 55672832,
+                "heapTotal": 7159808,
+                "heapUsed": 4345456,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 56836096,
+                "heapTotal": 7421952,
+                "heapUsed": 4650400,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 56918016,
+                "heapTotal": 7421952,
+                "heapUsed": 4402832,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1163264,
+                "heapTotal": 262144,
+                "heapUsed": 304944,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 55590912,
+                "heapTotal": 7421952,
+                "heapUsed": 4345456,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 56803328,
+                "heapTotal": 7684096,
+                "heapUsed": 4650400,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 56868864,
+                "heapTotal": 7684096,
+                "heapUsed": 4402832,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1212416,
+                "heapTotal": 262144,
+                "heapUsed": 304944,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        },
+        {
+          "submitted": 1024,
+          "active_io": 1024,
+          "median_delta_rss": 20922368,
+          "median_delta_heap_used": 2407928,
+          "median_delta_array_buffers": 0,
+          "samples": [
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 55410688,
+                "heapTotal": 7159808,
+                "heapUsed": 4345456,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 76365824,
+                "heapTotal": 16072704,
+                "heapUsed": 6743928,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 78102528,
+                "heapTotal": 14237696,
+                "heapUsed": 4687320,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 20955136,
+                "heapTotal": 8912896,
+                "heapUsed": 2398472,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 55459840,
+                "heapTotal": 7159808,
+                "heapUsed": 4345456,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 76333056,
+                "heapTotal": 16072704,
+                "heapUsed": 6753384,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 77791232,
+                "heapTotal": 13713408,
+                "heapUsed": 4687464,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 20873216,
+                "heapTotal": 8912896,
+                "heapUsed": 2407928,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 55410688,
+                "heapTotal": 7159808,
+                "heapUsed": 4345456,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 76333056,
+                "heapTotal": 16072704,
+                "heapUsed": 6753384,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "after": {
+                "rss": 77791232,
+                "heapTotal": 13713408,
+                "heapUsed": 4687464,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 20922368,
+                "heapTotal": 8912896,
+                "heapUsed": 2407928,
+                "external": 40,
+                "arrayBuffers": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bounded-concurrent-std",
+      "backend": "bounded",
+      "mode": "std",
+      "serialized": false,
+      "concurrent": true,
+      "wasm": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/core/app.wasm",
+      "probes": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/probes/app.wasm",
+      "heapProbes": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/heap-probes/app.wasm",
+      "unprotected": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/probes/unprotected.wasm",
+      "loader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/host.mjs",
+      "debugLoader": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/host-debug.mjs",
+      "common": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ],
+          [
+            20,
+            2
+          ]
+        ],
+        "completed_while_a_blocked": [
+          "B"
+        ],
+        "completion_order": [
+          "B",
+          "A"
+        ]
+      },
+      "files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/core/app.wasm",
+          "bytes": 2091,
+          "sha256": "24be78995c88dea00efe3c9862a555adb104e4e6928f953842a017fef2ec4f60",
+          "raw": 2091,
+          "gzip": 1184,
+          "brotli": 1097
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/host.mjs",
+          "bytes": 3474,
+          "sha256": "b2362ec0d7aecc7e8463ed82ee51d281b70d7090c3bf95f67ebdcc52cef6ee1b",
+          "raw": 3474,
+          "gzip": 1567,
+          "brotli": 1440
+        }
+      ],
+      "wasm_bytes": 2091,
+      "js_bytes": 3474,
+      "total_bytes": 5565,
+      "verification_files": [
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/probes/app.wasm",
+          "bytes": 8852,
+          "sha256": "e004cfe35f8748281ffad84bb7abd43a9712befd99aaccd7b6c6cfe08f2b89e6"
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/probes/unprotected.wasm",
+          "bytes": 8536,
+          "sha256": "b0327fb31737cbf271ea0eaee252120e4149f885865993edf82fbc57fd48fef5"
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/host-debug.mjs",
+          "bytes": 4314,
+          "sha256": "edf030304c4073f39dc11abdf0f00a10c6f7d44ff70db7067e00281a891060ba"
+        },
+        {
+          "file": "/Users/mz/ghq/github.com/mizchi/taraba/.cache/jspi-concurrent/bounded-concurrent-std/heap-probes/app.wasm",
+          "bytes": 14605,
+          "sha256": "db2a4a5fd2f703ed14c70dcac70454043f4b50a54e6e6388b3a2c6dad8ba8ca8"
+        }
+      ],
+      "release_probes": {
+        "all_passed": true,
+        "diagnostics": false,
+        "self_wakes": 1089,
+        "join_reverse_completion": true,
+        "futures_unordered_child_wakers": null,
+        "fixed_capacity": 16,
+        "overflow_before_io": true,
+        "coded_borrow_failure": true,
+        "select_drops_loser": true,
+        "late_completion_isolated": true,
+        "pinned_stack_tasks": 32,
+        "pinned_stack_bytes": 1024,
+        "rejection_reasons": 2,
+        "post_suspension_trap": true
+      },
+      "release_heap_probes": {
+        "all_passed": true,
+        "diagnostics": false,
+        "self_wakes": 1089,
+        "join_reverse_completion": true,
+        "futures_unordered_child_wakers": true,
+        "fixed_capacity": 16,
+        "overflow_before_io": true,
+        "coded_borrow_failure": true,
+        "select_drops_loser": true,
+        "late_completion_isolated": true,
+        "pinned_stack_tasks": 32,
+        "pinned_stack_bytes": 1024,
+        "rejection_reasons": 2,
+        "post_suspension_trap": true
+      },
+      "release_overlap": {
+        "roots": 16,
+        "child_io": 32,
+        "join": true,
+        "unordered": true,
+        "select": true
+      },
+      "debug_probes": {
+        "all_passed": true,
+        "diagnostics": true,
+        "self_wakes": 1089,
+        "join_reverse_completion": true,
+        "futures_unordered_child_wakers": null,
+        "fixed_capacity": 16,
+        "overflow_before_io": true,
+        "coded_borrow_failure": true,
+        "select_drops_loser": true,
+        "late_completion_isolated": true,
+        "pinned_stack_tasks": 32,
+        "pinned_stack_bytes": 1024,
+        "rejection_reasons": 2,
+        "post_suspension_trap": true
+      },
+      "debug_heap_probes": {
+        "all_passed": true,
+        "diagnostics": true,
+        "self_wakes": 1089,
+        "join_reverse_completion": true,
+        "futures_unordered_child_wakers": true,
+        "fixed_capacity": 16,
+        "overflow_before_io": true,
+        "coded_borrow_failure": true,
+        "select_drops_loser": true,
+        "late_completion_isolated": true,
+        "pinned_stack_tasks": 32,
+        "pinned_stack_bytes": 1024,
+        "rejection_reasons": 2,
+        "post_suspension_trap": true
+      },
+      "debug_overlap": {
+        "roots": 16,
+        "child_io": 32,
+        "join": true,
+        "unordered": true,
+        "select": true
+      },
+      "parked_spills": {
+        "task_count": 32,
+        "rust_array_bytes": 1024,
+        "stats": {
+          "gates": 32,
+          "parks": 32,
+          "dead": false,
+          "stack": {
+            "roots": 32,
+            "snapshot_bytes": 41472,
+            "copied_bytes": 41472,
+            "peak_snapshot_bytes": 41472
+          },
+          "jobs": 32,
+          "completion_queues": 32,
+          "queued": 32,
+          "polls": 32,
+          "drops": 0
+        }
+      },
+      "paired_immediate": {
+        "reference": "core-future-std",
+        "reference_timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            1.2089538574218128,
+            1.1773273925781425,
+            1.1743366699219493,
+            1.1963195800781534,
+            1.2750649414061677,
+            1.1350502929687867,
+            1.5682883300782713,
+            1.2179157714844457,
+            1.1547446289064123,
+            1.128916503906341,
+            1.1244609375000714
+          ],
+          "median": 1.1773273925781425,
+          "min": 1.1244609375000714,
+          "max": 1.5682883300782713
+        },
+        "timing": {
+          "unit": "microseconds/task (two host awaits)",
+          "tasks_per_sample": 4096,
+          "samples": [
+            5.982553955077963,
+            5.183044433593631,
+            4.9044291992186295,
+            5.317759277343903,
+            5.157012939453143,
+            5.162882324218909,
+            5.308146240234457,
+            5.067891601562513,
+            5.536732910156328,
+            4.957387451171913,
+            5.013437988281355
+          ],
+          "median": 5.162882324218909,
+          "min": 4.9044291992186295,
+          "max": 5.982553955077963
+        }
+      },
+      "delayed": {
+        "unit": "ms/batch",
+        "tasks": 16,
+        "host_delay_ms": 5,
+        "host_awaits_per_task": 2,
+        "samples": [
+          11.708291000000827,
+          11.668875000001208,
+          11.621750000000247,
+          11.582958000000872,
+          11.091041000001496
+        ],
+        "median": 11.621750000000247
+      },
+      "process_memory": [
+        {
+          "submitted": 128,
+          "active_io": 128,
+          "median_delta_rss": 1392640,
+          "median_delta_heap_used": 367448,
+          "median_delta_array_buffers": 55296,
+          "samples": [
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 56475648,
+                "heapTotal": 7421952,
+                "heapUsed": 4373272,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 57835520,
+                "heapTotal": 7684096,
+                "heapUsed": 4740720,
+                "external": 2364287,
+                "arrayBuffers": 192779
+              },
+              "after": {
+                "rss": 58097664,
+                "heapTotal": 7684096,
+                "heapUsed": 4437512,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1359872,
+                "heapTotal": 262144,
+                "heapUsed": 367448,
+                "external": 55336,
+                "arrayBuffers": 55296
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 56197120,
+                "heapTotal": 7159808,
+                "heapUsed": 4373272,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 57901056,
+                "heapTotal": 7421952,
+                "heapUsed": 4742008,
+                "external": 2364287,
+                "arrayBuffers": 192779
+              },
+              "after": {
+                "rss": 58245120,
+                "heapTotal": 7421952,
+                "heapUsed": 4437512,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1703936,
+                "heapTotal": 262144,
+                "heapUsed": 368736,
+                "external": 55336,
+                "arrayBuffers": 55296
+              }
+            },
+            {
+              "submitted": 128,
+              "active_io": 128,
+              "warmup": 64,
+              "before": {
+                "rss": 56344576,
+                "heapTotal": 7159808,
+                "heapUsed": 4373272,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 57737216,
+                "heapTotal": 7421952,
+                "heapUsed": 4739168,
+                "external": 2364287,
+                "arrayBuffers": 192779
+              },
+              "after": {
+                "rss": 58048512,
+                "heapTotal": 7684096,
+                "heapUsed": 4437512,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 1392640,
+                "heapTotal": 262144,
+                "heapUsed": 365896,
+                "external": 55336,
+                "arrayBuffers": 55296
+              }
+            }
+          ]
+        },
+        {
+          "submitted": 1024,
+          "active_io": 1024,
+          "median_delta_rss": 21708800,
+          "median_delta_heap_used": 2922456,
+          "median_delta_array_buffers": 442368,
+          "samples": [
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 56442880,
+                "heapTotal": 7421952,
+                "heapUsed": 4373272,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 78086144,
+                "heapTotal": 16859136,
+                "heapUsed": 7295728,
+                "external": 2751359,
+                "arrayBuffers": 579851
+              },
+              "after": {
+                "rss": 83361792,
+                "heapTotal": 14499840,
+                "heapUsed": 4739192,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 21643264,
+                "heapTotal": 9437184,
+                "heapUsed": 2922456,
+                "external": 442408,
+                "arrayBuffers": 442368
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 56279040,
+                "heapTotal": 7421952,
+                "heapUsed": 4373344,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 78004224,
+                "heapTotal": 16859136,
+                "heapUsed": 7295800,
+                "external": 2751359,
+                "arrayBuffers": 579851
+              },
+              "after": {
+                "rss": 83017728,
+                "heapTotal": 14499840,
+                "heapUsed": 4739264,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 21725184,
+                "heapTotal": 9437184,
+                "heapUsed": 2922456,
+                "external": 442408,
+                "arrayBuffers": 442368
+              }
+            },
+            {
+              "submitted": 1024,
+              "active_io": 1024,
+              "warmup": 64,
+              "before": {
+                "rss": 56377344,
+                "heapTotal": 7421952,
+                "heapUsed": 4373272,
+                "external": 2308951,
+                "arrayBuffers": 137483
+              },
+              "parked": {
+                "rss": 78086144,
+                "heapTotal": 16596992,
+                "heapUsed": 7295728,
+                "external": 2751359,
+                "arrayBuffers": 579851
+              },
+              "after": {
+                "rss": 83017728,
+                "heapTotal": 13975552,
+                "heapUsed": 4739192,
+                "external": 2308991,
+                "arrayBuffers": 137483
+              },
+              "delta": {
+                "rss": 21708800,
+                "heapTotal": 9175040,
+                "heapUsed": 2922456,
+                "external": 442408,
+                "arrayBuffers": 442368
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "inputs": {
+    "experiments/jspi-concurrent/Cargo.lock": "6a797cf3d37cdc235155e301ad2dc41ee69b4e3e24ae471f6f250fa4c8c91725",
+    "experiments/jspi-concurrent/Cargo.toml": "6e5aa208e6457428a46dc626e515c136f76042365f4b235508ef1fd252995532",
+    "experiments/jspi-concurrent/README.md": "4cb83c9397b38ace68a8ed7545a6d94f3213078992edd46383523d5fa7a2b62b",
+    "experiments/jspi-concurrent/bundle.mjs": "dce1196966988993e0b072cff8bebec6bc71736338a64a9643dd7019d6fc3029",
+    "experiments/jspi-concurrent/bundle.test.mjs": "85ec25f06e70214a5b378cf595231d0f91746676ee6bf7f568aee48cccd39c94",
+    "experiments/jspi-concurrent/host.mjs": "6047e804c7e6685829f75d4432485887e02f7f9b87fac41ad4bde84f3ebe4945",
+    "experiments/jspi-concurrent/memory.mjs": "294633749a33ba5fbface6bf48311266b5b4391a304f05bf806ea9dd89a7b125",
+    "experiments/jspi-concurrent/src/bin/transform.rs": "074c6579e5f2c28c00b6d9c621bf46e6797cc959c4de811ac95a6382f7844e34",
+    "experiments/jspi-concurrent/src/lib.rs": "1eefbfcdfac763c8219fabe126645c6288fa22782481dc3a9eab3637bc80814f",
+    "experiments/jspi-concurrent/stack.mjs": "c1b6af3fb36f0e7c392ef173898343f2259c6b9518c777bfe20e2156431b7bcd",
+    "experiments/jspi-concurrent/stack.test.mjs": "3d31760e5abe3f5216daf3737dc9243aaf9a5577be9133b6b9b681ded4f14199",
+    "experiments/jspi-concurrent/transform.test.mjs": "6c533c99502c33dae03671dd829355c0011e9234bd3901d1addff72f6327e821",
+    "experiments/jspi-concurrent/verify.mjs": "83d3d24aedb5fc862d02fa9a8cbb95e2300cc41f47066d74bba55eb3b199e658",
+    "experiments/jspi-concurrent/wit/app.wit": "bb273a77d32aa48a731e5bda8756590802d066f44cbd54f72a938e5bf04ed423",
+    "experiments/jspi-future/.gitignore": "aa8a4689f07a06b8823795e01fb6724506d06611ec7664be4d537b7a30d6ace2",
+    "experiments/jspi-future/Cargo.lock": "240ba8d8652475a70e5c262c6ca344c22d0ce9b17298037412a56f9fab82b6d4",
+    "experiments/jspi-future/Cargo.toml": "adfe37bdc30937f370a51378dadb4588a448456c150ca8a64924fe6c8796a7ed",
+    "experiments/jspi-future/README.md": "3e532926f3b9d06f7a56007c1abbd01f6cd312a365ccf91b5cccbd6e85cd599a",
+    "experiments/jspi-future/adapter/Cargo.toml": "bdb3c51dba6e8b6477ed1a91bee968496d56cba00254473c1491a07c69140fd2",
+    "experiments/jspi-future/adapter/src/bounded.rs": "c468d322ab2aa3ff28d092a4d8a422806f7be42978893c768ac2310c90b4fcb3",
+    "experiments/jspi-future/adapter/src/bounded_tests.rs": "f5171076173a448b537d625e6c30862dd33fe7212e0e07f7f9c9ec9855e7a185",
+    "experiments/jspi-future/adapter/src/lib.rs": "dbde1b343dac04ada2bff3655014c4ac3a3b87e5d87c26a9e14b7cf154db1068",
+    "experiments/jspi-future/adapter/src/tests.rs": "181f0fb436b38e7560ea6ceaf15e5a1d1f294082e349d8fe1264551da22ae5ba",
+    "experiments/jspi-future/bundle.mjs": "34ee2def969ae2ec59517b04941e1bef67dce4a2985f003f8e346fe1553043c6",
+    "experiments/jspi-future/bundle.test.mjs": "46b2d2e5c076d4a8e6de085ac583e745c39e3e932dc5d558193da485ed897999",
+    "experiments/jspi-future/error-codes.json": "0df2bb4b33da286f61115610b20e5f6c516df7bc03e4f2c8147c2e8627a555a1",
+    "experiments/jspi-future/errors.mjs": "84b74d406e4b64c0c11f99f55470623f93b48b46df6d589a6b6ef7fb2cfeda14",
+    "experiments/jspi-future/gates.mjs": "0e965e223f500bcd958fff952f4dacbb6eb5f7b688ee6d4873a3415d6210cd0e",
+    "experiments/jspi-future/gates.test.mjs": "95c7ef747e0616179c8f14a215ed9cf42c1c4e0074cc478b0fb4be9c6d8275e0",
+    "experiments/jspi-future/host.mjs": "4a83c56fe4b42dd1c57e9e9d50699f3135fbf345a4e5742c54be845aa47890f1",
+    "experiments/jspi-future/profiles.test.mjs": "11c1a68dd45b7a25e7a513cfad62d3e62d12015bbda40503c1de4637b90c47c8",
+    "experiments/jspi-future/src/lib.rs": "b117ec6f364b4912836354ca2a258c7ecc8b9de8974e55399acea2c972c7895d",
+    "experiments/jspi-future/timing.test.mjs": "336e3b03da447fe5ef5cd285c17917c1b1b2d7f8580bd946eda28b44e555f48c",
+    "experiments/jspi-future/verify.mjs": "70f6ff319b7f02f684bde5d0cec77511589c95ef63166d37494f76d3cafe71d2",
+    "experiments/jspi-future/wit/app.wit": "fc9acb15ddb76f6da45894e76fd0f68897cb163ca401a2297de7a20a5357ed54",
+    "experiments/wit/core/Cargo.lock": "a88a3a7f5579f1629e2efb2948d1120dae280d0e37a4e497f53114281f4bc8b7",
+    "experiments/wit/core/Cargo.toml": "4a23918a4d1e4888aaefb7a6a8ea96fcdd6d3889a3cf2a0a5dc61ba7ce8ca7c5",
+    "experiments/wit/core/src/lib.rs": "7ffb143a4b8ba324ca0545ee459d93f41987a37aa23f7f875980865c551dd440",
+    "experiments/wit/core/wit/app.wit": "4ff3cf67d0b7739895b0b24cb9d18bb9601bcc169bca2d2e595ecf1f295f3391",
+    "experiments/wit/jspi/Cargo.lock": "64e083c28773f6b1899bfdbb865a20c378ad6445ffc798c5da73f69e3e9d83f4",
+    "experiments/wit/jspi/Cargo.toml": "76949ff5bf69fb77cc8985145ff307d5ce575777c9c9e5a27b64afee82b1a9a1",
+    "experiments/wit/jspi/src/lib.rs": "416ad223aeecd645c9748192a1a37b1dbf7d6f1c9082a674f1354fec49ff2bca",
+    "experiments/wit/jspi/wit/app.wit": "9a67e6c1c9b5e768ba27d5b2e9981c530e015f47cf7038296185c57da43ace7a",
+    "crates/taraba/Cargo.toml": "8fdbb1db830f80cc737aea30c97402ef17a358b52507290c6ba7683685f95119",
+    "crates/taraba/build.rs": "1fcd2d553fab84267da595b7583da5d5b72e98f0af2eb51865c15e69670afc86",
+    "crates/taraba/src/ffi.rs": "ef9cbf04f504ed01cd0375360c78678f6c72d6dfd559dbdeb38402af5ed569b7",
+    "crates/taraba/src/lib.rs": "dbe86552eef0b4c593a061fbfc8367df17973f8b3a9f23d9062474d233bd8fc9",
+    "crates/taraba/src/promise.rs": "786501a2f38c24a3e16d27f2152b73627b4a74ab0aa7c8568fc0d59a402470be",
+    "crates/taraba/src/storage.rs": "a9360b426d54b6abb4190a32b6d64c1a689ebe45211356eccdcc85946dd3daec",
+    "crates/taraba/src/task.rs": "be66e11dc64d8e5f1428c9a8d51d85ff16a89645c54c38a0ab8b5bdb9b552f69",
+    "crates/taraba/src/value.rs": "cd89f28ad8b19990648a1f9bd12ad896a553ba2ebc8c0adf9c6ecb091b9d27cc",
+    "crates/taraba/src/waker.rs": "eac9c2b2f5a538918ac1cb0bfbad0934898c4c78b1b1fb84c893666029dc61b9",
+    "crates/taraba-allocator/Cargo.toml": "43b0129738ec7de12f0e4b62f8978055d33b56595dc8ffbdbac0b24b624acfcb",
+    "crates/taraba-allocator/build.rs": "4a0629122282895577de6196cbf84ee2f3fb26e73cf4bced4d5f32882eef9c14",
+    "crates/taraba-allocator/src/const_init.rs": "3990e2658a30f8674ad948ce6ca1a50a86c714417005df895d5e4892f863b867",
+    "crates/taraba-allocator/src/extra_assert.rs": "69119bed3138136b5a62d6f0604c984bda753d834931941680a33038f892a6fc",
+    "crates/taraba-allocator/src/imp_test.rs": "60e3ec7ccac4925e5aa33f4abeddb47d9e4210690c2689d97dd06028c2872910",
+    "crates/taraba-allocator/src/imp_wasm32.rs": "da90a938821d1d2c838027815398082675b2ac42d70fe5752991e711e103912e",
+    "crates/taraba-allocator/src/lib.rs": "c5e37400729d0db7417a49b7d2318ecb5d05fc18f147a8bf11c66cda452c806c",
+    "crates/taraba-allocator/src/neighbors.rs": "603c99ca0f8117b79a8f1c9ec53cdba73260b84032f239f6a9f00f7da94834f5",
+    "crates/taraba-allocator/src/regression.rs": "a3ed87881832843c4f0d3536b6f818732008bda863f02344d984cb37a1737483",
+    "crates/taraba-allocator/src/size_classes.rs": "5bd2c84867afde2dc9e4c39ba2013e4244b539efd80b1f93abf76ed1517f2a35",
+    "crates/taraba-cli/Cargo.toml": "d6ca1d8109d06d7671f2b276ecd592b038a02987e3f93457101d3f5f1df33250",
+    "crates/taraba-cli/src/abi.rs": "f3eae9eb25585ba4d18a034583e1c25465c9649d310204ed7f156d4bc51e4936",
+    "crates/taraba-cli/src/build.rs": "65b612a80657c661e83299d76989f61394a59256eecd24632ce91981c83b7a69",
+    "crates/taraba-cli/src/imports.rs": "de87fe8bdae64194d3afc6a5b27aa75acea7e03ce651f9bb8ac42828296be90f",
+    "crates/taraba-cli/src/lib.rs": "83589e2f94c4a5f851c111a1ffc8610baff1b6659bc37237e9bbd329833a6cbf",
+    "crates/taraba-cli/src/main.rs": "8aabd5c5ef5909030a42a6211feef1438dc901d5ec77e84dc8e2a19b4d5d32db",
+    "crates/taraba-cli/src/profile.rs": "055a544f6fb48ff77d1d2360f3f42fcc41f2ab711b721b041190d79efc9369f6",
+    "crates/taraba-cli/src/project.rs": "0e8abc16c7e18f9e0f5beb7311bd192709a2dc4098a8c34d1bc28ee5f545cba6",
+    "crates/taraba-cli/src/templates/app.rs": "57673e347845ec6e265cfa041ff9abfff010b517d823d4ec0b7346203141faec",
+    "crates/taraba-cli/src/templates/jspi.rs": "682ecb4ee02a68ab7190f89837451b68e8731c198a654b60796c60eacc2c51a3",
+    "crates/taraba-cli/src/wit.rs": "3219167f3eadbea340df3fc65982b4fbd3b658fb00b29cf3c5be18378db1657c",
+    "crates/taraba-cli/tests/branding.rs": "12a0169e1846592f1a5aa02df846e0918d1d349efa35ea01a497306cdaf3c2f1",
+    "Cargo.lock": "de240bf1a75f35d6e1a7cb8e7cf8f77999468f54e42e4fbfce82ce566229413b",
+    "rust-toolchain.toml": "8af15b24d337d34a26b257ce39a67ed05d31f5e504d2a6cd9f2b9621a2afdb84",
+    "package.json": "25c711e8ae47dbc5c8a4247fecef4af1dd017f330769fd3e63375efaa4353fba",
+    "pnpm-lock.yaml": "0a6dc6db3845da5f63f71aaf97d052cfe00251c1527ad3f292e01ce5a1d4395d",
+    "experiments/wit/shared/compute.rs": "dad3b1f23b34508677b208d188d5f87d955374b55328811f5066e86436eb1262",
+    "tests/support/scheduling.mjs": "1e6356ad265fe5b8b5656d47de9278a3fce781a6eabdc544fcc4e601b59d2ab9",
+    "tests/support/wit-contract.mjs": "e9e8db4af3aadea1b423dafac9e32ba54480e92c8694c3dc052e5aea76d20589",
+    "tools/experiment-jspi-concurrent.mjs": "8f452b4c055f32180c5d47c4b087e2f0bc7714032c1822a3ae2dabee00a830db",
+    "crates/taraba-cli/assets/provenance.json": "1af7b732cf1957014dda97360819089fd011414cfc2ec53014621e2cbe401c7f"
+  },
+  "all_passed": true
+}
