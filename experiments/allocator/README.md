@@ -15,11 +15,14 @@ The ABI is trusted: freeing requires the exact live pointer, size and alignment.
 wee_alloc fails the adjacent-block reuse oracle and is excluded from timing.
 Current/reference variants must pass the full oracle before 8 kernels are timed.
 The checked and normal kernel modes both pass an independent JS result oracle.
-All timing uses warm V8 instances, 21 interleaved samples, batched Wasm calls,
+All timing uses V8's optimizing Wasm tier (`--no-liftoff`), at least 50 ms of
+warmup per kernel/instance, 21 interleaved samples, batched Wasm calls,
 and checks that timing never grows memory. This is a V8 microbenchmark, not a
 Criterion confidence interval or Wasmtime benchmark. Small differences are noise.
 
-Both std/no_std and size classes on/off are recorded. All variants use the same
+Both std/no_std and size classes on/off are recorded. pair_32 requests 4-byte
+alignment to exercise the small-class fast path on wasm32; the larger-alignment
+cases exercise the main list. All variants use the same
 Rust flags and Binaryen 133 optimization. The code-size regression guard requires
 the small profile to be smaller than the fixed reference in both std modes.
 The report includes the entire probe/kernel, not just allocator bytes. Application

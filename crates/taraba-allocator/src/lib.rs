@@ -858,28 +858,30 @@ impl<'a> WeeAlloc<'a> {
 
             let free = allocated_cell_into_free_cell(cell, policy);
 
+            if !policy.should_merge_adjacent_free_cells() {
+                FreeCell::insert_into_free_list(free, head, policy);
+                return;
+            }
             let mut survivor = free;
-            if policy.should_merge_adjacent_free_cells() {
-                let neighbors = &(*free).header.neighbors;
-                if neighbors.next().is_some_and(|next| next.is_free()) {
-                    // Unlink the right neighbor before removing its physical header.
-                    // The logical predecessor may be any free cell, including `prev`.
-                    let next = neighbors.next_unchecked() as *const FreeCell<'a>;
-                    let slot = find_free_list_slot(head, next)
-                        .expect("adjacent free cell must be in free list");
-                    (*slot).set((*next).next_free());
-                    if CellHeader::next_cell_is_invalid(&(*next).header.neighbors) {
-                        CellHeader::set_next_cell_is_invalid(neighbors);
-                    }
-                    (*next).header.neighbors.remove();
+            let neighbors = &(*free).header.neighbors;
+            if neighbors.next().is_some_and(|next| next.is_free()) {
+                // Unlink the right neighbor before removing its physical header.
+                // The logical predecessor may be any free cell, including `prev`.
+                let next = neighbors.next_unchecked() as *const FreeCell<'a>;
+                let slot = find_free_list_slot(head, next)
+                    .expect("adjacent free cell must be in free list");
+                (*slot).set((*next).next_free());
+                if CellHeader::next_cell_is_invalid(&(*next).header.neighbors) {
+                    CellHeader::set_next_cell_is_invalid(neighbors);
                 }
-                if neighbors.prev().is_some_and(|prev| prev.is_free()) {
-                    survivor = neighbors.prev_unchecked() as *const FreeCell<'a>;
-                    if CellHeader::next_cell_is_invalid(neighbors) {
-                        CellHeader::set_next_cell_is_invalid(&(*survivor).header.neighbors);
-                    }
-                    neighbors.remove();
+                (*next).header.neighbors.remove();
+            }
+            if neighbors.prev().is_some_and(|prev| prev.is_free()) {
+                survivor = neighbors.prev_unchecked() as *const FreeCell<'a>;
+                if CellHeader::next_cell_is_invalid(neighbors) {
+                    CellHeader::set_next_cell_is_invalid(&(*survivor).header.neighbors);
                 }
+                neighbors.remove();
             }
             write_free_pattern(survivor, (*survivor).header.size(), policy);
             if ptr::eq(survivor, free) {

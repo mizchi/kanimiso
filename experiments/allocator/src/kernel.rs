@@ -51,7 +51,8 @@ pub fn run(case: u32, rounds: u32, mut seed: u32, verify: bool) -> u32 {
         match case {
             1..=3 => {
                 let (size, align) = match case {
-                    1 => (32, 8),
+                    // Four-byte alignment exercises the small-class fast path on wasm32.
+                    1 => (32, 4),
                     2 => (1024, 16),
                     _ => (64, 4096),
                 };

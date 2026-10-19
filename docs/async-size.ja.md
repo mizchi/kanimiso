@@ -2,7 +2,7 @@
 
 [English](async-size.md) | 日本語
 
-2026-10-19T01:22:48.625Z
+2026-10-19T01:31:31.075Z
 
 現在の taraba・公式 Embassy WASM executor・wasm-bindgen-futures をビルドし直した。同じ二段 await の Rust ソース、3,507 入力、全 I/O 引数、外から解決する二回の待機を検査した。以下は測定時点のスナップショットであり、固定されたライブラリ overhead や全用途での順位ではない。
 
@@ -12,11 +12,11 @@
 
 | 構成 | 同期合計 B | async Wasm B | async JS B | async 合計 B | 同期からの増分 B | Brotli 合計 B |
 |---|---:|---:|---:|---:|---:|---:|
-| taraba JSPI | 2,149 | 5,307 | 1,431 | 6,738 | +4,589 | 3,195 |
-| taraba Future | 4,725 | 6,915 | 4,007 | 10,922 | +6,197 | 5,224 |
-| Component + jco | 53,184 | 25,460 | 66,776 | 92,236 | +39,052 | 27,200 |
-| wasm-bindgen-futures | 1,861 | 15,303 | 4,442 | 19,745 | +17,884 | 8,355 |
-| Embassy WASM + JsFuture | 1,861 | 13,438 | 5,211 | 18,649 | +16,788 | 7,965 |
+| taraba JSPI | 2,149 | 5,307 | 1,431 | 6,738 | +4,589 | 3,206 |
+| taraba Future | 4,725 | 6,915 | 4,007 | 10,922 | +6,197 | 5,242 |
+| Component + jco | 53,184 | 25,460 | 66,776 | 92,236 | +39,052 | 27,175 |
+| wasm-bindgen-futures | 1,861 | 15,303 | 4,442 | 19,745 | +17,884 | 8,358 |
+| Embassy WASM + JsFuture | 1,861 | 13,438 | 5,211 | 18,649 | +16,788 | 7,959 |
 
 同じ std / allocator で、Embassy との差は次のとおり。負は taraba 側が小さいことを表す。
 
@@ -75,14 +75,14 @@ JS のサイズは同じでも、std のリンクで Wasm が増える。no_std 
 | 構成・モード | 型定義 B | Component B | npm tgz B |
 |---|---:|---:|---:|
 | taraba JSPI / no_std | 1,340 | 0 | 2,473 |
-| taraba JSPI / std | 1,340 | 0 | 5,292 |
+| taraba JSPI / std | 1,340 | 0 | 5,294 |
 | taraba Future / no_std | 2,082 | 0 | 5,033 |
-| taraba Future / std | 2,082 | 0 | 7,820 |
+| taraba Future / std | 2,082 | 0 | 7,819 |
 | Component + jco / no_std | 2,154 | 14,942 | 28,802 |
 | Component + jco / std | 2,154 | 26,614 | 34,342 |
 | wasm-bindgen-futures / no_std | 3,419 | 0 | 7,540 |
-| wasm-bindgen-futures / std | 3,419 | 0 | 10,192 |
-| Embassy WASM + JsFuture / std | 4,457 | 0 | 9,972 |
+| wasm-bindgen-futures / std | 3,419 | 0 | 10,193 |
+| Embassy WASM + JsFuture / std | 4,457 | 0 | 9,973 |
 
 taraba の実用ガイドは [使い方](guide.ja.md)。Component は WIT から型付き async 戻り値を得られ、Core Future の opaque Promise は unknown のまま。wasm-bindgen の公式生成型も保存しており、この比較の Rust→JS Promise 戻り値には any が含まれる。型情報と API 契約も含めて選ぶ。
 

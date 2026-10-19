@@ -54,10 +54,10 @@ prepare-allocator:
     pnpm exec prettier --check experiments/allocator/*.mjs
 
 compare-allocator: prepare-allocator
-    node tools/compare-allocator.mjs --require-improvement
+    node --no-liftoff tools/compare-allocator.mjs --require-improvement
 
 check-allocator: prepare-allocator
-    node tools/compare-allocator.mjs --check --require-improvement
+    node --no-liftoff tools/compare-allocator.mjs --check --require-improvement
 
 fmt:
     pnpm format

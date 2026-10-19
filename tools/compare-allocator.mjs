@@ -14,6 +14,10 @@ import { performance } from "node:perf_hooks";
 import { optimizationArgs } from "./wasm-opt-contract.mjs";
 import { verifyAllocator } from "../experiments/allocator/probe.mjs";
 import { cases, expected } from "../experiments/allocator/contract.mjs";
+assert(
+  process.execArgv.includes("--no-liftoff"),
+  "run just compare-allocator: fix the Wasm optimizing tier before timing",
+);
 const out = resolve(".cache/allocator"),
   check = process.argv.includes("--check");
 mkdirSync(out, { recursive: true });
@@ -29,13 +33,13 @@ const hash = (b) => createHash("sha256").update(b).digest("hex");
 const report = {
   created_at: new Date().toISOString(),
   baseline: "44bf8b09c61a53368e28821874ab874258f6b1cd",
-  engine: `Node ${process.version} / V8 ${process.versions.v8}`,
+  engine: `Node ${process.version} / V8 ${process.versions.v8} (--no-liftoff)`,
   machine: { cpu: os.cpus()[0]?.model, os: os.release(), arch: process.arch },
   rust: run("rustc", ["--version"]).toString().trim(),
   rustflags: env.RUSTFLAGS,
   entries: [],
   timing:
-    "V8 warm instances, 21 interleaved samples, median ns/job; JIT/instantiation excluded; guest calls batch 256 jobs; boundary is a single call. Only whole-probe passes are timed; wee_alloc fails adjacent-block reuse and is excluded.",
+    "V8 optimizing Wasm tier (--no-liftoff), >=50ms warmup per kernel/instance, 21 interleaved samples, median ns/job; JIT/instantiation excluded; guest calls batch 256 jobs; boundary is a single call. Only whole-probe passes are timed; wee_alloc fails adjacent-block reuse and is excluded.",
 };
 const guests = new Map();
 try {
@@ -156,6 +160,8 @@ try {
         };
         let n = 1;
         while (n < 4096 && batch(n) < 3) n *= 2;
+        const warm = performance.now();
+        while (performance.now() - warm < 50) batch(n);
         return { e, k, batch, n };
       });
     for (let round = 0; round < 21; round++)
@@ -228,7 +234,7 @@ try {
       );
     lines.push(
       "",
-      "21回の測定順を循環させた中央値 ns/job。JIT・instance 生成は除外し、各 sample で結果と memory plateau を確認する。JS→Wasm 呼び出しを含む V8 上の結果で、Criterion/Wasmtime の過去結果とは混ぜない。",
+      "最適化済み Wasm（--no-liftoff）に固定し、kernel/instance ごとに50 ms以上ウォームアップ。21回の測定順を循環させた中央値 ns/job。JIT・instance 生成は除外し、各 sample で結果と memory plateau を確認する。数%の差や今回1回の測定だけで速度の優劣を断定しない。JS→Wasm 呼び出しを含む V8 上の結果で、Criterion/Wasmtime の過去結果とは混ぜない。",
       "",
       "| mode / classes / kernel | 変更前 | 現在 | wee_alloc（除外） |",
       "|---|---:|---:|---:|",
