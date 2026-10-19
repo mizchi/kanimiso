@@ -18,6 +18,19 @@ const { instantiate } = await import(
   "data:text/javascript;base64," +
     Buffer.from(built.outputFiles[0].text).toString("base64")
 );
+test("release JSPI host stays below the previous 1324-byte bundle", async () => {
+  const release = await esbuild.build({
+    entryPoints: ["src/jspi.mjs"],
+    bundle: true,
+    minify: true,
+    format: "esm",
+    platform: "neutral",
+    target: "es2022",
+    write: false,
+    define: { __JSRT_DEBUG_ERRORS__: "false" },
+  });
+  assert.ok(release.outputFiles[0].contents.length < 1324);
+});
 const dir = mkdtempSync(join(tmpdir(), "taraba-jspi-"));
 const wasm = (wat) => {
   writeFileSync(`${dir}/raw.wat`, wat);
@@ -101,6 +114,37 @@ test("host rejection closes the instance with the first reason and rejects queue
   assert.equal(calls, 1);
   assert.equal(h.stats().dead, true);
   await assert.rejects(h.promise("run", 1, 2), (e) => e === reason);
+});
+test("fatal reason wins over queued private or missing exports after dispatch is cleared", async () => {
+  for (const reason of [
+    undefined,
+    null,
+    0,
+    Object.freeze({ failure: "fatal" }),
+  ]) {
+    const h = await instantiate(bytes, {
+      bindings: { add: () => Promise.reject(reason) },
+    });
+    const results = await Promise.allSettled([
+      h.call("run", 1, 2),
+      h.call("rt_poll"),
+      h.call("missing"),
+    ]);
+    for (const result of results) {
+      assert.equal(result.status, "rejected");
+      assert.equal(result.reason, reason);
+    }
+    assert.deepEqual(h.stats(), {
+      calls: 1,
+      completions: 0,
+      queued: 0,
+      dead: true,
+    });
+    const [later] = await Promise.allSettled([h.promise("cabi_realloc")]);
+    assert.equal(later.status, "rejected");
+    assert.equal(later.reason, reason);
+    assert.equal(h.stats().queued, 0);
+  }
 });
 test("a Wasm trap closes the instance after JSPI resumption", async () => {
   const h = await instantiate(new WebAssembly.Module(bytes), {

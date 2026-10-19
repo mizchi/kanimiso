@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "created_at": "2026-10-19T01:31:31.075Z",
+  "created_at": "2026-10-19T02:10:12.616Z",
   "engine": "Node v24.21.0 / V8 13.6.233.17-node.53",
   "machine": {
     "os": "25.6.0",
@@ -38,27 +38,27 @@
       "raw_rust_wasm_bytes": 3324,
       "raw_rust_sha256": "fb67816db19ab48a3d63d7315bc4ba43ba75c7fef2cecd0597ed1f61e4f12bc4",
       "runtime": {
-        "raw": 1539,
-        "gzip": 794,
-        "brotli": 702
+        "raw": 1510,
+        "gzip": 782,
+        "brotli": 690
       },
       "wasm_bytes": 108,
-      "js_bytes": 1431,
+      "js_bytes": 1402,
       "declaration_bytes": 1340,
       "component_bytes": 0,
-      "payload_bytes": 2879,
-      "npm_tarball_bytes": 2367,
+      "payload_bytes": 2850,
+      "npm_tarball_bytes": 2356,
       "packed_artifacts_verified": true,
       "typescript_strict": true,
       "files": {
         "runtime": [
           {
             "path": "bundle.mjs",
-            "sha256": "f5563869d8489208b98f04fc20fb14af4dfabe840b7e7a7fd9cfa9f13ee13896",
+            "sha256": "bbf221b1f348a7e14d3ee7db19c2749984a48e87179d417141933787806b54ea",
             "sizes": {
-              "raw": 1431,
-              "gzip": 679,
-              "brotli": 608
+              "raw": 1402,
+              "gzip": 667,
+              "brotli": 596
             }
           },
           {
@@ -111,27 +111,27 @@
       "raw_rust_wasm_bytes": 3545,
       "raw_rust_sha256": "11ce81ff1e1c0e2ae6a5517609641d2d197453bb5472e876c5ddbeb4fac09da3",
       "runtime": {
-        "raw": 1679,
-        "gzip": 880,
-        "brotli": 785
+        "raw": 1650,
+        "gzip": 868,
+        "brotli": 773
       },
       "wasm_bytes": 248,
-      "js_bytes": 1431,
+      "js_bytes": 1402,
       "declaration_bytes": 1340,
       "component_bytes": 0,
-      "payload_bytes": 3019,
-      "npm_tarball_bytes": 2473,
+      "payload_bytes": 2990,
+      "npm_tarball_bytes": 2462,
       "packed_artifacts_verified": true,
       "typescript_strict": true,
       "files": {
         "runtime": [
           {
             "path": "bundle.mjs",
-            "sha256": "f5563869d8489208b98f04fc20fb14af4dfabe840b7e7a7fd9cfa9f13ee13896",
+            "sha256": "bbf221b1f348a7e14d3ee7db19c2749984a48e87179d417141933787806b54ea",
             "sizes": {
-              "raw": 1431,
-              "gzip": 679,
-              "brotli": 608
+              "raw": 1402,
+              "gzip": 667,
+              "brotli": 596
             }
           },
           {
@@ -208,27 +208,27 @@
       "raw_rust_wasm_bytes": 56482,
       "raw_rust_sha256": "206c188c96121fb8dca712308304536f6312d395efbe68a0aa58b41e7b8d59a5",
       "runtime": {
-        "raw": 2149,
-        "gzip": 1176,
-        "brotli": 1052
+        "raw": 2120,
+        "gzip": 1164,
+        "brotli": 1040
       },
       "wasm_bytes": 718,
-      "js_bytes": 1431,
+      "js_bytes": 1402,
       "declaration_bytes": 1340,
       "component_bytes": 0,
-      "payload_bytes": 3489,
-      "npm_tarball_bytes": 2764,
+      "payload_bytes": 3460,
+      "npm_tarball_bytes": 2753,
       "packed_artifacts_verified": true,
       "typescript_strict": true,
       "files": {
         "runtime": [
           {
             "path": "bundle.mjs",
-            "sha256": "f5563869d8489208b98f04fc20fb14af4dfabe840b7e7a7fd9cfa9f13ee13896",
+            "sha256": "bbf221b1f348a7e14d3ee7db19c2749984a48e87179d417141933787806b54ea",
             "sizes": {
-              "raw": 1431,
-              "gzip": 679,
-              "brotli": 608
+              "raw": 1402,
+              "gzip": 667,
+              "brotli": 596
             }
           },
           {
@@ -281,27 +281,27 @@
       "raw_rust_wasm_bytes": 57065,
       "raw_rust_sha256": "bc50666c98cb143b6dafaa44fede1f68d7c0a380eed85c938667ab2e3697b5c2",
       "runtime": {
-        "raw": 6738,
-        "gzip": 3518,
-        "brotli": 3206
+        "raw": 6709,
+        "gzip": 3506,
+        "brotli": 3194
       },
       "wasm_bytes": 5307,
-      "js_bytes": 1431,
+      "js_bytes": 1402,
       "declaration_bytes": 1340,
       "component_bytes": 0,
-      "payload_bytes": 8078,
-      "npm_tarball_bytes": 5294,
+      "payload_bytes": 8049,
+      "npm_tarball_bytes": 5283,
       "packed_artifacts_verified": true,
       "typescript_strict": true,
       "files": {
         "runtime": [
           {
             "path": "bundle.mjs",
-            "sha256": "f5563869d8489208b98f04fc20fb14af4dfabe840b7e7a7fd9cfa9f13ee13896",
+            "sha256": "bbf221b1f348a7e14d3ee7db19c2749984a48e87179d417141933787806b54ea",
             "sizes": {
-              "raw": 1431,
-              "gzip": 679,
-              "brotli": 608
+              "raw": 1402,
+              "gzip": 667,
+              "brotli": 596
             }
           },
           {
@@ -2419,7 +2419,7 @@
     "tests/support/scheduling.mjs": "1e6356ad265fe5b8b5656d47de9278a3fce781a6eabdc544fcc4e601b59d2ab9",
     "tests/support/metrics.mjs": "8e00d852b079470d4b2554dae8d21efb8b5a1493ae3b8cc78387c3389006d5de",
     "experiments/wit/shared/compute.rs": "dad3b1f23b34508677b208d188d5f87d955374b55328811f5066e86436eb1262",
-    "crates/taraba-cli/assets/provenance.json": "14899b1d9889395647b510bcf43dd1c500c2716563724d28912b1102a1e10ac0",
+    "crates/taraba-cli/assets/provenance.json": "8b92b856d8adfdbed13329ec09ee9e951556648f55b4522c50ce0ffc29751996",
     "crates/taraba/Cargo.toml": "8fdbb1db830f80cc737aea30c97402ef17a358b52507290c6ba7683685f95119",
     "crates/taraba/build.rs": "1fcd2d553fab84267da595b7583da5d5b72e98f0af2eb51865c15e69670afc86",
     "crates/taraba-allocator/Cargo.toml": "43b0129738ec7de12f0e4b62f8978055d33b56595dc8ffbdbac0b24b624acfcb",
@@ -2440,15 +2440,15 @@
     "crates/taraba-allocator/src/lib.rs": "7e3d52dedf00b5d76da43233f33fa0999c35419f8165ac312c68cf5cbfc6226e",
     "crates/taraba-allocator/src/neighbors.rs": "603c99ca0f8117b79a8f1c9ec53cdba73260b84032f239f6a9f00f7da94834f5",
     "crates/taraba-allocator/src/regression.rs": "a3ed87881832843c4f0d3536b6f818732008bda863f02344d984cb37a1737483",
-    "crates/taraba-allocator/src/size_classes.rs": "5bd2c84867afde2dc9e4c39ba2013e4244b539efd80b1f93abf76ed1517f2a35",
+    "crates/taraba-allocator/src/size_classes.rs": "3365942c7dd5a256b9d558dd856ca0eea8ae060ad726956535da3e8f06032ebe",
     "crates/taraba-cli/assets/error-codes.json": "5f983b94327523505f36b9e33da1d007bb3efdd2aa24e267948d1ad92db3964f",
     "crates/taraba-cli/assets/intrusive-probes.wat": "14e58c622b839680b7ed302c6825f8106b387757302858c29f01b7eb2e8c7700",
     "crates/taraba-cli/assets/intrusive.wat": "3ea11b4e93b5f2d7c82423675f9b3c7e0e19bb3f2d618eca43048af68ec77a72",
     "crates/taraba-cli/assets/private-imports.json": "59717e952842214c631d7d838a83302fc30290dd301a091af5a24dd3699a3cb5",
     "crates/taraba-cli/assets/taraba-debug.mjs": "ae7771397c18309963eae356e8bf61f8f100f4a077ffcd3bc8a99f66d39557dc",
-    "crates/taraba-cli/assets/taraba-jspi-debug.mjs": "18eb6dc65f1cfecfe3a70922cf35f681530016795fb841c5f9439393fceeabbd",
+    "crates/taraba-cli/assets/taraba-jspi-debug.mjs": "981aa40ca43de5043a15a627f26cbc787067e18bd7d545ae0b21f0536f549de1",
     "crates/taraba-cli/assets/taraba-jspi.d.mts": "0cdcff86e06e5c2cccb5112a72ba59833218a97d3cee6349305862a28b73728a",
-    "crates/taraba-cli/assets/taraba-jspi.mjs": "6eb69c495deb02e293d68b41bff1dcad56beb7078a3466e6127e621c892ad3de",
+    "crates/taraba-cli/assets/taraba-jspi.mjs": "239469ea01011610169d3262900ffd98dd83624e63fc5fac3862441de9205a16",
     "crates/taraba-cli/assets/taraba.d.mts": "f042853d196d0fce34cafabda9ba4c4b7616b68f8d0c7b02cb9f2ac37f40c6f5",
     "crates/taraba-cli/assets/taraba.mjs": "741a202dd568b320ba9375fe8ddf772557122ffc0fc340f4863e1a8caf75e9ce",
     "crates/taraba-cli/src/abi.rs": "cd0e5e0ed8e32c14fe316edba4590b08d94f9e342acc75519a6c6a02102791e9",

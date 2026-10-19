@@ -4,7 +4,6 @@ use super::{alloc_with_refill, AllocErr, AllocPolicy, CellHeader, FreeCell, Larg
 use crate::const_init::ConstInit;
 use crate::imp;
 use core::cell::Cell;
-use core::cmp;
 use memory_units::{size_of, Bytes, RoundUpTo, Words};
 
 /// An array of free lists specialized for allocations of sizes
@@ -27,9 +26,14 @@ impl<'a> SizeClasses<'a> {
     }
 }
 
-// The minimum segment size the `SizeClassAllocPolicy` should get from the
-// `LargeAllocPolicy`.
+// Each of the 32 classes refills one fixed slab. Even the largest request and
+// its header fit, on both wasm32 and the native test backend.
 const MIN_NEW_CELL_SIZE: Bytes = Bytes(8192);
+const _: () = assert!(
+    SizeClasses::NUM_SIZE_CLASSES * core::mem::size_of::<usize>()
+        + core::mem::size_of::<CellHeader>()
+        <= MIN_NEW_CELL_SIZE.0
+);
 
 pub(crate) struct SizeClassAllocPolicy<'a, 'b>(pub(crate) &'b imp::Exclusive<*const FreeCell<'a>>)
 where
@@ -47,14 +51,8 @@ where
         extra_assert!(align.0 > 0);
         extra_assert!(align.0.is_power_of_two());
         extra_assert!(align <= size_of::<usize>());
-
-        // Need room for at least size^2 allocations.
-        let size_of_header: Words = size_of::<CellHeader>().round_up_to();
-        let size_with_header = size + size_of_header;
-        let new_cell_size = cmp::max(
-            size_with_header * size_with_header,
-            MIN_NEW_CELL_SIZE.round_up_to(),
-        );
+        extra_assert!(size.0 > 0 && size.0 <= SizeClasses::NUM_SIZE_CLASSES);
+        let new_cell_size: Words = MIN_NEW_CELL_SIZE.round_up_to();
 
         let new_cell = self.0.with_exclusive_access(|head| {
             let head_cell = Cell::new(*head);
@@ -100,5 +98,23 @@ where
     #[cfg(feature = "extra_assertions")]
     fn free_pattern(&self) -> u8 {
         CellHeader::SIZE_CLASS_FREE_PATTERN
+    }
+}
+
+#[test]
+fn every_size_class_refills_one_fixed_slab() {
+    #[cfg(not(target_arch = "wasm32"))]
+    let _arena = crate::imp::scope();
+    let main = imp::Exclusive::INIT;
+    let policy = SizeClassAllocPolicy(&main);
+    for words in 1..=SizeClasses::NUM_SIZE_CLASSES {
+        let cell = unsafe {
+            policy
+                .new_cell_for_free_list(Words(words), size_of::<usize>())
+                .unwrap()
+        };
+        let bytes = unsafe { (*cell).header.size() + size_of::<CellHeader>() };
+        assert_eq!(bytes, MIN_NEW_CELL_SIZE, "class {words} refill size");
+        assert!(bytes >= Bytes::from(Words(words)) + size_of::<CellHeader>());
     }
 }

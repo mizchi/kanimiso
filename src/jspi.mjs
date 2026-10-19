@@ -16,7 +16,7 @@ export async function instantiate(
     calls = 0,
     completions = 0,
     queued = 0;
-  const functions = Object.create(null);
+  let functions = Object.create(null);
   const alive = () => {
     if (dead) throw fatal;
   };
@@ -24,7 +24,8 @@ export async function instantiate(
     if (!dead) {
       dead = true;
       fatal = error;
-      for (const name in functions) delete functions[name];
+      // Queued entries check alive() before touching the dispatch table.
+      functions = null;
     }
     return fatal;
   };

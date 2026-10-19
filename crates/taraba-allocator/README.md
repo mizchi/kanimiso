@@ -16,6 +16,8 @@ static ALLOCATOR: taraba_allocator::Allocator = taraba_allocator::Allocator::INI
 
 `--no-default-features` disables size classes for the smallest code footprint.
 The default `size_classes` feature provides a different size/performance tradeoff.
+Each of its 32 classes refills an 8 KiB slab. The wasm32 refill size is unchanged;
+using a constant removes the previous per-refill quadratic sizing calculation.
 `extra_assertions` enables additional internal checks; `instrumentation` is for diagnostics.
 
 This allocator is optional for taraba. Fixed task slots are allocated separately.

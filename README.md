@@ -36,7 +36,7 @@ The same two-await Rust implementation, std and taraba-allocator (size classes d
 
 | Backend | Async Wasm B | Async JS B | Total B | Growth from sync B |
 |---|---:|---:|---:|---:|
-| taraba JSPI | 5,307 | 1,431 | 6,738 | +4,589 |
+| taraba JSPI | 5,307 | 1,402 | 6,709 | +4,589 |
 | taraba Future | 6,915 | 4,007 | 10,922 | +6,197 |
 | Embassy WASM + JsFuture | 13,438 | 5,211 | 18,649 | +16,788 |
 | wasm-bindgen-futures | 15,303 | 4,442 | 19,745 | +17,884 |

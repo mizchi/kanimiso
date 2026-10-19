@@ -78,6 +78,7 @@ miri:
     cargo +nightly miri test --locked -p taraba --lib --features std -- --test-threads=1
     cargo +nightly miri test --locked -p taraba-allocator --lib --no-default-features --features instrumentation -- --test-threads=1
     cargo +nightly miri test --locked -p taraba-allocator --lib --no-default-features --features instrumentation,extra_assertions test_merge_free_ -- --test-threads=1
+    cargo +nightly miri test --locked -p taraba-allocator --lib --features instrumentation every_size_class_refills_one_fixed_slab -- --test-threads=1
 
 kani-setup:
     cargo install --locked kani-verifier --version 0.67.0

@@ -234,6 +234,8 @@ try {
       );
     lines.push(
       "",
+      "size classes 有効時は全32クラスの補充領域を固定8 KiBとする。wasm32 では従来の二乗・max 計算も全クラスで8 KiBになっていたため、補充サイズを変えずに計算を除去できる。classes 無効の最小構成には影響しない。",
+      "",
       "最適化済み Wasm（--no-liftoff）に固定し、kernel/instance ごとに50 ms以上ウォームアップ。21回の測定順を循環させた中央値 ns/job。JIT・instance 生成は除外し、各 sample で結果と memory plateau を確認する。数%の差や今回1回の測定だけで速度の優劣を断定しない。JS→Wasm 呼び出しを含む V8 上の結果で、Criterion/Wasmtime の過去結果とは混ぜない。",
       "",
       "| mode / classes / kernel | 変更前 | 現在 | wee_alloc（除外） |",
