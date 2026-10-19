@@ -33,6 +33,8 @@ taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --compon
 
 `wit/app.wit` に `async func` を書き、生成された Rust の `Guest` trait を `async fn` で実装すると、`pkg/app.component.wasm` を生成できます。`--npm-name @example/hello --npm-version 0.1.0 --license MIT` を追加すると、JS・TS 型定義・必要な Wasm・`package.json` まで生成します。Component の npm 化には jco 1.39.0 も必要です。`pnpm pack` で tarball を作れます。ビルドは publish を行いません。
 
+開発中は `taraba build --watch --component`（雛形では `just watch`）で Rust・WIT・ローカル依存を監視し、Cargo ビルドから成果物の生成まで自動実行できます。失敗時は直前の正常な出力を保持し、修正後に再試行します。[watch の使い方](docs/guide.ja.md#開発中の自動ビルド)。
+
 <!-- async-size:begin -->
 ## ビルドサイズ比較
 

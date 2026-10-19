@@ -31,10 +31,15 @@ check: build test
     node tools/check.mjs
     node tools/check-jspi.mjs
     node tools/check-library.mjs
+    node tools/check-watch.mjs
 
 library-check: build-host
     cargo build --locked --release -p taraba-cli
     node tools/check-library.mjs
+
+watch-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-watch.mjs
 
 prepare-async-size: build-host
     node tools/install-wasm-bindgen.mjs

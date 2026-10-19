@@ -17,6 +17,7 @@ import { verifyWit } from "../tests/support/wit-contract.mjs";
 import { verifyScheduling } from "../tests/support/scheduling.mjs";
 import { asyncCases } from "../tests/support/async-contract.mjs";
 import { verifyEsmCache } from "./check-esm-cache.mjs";
+import { verifyWatchOutput } from "./check-watch.mjs";
 
 const root = resolve(".");
 const temp = mkdtempSync(join(tmpdir(), "taraba-library-"));
@@ -226,6 +227,40 @@ try {
       mkdirSync(out);
       writeFileSync(join(out, "stale.wasm"), "not a build output");
       build(raw, project, profile, out, `@taraba-tests/${id}`);
+      const watch = !std
+        ? await verifyWatchOutput(
+            cli,
+            [
+              "build",
+              ...(profile === "jspi" ? [] : [`--${profile}`]),
+              "--watch",
+              "--manifest-path",
+              join(project, "Cargo.toml"),
+              "--out-dir",
+              join(temp, `watch-${id}`),
+              ...(profile === "component"
+                ? [
+                    "--wasm-tools",
+                    wasmTools,
+                    "--jco",
+                    resolve("node_modules/.bin/jco"),
+                  ]
+                : []),
+              "--npm-name",
+              `@taraba-tests/${id}`,
+              "--npm-version",
+              "0.1.0-test.1",
+              "--license",
+              "MIT",
+            ],
+            {
+              cwd: project,
+              env,
+              expected: out,
+              output: join(temp, `watch-${id}`),
+            },
+          )
+        : null;
       const installed = await install(out, profile, id);
       if (profile !== "component") corePackages.push({ ...installed, profile });
       const factory = async (add) => {
@@ -295,6 +330,7 @@ try {
       }
       report.cases.push({
         id,
+        watch,
         ...verified,
         scheduling,
         typescript_strict: true,
@@ -421,6 +457,7 @@ export!(App);`,
       "tools/check-library.mjs",
       "tools/check-esm-cache.mjs",
       "tools/shared-runtime.mjs",
+      "tools/check-watch.mjs",
       "Cargo.lock",
       "pnpm-lock.yaml",
       ...readdirSync("crates/taraba-cli/src", { recursive: true })

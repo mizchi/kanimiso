@@ -18,6 +18,8 @@ walrus = "=0.27.2"
 serde_json = { version = "=1.0.150", features = ["preserve_order"] }
 tempfile = "=3.27.0"
 wit-parser = "=0.251.0"
+notify = "=8.2.0"
+ctrlc = { version = "=3.5.2", features = ["termination"] }
 
 [dev-dependencies]
 wat = "=1.252.0"

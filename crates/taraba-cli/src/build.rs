@@ -6,6 +6,7 @@ use std::{
     process::Command,
 };
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
+#[derive(Clone)]
 pub struct BuildOptions {
     pub input: PathBuf,
     pub wit: PathBuf,

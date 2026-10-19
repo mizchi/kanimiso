@@ -2,7 +2,7 @@
 
 [English](async-size.md) | 日本語
 
-2026-10-19T04:15:20.692Z
+2026-10-19T04:50:08.841Z
 
 taraba・Embassy・wasm-bindgen-futures・Tokio・async-executor・async-std・FuturesUnordered をビルドし直した。同じ二段 await の Rust ソース、3,507 入力、全 I/O 引数、外から解決する二回の待機を検査した。以下は測定時点のスナップショットであり、固定されたライブラリ overhead や全用途での順位ではない。
 

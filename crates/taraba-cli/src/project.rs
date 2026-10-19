@@ -117,7 +117,7 @@ codegen-units = 1
     fs::write(
         path.join("justfile"),
         format!(
-            "# Build the library for its selected execution contract.\nbuild:\n    cargo build --release --target wasm32-unknown-unknown\n    taraba build target/wasm32-unknown-unknown/release/{artifact}.wasm --wit wit{profile}\n\n# Prepare a publishable package; inspect it with pnpm pack before publishing.\nnpm name version=\"0.1.0\" license=\"UNLICENSED\":\n    cargo build --release --target wasm32-unknown-unknown\n    pnpm exec taraba build target/wasm32-unknown-unknown/release/{artifact}.wasm --wit wit{profile} --npm-name {{{{name}}}} --npm-version {{{{version}}}} --license \"{{{{license}}}}\"\n"
+            "# Build the library for its selected execution contract.\nbuild:\n    cargo build --release --target wasm32-unknown-unknown\n    taraba build target/wasm32-unknown-unknown/release/{artifact}.wasm --wit wit{profile}\n\n# Watch Rust/WIT changes and rebuild the selected library.\nwatch *args:\n    taraba build --watch{profile} {{{{args}}}}\n\n# Prepare a publishable package; inspect it with pnpm pack before publishing.\nnpm name version=\"0.1.0\" license=\"UNLICENSED\":\n    cargo build --release --target wasm32-unknown-unknown\n    pnpm exec taraba build target/wasm32-unknown-unknown/release/{artifact}.wasm --wit wit{profile} --npm-name {{{{name}}}} --npm-version {{{{version}}}} --license \"{{{{license}}}}\"\n"
         ),
     )?;
     println!(

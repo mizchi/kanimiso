@@ -32,6 +32,38 @@ WIT を変更 → Rust の型エラーに従って Guest/import を更新 → ca
 
 雛形の `just build` は選択した成果物をビルドし、`just npm @example/orders 0.1.0 MIT` は npm 用に再生成します。後者はローカルの node_modules/.bin も PATH に追加するため、jco は `pnpm add -D` で用意できます。
 
+## 開発中の自動ビルド
+
+Cargo プロジェクト内で `taraba build --watch` を実行すると、起動直後とファイル変更時に Cargo の release / wasm32-unknown-unknown ビルドから成果物生成まで実行します。WIT の既定値は選んだ package の `wit/` です。Core/JSPI が既定で、他の実行方式は明示します。
+
+```sh
+taraba build --watch
+taraba build --watch --future
+taraba build --watch --component --npm-name @example/orders --license MIT
+# 新しい雛形の justfile から: just watch
+```
+
+workspace や Cargo feature は次のように指定します。Cargo の JSON 出力から実際の Wasm を取得するため、独自の target directory や `[lib].name` にも対応します。
+
+```sh
+taraba build --watch --manifest-path crates/orders/Cargo.toml \
+  --package orders --no-default-features --features std \
+  --wit crates/orders/wit --out-dir web/pkg
+```
+
+Rust、WIT、Cargo.toml / Cargo.lock、Cargo 設定、解決されたローカル path 依存とアセットの変更を監視します。連続した変更を150 msの待機でまとめ、ビルドを直列化します。ビルド中の変更は次のビルドで処理します。Cargo の target directory、出力先、`.git`、`node_modules`、`.cache`、一時出力を除外して再ビルドループを防ぎます。
+
+watch の出力ディレクトリは生成物専用です。既存の非空ディレクトリは taraba の `build.json` を持つものを使用します。別ディレクトリで生成に成功してから置き換えます。Rust のコンパイルや WIT の検証に失敗しても直前の出力を保持し、次の編集で再試行します。起動時には有効な Cargo manifest と選択可能な cdylib package が必要です。停止は Ctrl-C です。
+
+ビルド済み Wasm の更新だけを監視する場合は、従来の入力形式に `--watch` を追加します。この形式では Wasm と WIT を監視し、Cargo のコンパイルは外部のビルド工程が担当します。
+
+```sh
+taraba build target/wasm32-unknown-unknown/release/orders.wasm \
+  --wit wit --watch --out-dir pkg
+```
+
+`--manifest-path` / `--package` / `--features` / `--no-default-features` は、Wasm 入力を省略した project watch 専用です。`--world`、実行方式、`--debug`、`--npm-name` など、各ビルド形式のオプションは再ビルドにも引き継ぎます。
+
 ## インストール
 
 `taraba-cli`、`taraba`、`taraba-allocator` の初回 crates.io 公開を準備しています。レジストリ公開・レジストリからのインストールはまだ実施していません。以下は公開後の利用手順で、現在は .crate アーカイブとリポジトリ外の利用アプリで検証しています。

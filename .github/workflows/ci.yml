@@ -40,6 +40,8 @@ jobs:
             .cache/package-check-error.log
             .cache/library-check.json
             .cache/library-check-error.log
+            .cache/watch-check.json
+            .cache/watch-check.log
             .cache/async-size/check.json
             .cache/async-size/failure.log
             .cache/allocator/check.json

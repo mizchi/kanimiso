@@ -18,6 +18,7 @@ setup installs dependencies, the Wasm Rust target, Binaryen 133 and wasm-tools 1
 | `just check` | Rust/JS tests, formatting, Core fatal/ownership behavior, JSPI spills, npm consumer checks and active documentation links |
 | `just library-check` | Current CLI: pack/install outside the repo, strict TS, three profiles × std/no_std, rich Component domain/errors, shared Core ESM and instance isolation |
 | `just package-check` | Packages all three crates, installs an unpacked CLI, repeats external consumers and npm library generation |
+| `just watch-check` | Real Cargo/CLI watch: workspace/features/local dependencies, recovery, output exclusions, edits during builds and Ctrl-C |
 | `just compare-async-size` | Common sync/async implementations with Embassy, Tokio, async-executor, async-std, wasm-bindgen and FuturesUnordered; writes docs/async-size.{json,md} and Japanese report |
 | `just check-async-size` | Same comparison and correctness checks; writes only .cache/async-size |
 | `just compare-allocator` / `just check-allocator` | Common allocator oracle and nine V8 kernels for the fixed reference, current default/optional realloc feature and wee_alloc; check writes .cache only |

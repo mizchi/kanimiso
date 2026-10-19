@@ -33,6 +33,8 @@ taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --compon
 
 Write `async func` in `wit/app.wit`, implement the generated Rust `Guest` trait with `async fn`, and receive `pkg/app.component.wasm`. Add `--npm-name @example/hello --npm-version 0.1.0 --license MIT` to generate JS, TypeScript, all required Wasm and `package.json`; Component npm builds also need jco 1.39.0. `pnpm pack` produces a tarball. Builds never publish.
 
+During development, `taraba build --watch --component` (`just watch` in the scaffold) watches Rust, WIT and local dependencies, then runs Cargo and regenerates the artifacts. Failed builds keep the previous successful output and retry after edits. See [automatic rebuilds](docs/guide.md#automatic-rebuilds).
+
 <!-- async-size:begin -->
 ## Build size comparison
 

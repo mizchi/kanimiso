@@ -32,6 +32,38 @@ Edit WIT, update Guest/imports using Rust's type errors, run cargo build then ta
 
 The scaffold's `just build` builds the selected artifact; `just npm @example/orders 0.1.0 MIT` regenerates an npm package. The npm task includes local node_modules/.bin in PATH, so jco can be installed with pnpm add -D.
 
+## Automatic rebuilds
+
+Run `taraba build --watch` in a Cargo project to build immediately and rebuild after changes. It runs Cargo in release mode for wasm32-unknown-unknown, then generates the distribution artifacts. WIT defaults to the selected package's `wit/` directory. Core/JSPI is the default; select other execution profiles explicitly.
+
+```sh
+taraba build --watch
+taraba build --watch --future
+taraba build --watch --component --npm-name @example/orders --license MIT
+# From a newly generated justfile: just watch
+```
+
+Select a workspace package and Cargo features when needed. The actual Wasm path comes from Cargo's JSON artifact messages, so custom target directories and `[lib].name` work too.
+
+```sh
+taraba build --watch --manifest-path crates/orders/Cargo.toml \
+  --package orders --no-default-features --features std \
+  --wit crates/orders/wit --out-dir web/pkg
+```
+
+Watch covers Rust, WIT, Cargo.toml / Cargo.lock, Cargo configuration, resolved local path dependencies and assets. A 150 ms quiet period coalesces edits. Builds run serially; edits during a build trigger a subsequent build. Cargo's target directory, output, `.git`, `node_modules`, `.cache` and staging directories are excluded to avoid rebuild loops.
+
+The output directory is dedicated to generated files. An existing nonempty directory must contain taraba build metadata in `build.json`. Each successful build replaces it after generating artifacts in a separate directory. Rust compilation or WIT validation failures preserve the last successful output and retry after edits. Startup requires a valid Cargo manifest and a selectable cdylib package. Stop with Ctrl-C.
+
+To watch an existing Wasm artifact, add `--watch` to the original input form. This watches the Wasm and WIT; an external build process compiles Rust.
+
+```sh
+taraba build target/wasm32-unknown-unknown/release/orders.wasm \
+  --wit wit --watch --out-dir pkg
+```
+
+`--manifest-path` / `--package` / `--features` / `--no-default-features` require project watch without a positional Wasm input. Existing options such as `--world`, execution profiles, `--debug` and `--npm-name` carry over to rebuilds.
+
 ## Installation
 
 The three crates (`taraba-cli`, `taraba`, `taraba-allocator`) are prepared for their first crates.io release. Registry publication and registry installation have not been performed. The following commands describe the intended workflow after publication; archived crates and external consumers are tested today.

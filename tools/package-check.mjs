@@ -15,6 +15,7 @@ import { rustEnvironment } from "./rust-toolchain.mjs";
 import { verifyWit } from "../tests/support/wit-contract.mjs";
 import { verifyScheduling } from "../tests/support/scheduling.mjs";
 import { asyncCases } from "../tests/support/async-contract.mjs";
+import { verifyWatch } from "./check-watch.mjs";
 const root = resolve("."),
   temp = mkdtempSync(join(tmpdir(), "taraba-package-"));
 const rustEnv = rustEnvironment(root);
@@ -249,6 +250,7 @@ try {
     TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-0.1.0`,
   });
   result.npm_libraries_verified_from_archived_cli = true;
+  result.watch = await verifyWatch(cli, env);
   mkdirSync(".cache", { recursive: true });
   writeFileSync(
     ".cache/package-check.json",
