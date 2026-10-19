@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
-const revision = "44bf8b09c61a53368e28821874ab874258f6b1cd";
+const revision = "8cb75b788a4720753ac6fd30f64615f575e8761e";
 try {
   execFileSync("git", ["cat-file", "-e", `${revision}^{commit}`], {
     stdio: "pipe",

@@ -20,6 +20,8 @@ test: build-host
     cargo test --locked -p taraba-cli
     cargo test --locked -p taraba-allocator --lib --features instrumentation,extra_assertions
     cargo test --locked -p taraba-allocator --lib --no-default-features --features instrumentation,extra_assertions
+    cargo test --locked -p taraba-allocator --lib --features instrumentation,extra_assertions,realloc_in_place
+    cargo test --locked -p taraba-allocator --lib --no-default-features --features instrumentation,extra_assertions,realloc_in_place
 
 check: build test
     pnpm format:check
@@ -79,6 +81,8 @@ miri:
     cargo +nightly miri test --locked -p taraba-allocator --lib --no-default-features --features instrumentation -- --test-threads=1
     cargo +nightly miri test --locked -p taraba-allocator --lib --no-default-features --features instrumentation,extra_assertions test_merge_free_ -- --test-threads=1
     cargo +nightly miri test --locked -p taraba-allocator --lib --features instrumentation every_size_class_refills_one_fixed_slab -- --test-threads=1
+    cargo +nightly miri test --locked -p taraba-allocator --lib --features instrumentation,realloc_in_place regression:: -- --test-threads=1
+    cargo +nightly miri test --locked -p taraba-allocator --lib --no-default-features --features instrumentation,realloc_in_place regression:: -- --test-threads=1
 
 kani-setup:
     cargo install --locked kani-verifier --version 0.67.0
@@ -89,6 +93,7 @@ kani:
     cargo kani --manifest-path verification/kani/models/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
     cargo kani --manifest-path .cache/kani/waker/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
     cargo kani --manifest-path .cache/kani/allocator/Cargo.toml --lib --tests --exact --harness kani_proofs::checked_rounding_all_usize_values --harness kani_boundary_proofs::neighbor_tag_bits_preserve_every_aligned_u32_address --harness kani_boundary_proofs::valid_layouts_return_null_on_refill_oom_without_overflow --output-format terse -Z unstable-options --harness-timeout 60s
+    cargo kani --manifest-path .cache/kani/allocator/Cargo.toml --lib --tests --features realloc_in_place --exact --harness kani_proofs::realloc_fast_path_preserves_word_class --output-format terse -Z unstable-options --harness-timeout 60s
 
 workers *args:
     node tools/workers.mjs {{args}}
@@ -98,6 +103,10 @@ modern:
 
 kani-explore:
     cargo kani --manifest-path .cache/kani/allocator/Cargo.toml --lib --tests --exact --harness kani_proofs::adjacent_frees_coalesce_in_both_orders --harness kani_proofs::two_live_allocations_preserve_payload_and_alignment --output-format terse -Z unstable-options --harness-timeout 60s
+
+kani-realloc-explore:
+    node tools/prepare-kani.mjs
+    cargo kani --manifest-path .cache/kani/allocator/Cargo.toml --lib --tests --features realloc_in_place --exact --harness kani_proofs::native_same_word_realloc_preserves_prefix --output-format terse -Z unstable-options --harness-timeout 60s
 
 report:
     node tools/report-verification.mjs

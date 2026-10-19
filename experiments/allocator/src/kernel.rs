@@ -42,7 +42,7 @@ unsafe fn distinct(p: *mut u8, size: usize, other: *mut u8, other_size: usize) {
 }
 
 pub fn run(case: u32, rounds: u32, mut seed: u32, verify: bool) -> u32 {
-    assert!(case <= 7, "unknown workload");
+    assert!(case <= 8, "unknown workload");
     if case == 0 {
         return seed;
     }
@@ -142,6 +142,27 @@ pub fn run(case: u32, rounds: u32, mut seed: u32, verify: bool) -> u32 {
                     stamp(p, 60000, value, verify);
                     sum = sum.wrapping_add(check(p, 60000, value, verify));
                     dealloc(p, layout);
+                }
+            }
+            8 => {
+                let layout = Layout::from_size_align(25, 4).unwrap();
+                let value = marker(&mut seed);
+                unsafe {
+                    let p = allocate(layout);
+                    stamp(p, 25, value, verify);
+                    let q = realloc(black_box(p), layout, black_box(28));
+                    assert!(!q.is_null());
+                    assert_eq!(q.addr() % 4, 0);
+                    assert_eq!(check(q, 25, value, verify), u32::from(value));
+                    let p = realloc(
+                        black_box(q),
+                        Layout::from_size_align(28, 4).unwrap(),
+                        black_box(25),
+                    );
+                    assert!(!p.is_null());
+                    assert_eq!(p.addr() % 4, 0);
+                    sum = sum.wrapping_add(check(p, 25, value, verify));
+                    dealloc(black_box(p), layout);
                 }
             }
             _ => unreachable!(),

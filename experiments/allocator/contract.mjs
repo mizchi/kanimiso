@@ -7,10 +7,11 @@ export const cases = [
   { id: 5, name: "burst_lifo", rounds: 8, jobs: 256 },
   { id: 6, name: "grow_realloc", rounds: 8, jobs: 256 },
   { id: 7, name: "coalesce", rounds: 64, jobs: 256 },
+  { id: 8, name: "realloc_same_word", rounds: 256, jobs: 256 },
 ];
 export function expected(id, rounds, seed) {
   if (id === 0) return seed >>> 0;
-  if (!Number.isInteger(id) || id < 1 || id > 7)
+  if (!Number.isInteger(id) || id < 1 || id > 8)
     throw Error("unknown workload");
   let sum = 0;
   const jobs = rounds * (id >= 4 && id <= 6 ? 32 : id === 7 ? 4 : 1);

@@ -90,6 +90,23 @@ taraba build target/wasm32-unknown-unknown/release/orders.wasm \
 
 ドメイン契約には WIT の record / list / string / result を使えます。interface や resource の所有権も標準ツールが生成します。native async の実行にはその proposal に対応した Component host が必要です。今回のライブラリ検証は validate と jco 出力の実行であり、全 native host での動作確認ではありません。WASI 実装や Preview 1 adapter は自動で付与しません。宣言した import はホスト側から提供します。
 
+## allocator の構成を選ぶ
+
+生成する Cargo.toml は Wasm の小ささを優先し、taraba-allocator を
+`default-features = false` で指定します。用途に応じて、その依存の features に追加します。
+
+| 用途 | features |
+|---|---|
+| コードサイズを最小にする | なし |
+| 小さな領域の確保が多い | `size_classes`。main free list と実測で比較する |
+| 25→28→25 Bなど、同じ4 B単位の丸め結果に収まる拡縮が多い | `realloc_in_place` |
+
+両 feature は併用できます。`realloc_in_place` は既定で無効で、丸めたワード数が変わる
+拡縮では通常の allocate/copy/free に戻ります。専用の拡縮ベンチと、一般的な Vec の
+成長は別の処理です。[allocator のサイズ・速度比較](allocator.md)で両構成と共通の検証条件を
+確認できます。数値だけを扱う JSPI の例は汎用確保を行わないため、allocator の変更が
+成果物のサイズに現れない場合があります。
+
 ## TypeScript 型定義込みの npm ライブラリ
 
 上の Component プロジェクトから次を実行します。

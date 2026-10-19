@@ -45,7 +45,7 @@ export function prepareKani(root = ".cache/kani") {
   copyFileSync(`${allocator}/LICENSE`, `${root}/allocator/LICENSE`);
   writeFileSync(
     `${root}/allocator/Cargo.toml`,
-    `[package]\nname="taraba-allocator-kani"\nversion="0.0.0"\nedition="2021"\nlicense="MPL-2.0"\n[workspace]\n[features]\ndefault=[]\nsize_classes=[]\ninstrumentation=[]\nextra_assertions=[]\n[dependencies]\nmemory_units="=0.4.0"\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
+    `[package]\nname="taraba-allocator-kani"\nversion="0.0.0"\nedition="2021"\nlicense="MPL-2.0"\n[workspace]\n[features]\ndefault=[]\nsize_classes=[]\ninstrumentation=[]\nextra_assertions=[]\nrealloc_in_place=[]\n[dependencies]\nmemory_units="=0.4.0"\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
   );
   const original = readFileSync("crates/taraba/src/waker.rs", "utf8");
   const needle = '#[cfg(target_arch = "wasm32")]';

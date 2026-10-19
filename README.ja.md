@@ -36,11 +36,11 @@ taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --compon
 
 | 構成 | async Wasm B | async JS B | 合計 B | 同期版からの増分 B |
 |---|---:|---:|---:|---:|
-| taraba JSPI | 5,307 | 1,402 | 6,709 | +4,589 |
-| taraba Future | 6,915 | 4,007 | 10,922 | +6,197 |
-| Embassy WASM + JsFuture | 13,438 | 5,211 | 18,649 | +16,788 |
-| wasm-bindgen-futures | 15,303 | 4,442 | 19,745 | +17,884 |
-| Component + jco | 25,460 | 66,776 | 92,236 | +39,052 |
+| taraba JSPI | 5,263 | 1,402 | 6,665 | +4,545 |
+| taraba Future | 6,871 | 4,007 | 10,878 | +6,153 |
+| Embassy WASM + JsFuture | 13,360 | 5,211 | 18,571 | +16,710 |
+| wasm-bindgen-futures | 15,221 | 4,442 | 19,663 | +17,802 |
+| Component + jco | 25,350 | 66,776 | 92,126 | +38,986 |
 
 JSPI は instance を直列実行し、Component は型付き WIT async / Canonical ABI を含むため、API 契約は異なります。Component container は実行用 core Wasm と二重計上していません。[no_std・圧縮・wee_alloc 対照・測定条件](docs/async-size.ja.md)。
 <!-- async-size:end -->

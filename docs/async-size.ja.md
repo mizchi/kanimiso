@@ -2,7 +2,7 @@
 
 [English](async-size.md) | 日本語
 
-2026-10-19T02:10:12.616Z
+2026-10-19T03:10:04.666Z
 
 現在の taraba・公式 Embassy WASM executor・wasm-bindgen-futures をビルドし直した。同じ二段 await の Rust ソース、3,507 入力、全 I/O 引数、外から解決する二回の待機を検査した。以下は測定時点のスナップショットであり、固定されたライブラリ overhead や全用途での順位ではない。
 
@@ -12,20 +12,20 @@
 
 | 構成 | 同期合計 B | async Wasm B | async JS B | async 合計 B | 同期からの増分 B | Brotli 合計 B |
 |---|---:|---:|---:|---:|---:|---:|
-| taraba JSPI | 2,120 | 5,307 | 1,402 | 6,709 | +4,589 | 3,194 |
-| taraba Future | 4,725 | 6,915 | 4,007 | 10,922 | +6,197 | 5,242 |
-| Component + jco | 53,184 | 25,460 | 66,776 | 92,236 | +39,052 | 27,175 |
-| wasm-bindgen-futures | 1,861 | 15,303 | 4,442 | 19,745 | +17,884 | 8,358 |
-| Embassy WASM + JsFuture | 1,861 | 13,438 | 5,211 | 18,649 | +16,788 | 7,959 |
+| taraba JSPI | 2,120 | 5,263 | 1,402 | 6,665 | +4,545 | 3,165 |
+| taraba Future | 4,725 | 6,871 | 4,007 | 10,878 | +6,153 | 5,219 |
+| Component + jco | 53,140 | 25,350 | 66,776 | 92,126 | +38,986 | 27,091 |
+| wasm-bindgen-futures | 1,861 | 15,221 | 4,442 | 19,663 | +17,802 | 8,318 |
+| Embassy WASM + JsFuture | 1,861 | 13,360 | 5,211 | 18,571 | +16,710 | 7,968 |
 
 同じ std / allocator で、Embassy との差は次のとおり。負は taraba 側が小さいことを表す。
 
 | 構成 | async 合計 − Embassy B | 比率 |
 |---|---:|---:|
-| taraba JSPI | -11,940 | 0.360× |
-| taraba Future | -7,727 | 0.586× |
-| Component + jco | +73,587 | 4.946× |
-| wasm-bindgen-futures | +1,096 | 1.059× |
+| taraba JSPI | -11,906 | 0.359× |
+| taraba Future | -7,693 | 0.586× |
+| Component + jco | +73,555 | 4.961× |
+| wasm-bindgen-futures | +1,092 | 1.059× |
 
 ## no_std の比較
 
@@ -35,8 +35,8 @@
 |---|---:|---:|---:|---:|---:|---:|
 | taraba JSPI | 1,510 | 248 | 1,402 | 1,650 | +140 | 773 |
 | taraba Future | 4,115 | 1,744 | 4,007 | 5,751 | +1,636 | 2,840 |
-| Component + jco | 49,226 | 13,789 | 66,776 | 80,565 | +31,339 | 22,680 |
-| wasm-bindgen-futures | 1,244 | 9,852 | 4,442 | 14,294 | +13,050 | 6,086 |
+| Component + jco | 49,182 | 13,691 | 66,776 | 80,467 | +31,285 | 22,625 |
+| wasm-bindgen-futures | 1,244 | 9,783 | 4,442 | 14,225 | +12,981 | 6,057 |
 
 ### std で増えた Wasm
 
@@ -44,10 +44,10 @@ JS のサイズは同じでも、std のリンクで Wasm が増える。no_std 
 
 | 構成 | no_std async Wasm B | std async Wasm B | std − no_std B |
 |---|---:|---:|---:|
-| taraba JSPI | 248 | 5,307 | +5,059 |
-| taraba Future | 1,744 | 6,915 | +5,171 |
-| Component + jco | 13,789 | 25,460 | +11,671 |
-| wasm-bindgen-futures | 9,852 | 15,303 | +5,451 |
+| taraba JSPI | 248 | 5,263 | +5,015 |
+| taraba Future | 1,744 | 6,871 | +5,127 |
+| Component + jco | 13,691 | 25,350 | +11,659 |
+| wasm-bindgen-futures | 9,783 | 15,221 | +5,438 |
 
 ## 増分の読み方
 
@@ -64,9 +64,9 @@ JS のサイズは同じでも、std のリンクで Wasm が増える。no_std 
 
 | 構成 | モード | taraba-allocator 合計 B | wee_alloc 合計 B | wee − taraba B |
 |---|---|---:|---:|---:|
-| wasm-bindgen-futures | no_std | 14,294 | 14,250 | -44 |
-| wasm-bindgen-futures | std | 19,745 | 19,417 | -328 |
-| Embassy WASM + JsFuture | std | 18,649 | 18,411 | -238 |
+| wasm-bindgen-futures | no_std | 14,225 | 14,250 | +25 |
+| wasm-bindgen-futures | std | 19,663 | 19,417 | -246 |
+| Embassy WASM + JsFuture | std | 18,571 | 18,411 | -160 |
 
 ## npm と Component の配布物
 
@@ -75,14 +75,14 @@ JS のサイズは同じでも、std のリンクで Wasm が増える。no_std 
 | 構成・モード | 型定義 B | Component B | npm tgz B |
 |---|---:|---:|---:|
 | taraba JSPI / no_std | 1,340 | 0 | 2,462 |
-| taraba JSPI / std | 1,340 | 0 | 5,283 |
+| taraba JSPI / std | 1,340 | 0 | 5,271 |
 | taraba Future / no_std | 2,082 | 0 | 5,033 |
-| taraba Future / std | 2,082 | 0 | 7,819 |
-| Component + jco / no_std | 2,154 | 14,942 | 28,802 |
-| Component + jco / std | 2,154 | 26,614 | 34,342 |
-| wasm-bindgen-futures / no_std | 3,419 | 0 | 7,540 |
-| wasm-bindgen-futures / std | 3,419 | 0 | 10,193 |
-| Embassy WASM + JsFuture / std | 4,457 | 0 | 9,973 |
+| taraba Future / std | 2,082 | 0 | 7,813 |
+| Component + jco / no_std | 2,154 | 14,844 | 28,744 |
+| Component + jco / std | 2,154 | 26,504 | 34,298 |
+| wasm-bindgen-futures / no_std | 3,419 | 0 | 7,506 |
+| wasm-bindgen-futures / std | 3,419 | 0 | 10,157 |
+| Embassy WASM + JsFuture / std | 4,457 | 0 | 9,948 |
 
 taraba の実用ガイドは [使い方](guide.ja.md)。Component は WIT から型付き async 戻り値を得られ、Core Future の opaque Promise は unknown のまま。wasm-bindgen の公式生成型も保存しており、この比較の Rust→JS Promise 戻り値には any が含まれる。型情報と API 契約も含めて選ぶ。
 

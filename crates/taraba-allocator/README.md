@@ -20,6 +20,15 @@ Each of its 32 classes refills an 8 KiB slab. The wasm32 refill size is unchange
 using a constant removes the previous per-refill quadratic sizing calculation.
 `extra_assertions` enables additional internal checks; `instrumentation` is for diagnostics.
 
+Enable `realloc_in_place` when repeated reallocations within the same rounded word
+are common. On wasm32, for example, 25→28→25 bytes stays in one 4-byte word group,
+so the pointer and payload can be kept. Other sizes use allocate/copy/free.
+This feature is off by default; the [comparison](../../docs/allocator.md) records
+its code-size cost and targeted throughput separately from the smallest profile.
+
+The unsafe `GlobalAlloc` methods require nonzero sizes, valid `Layout` values and
+live pointers with their exact layouts, following Rust's allocator contract.
+
 This allocator is optional for taraba. Fixed task slots are allocated separately.
 An application's `Vec`, `Box`, and other general allocations can use this allocator.
 It supports non-shared wasm32 memory only. The native page backend is test-only.

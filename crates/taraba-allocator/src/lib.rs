@@ -73,6 +73,14 @@ where
     }
 }
 
+#[cfg(feature = "realloc_in_place")]
+#[inline]
+fn realloc_stays_in_word(old_size: usize, new_size: usize) -> bool {
+    // GlobalAlloc requires both sizes to be positive.
+    let word = core::mem::size_of::<usize>();
+    (old_size - 1) / word == (new_size - 1) / word
+}
+
 #[repr(C)]
 #[derive(Default, Debug)]
 struct CellHeader<'a> {
@@ -819,18 +827,9 @@ impl<'a> WeeAlloc<'a> {
 
     unsafe fn alloc_impl(&self, layout: Layout) -> Result<NonNull<u8>, AllocErr> {
         let size = Bytes(layout.size());
-        let align = if layout.align() == 0 {
-            Bytes(1)
-        } else {
-            Bytes(layout.align())
-        };
-
-        if size.0 == 0 {
-            // Ensure that our made up pointer is properly aligned by using the
-            // alignment as the pointer.
-            extra_assert!(align.0 > 0);
-            return Ok(NonNull::new_unchecked(align.0 as *mut u8));
-        }
+        let align = Bytes(layout.align());
+        // GlobalAlloc requires a nonzero size; Layout guarantees its alignment.
+        extra_assert!(size.0 > 0);
 
         let word_size: Words = checked_round_up_to(size).ok_or_else(AllocErr::new)?;
 
@@ -842,9 +841,7 @@ impl<'a> WeeAlloc<'a> {
 
     unsafe fn dealloc_impl(&self, ptr: NonNull<u8>, layout: Layout) {
         let size = Bytes(layout.size());
-        if size.0 == 0 {
-            return;
-        }
+        extra_assert!(size.0 > 0);
 
         let size: Words = size.round_up_to();
         let align = Bytes(layout.align());
@@ -901,9 +898,24 @@ unsafe impl GlobalAlloc for WeeAlloc<'static> {
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        if let Some(ptr) = NonNull::new(ptr) {
-            self.dealloc_impl(ptr, layout);
+        // The caller supplies the live non-null pointer and its exact layout.
+        self.dealloc_impl(NonNull::new_unchecked(ptr), layout);
+    }
+
+    #[cfg(feature = "realloc_in_place")]
+    unsafe fn realloc(&self, ptr: *mut u8, layout: Layout, new_size: usize) -> *mut u8 {
+        // Both sizes are nonzero by GlobalAlloc's contract. Keep the rounded
+        // word count unchanged so deallocation selects the original free list.
+        if realloc_stays_in_word(layout.size(), new_size) {
+            return ptr;
         }
+        let next = Layout::from_size_align_unchecked(new_size, layout.align());
+        let result = self.alloc(next);
+        if !result.is_null() {
+            ptr::copy_nonoverlapping(ptr, result, cmp::min(layout.size(), new_size));
+            self.dealloc(ptr, layout);
+        }
+        result
     }
 }
 

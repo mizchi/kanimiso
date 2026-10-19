@@ -29,6 +29,53 @@ mod kani_proofs {
             assert!(b > usize::MAX - unit);
         }
     }
+    #[cfg(feature = "realloc_in_place")]
+    #[kani::proof]
+    fn realloc_fast_path_preserves_word_class() {
+        let old_size: usize = kani::any();
+        let new_size: usize = kani::any();
+        kani::assume(old_size > 0 && old_size <= isize::MAX as usize);
+        kani::assume(new_size > 0 && new_size <= isize::MAX as usize);
+        let old: Words = checked_round_up_to(Bytes(old_size)).unwrap();
+        let new: Words = checked_round_up_to(Bytes(new_size)).unwrap();
+        assert_eq!(realloc_stays_in_word(old_size, new_size), old == new);
+        if realloc_stays_in_word(old_size, new_size) {
+            let capacity: Bytes = old.into();
+            assert!(new_size <= capacity.0);
+            assert!(capacity.0 - new_size < core::mem::size_of::<usize>());
+        }
+    }
+    // Exploration only: the pointer/payload harness exceeded the 60s budget.
+    #[cfg(feature = "realloc_in_place")]
+    #[kani::proof]
+    #[kani::unwind(4)]
+    fn native_same_word_realloc_preserves_prefix() {
+        let a = WeeAlloc::INIT;
+        let mut storage = [0usize; 64];
+        let next: u8 = kani::any();
+        kani::assume(next > 0 && next <= core::mem::size_of::<usize>() as u8);
+        let marker: u8 = kani::any();
+        unsafe {
+            seed(&a, &mut storage);
+            let layout = Layout::from_size_align(3, 8).unwrap();
+            let p = a.alloc(layout);
+            assert!(!p.is_null());
+            ptr::write_bytes(p, marker, 3);
+            let address = p.addr();
+            let q = a.realloc(p, layout, usize::from(next));
+            assert_eq!(q.addr(), address);
+            assert_eq!(*q, marker);
+            if next >= 2 {
+                assert_eq!(*q.add(1), marker);
+            }
+            if next >= 3 {
+                assert_eq!(*q.add(2), marker);
+            }
+            // Prefix preservation is this harness's boundary. Coalescing and
+            // freeing with the updated layout are exercised by Miri/Wasm tests.
+            *q.add(usize::from(next) - 1) = marker;
+        }
+    }
     #[kani::proof]
     #[kani::unwind(4)]
     fn two_live_allocations_preserve_payload_and_alignment() {

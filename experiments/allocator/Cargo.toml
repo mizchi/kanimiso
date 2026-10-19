@@ -15,6 +15,7 @@ current = ["dep:taraba-allocator"]
 before = ["dep:before"]
 wee = ["dep:wee_alloc"]
 classes = ["taraba-allocator?/size_classes", "before?/size_classes", "wee_alloc?/size_classes"]
+realloc = ["taraba-allocator?/realloc_in_place"]
 [dependencies]
 taraba-allocator = {path = "../../crates/taraba-allocator", default-features = false, optional = true}
 before = {package = "taraba-allocator-before", path = "../../.cache/allocator/baseline/crates/taraba-allocator", default-features = false, optional = true}

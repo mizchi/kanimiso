@@ -58,8 +58,15 @@ export async function verifyAllocator(factory) {
   };
   // Two live regions first: the host must catch overlap before writing the second.
   let h = await make();
+  // The trusted ABI rejects zero requests before invoking GlobalAlloc.
+  assert.equal(h.e.mem_alloc(0, 8), 0);
+  assert.equal(h.e.mem_zeroed(0, 8), 0);
+  assert.equal(h.e.mem_realloc(0, 8, 8, 16), 0);
+  h.e.mem_free(0, 0, 0);
   const first = h.alloc(64),
     second = h.alloc(64);
+  assert.equal(h.e.mem_realloc(first.p, first.size, first.align, 0), 0);
+  h.check(first);
   h.free(first);
   h.free(second);
   for (const align of [1, 2, 4, 8, 16, 64, 256, 4096, 65536])
@@ -69,6 +76,17 @@ export async function verifyAllocator(factory) {
       h.realloc(b, size);
       h.free(b);
     }
+  h = await make();
+  let stationary = 0;
+  for (let words = 1; words <= 32; words++) {
+    const b = h.alloc(words * 4 - 3, 4, words);
+    for (const size of [words * 4, words * 4 - 3, words * 4 + 1, 1]) {
+      const address = b.p;
+      h.realloc(b, size);
+      if (b.p === address) stationary++;
+    }
+    h.free(b);
+  }
   const merge = [];
   for (const order of [
     [0, 1, 2],
@@ -185,6 +203,7 @@ export async function verifyAllocator(factory) {
     all_passed: true,
     allocations,
     checked_bytes: checkedBytes,
+    realloc_word_roundtrips: { calls: 128, stationary },
     merge,
     mixed_pages: mixedPages,
     pairs,

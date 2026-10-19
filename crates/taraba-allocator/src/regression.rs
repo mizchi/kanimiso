@@ -1,5 +1,34 @@
 use super::*;
 
+#[cfg(feature = "realloc_in_place")]
+#[test]
+fn realloc_within_one_word_keeps_pointer_and_payload() {
+    #[cfg(not(target_arch = "wasm32"))]
+    let _arena = crate::imp::scope();
+    let a = WeeAlloc::INIT;
+    let word = core::mem::size_of::<usize>();
+    let mut size = word + 1;
+    let mut layout = Layout::from_size_align(size, word).unwrap();
+    unsafe {
+        let mut p = a.alloc(layout);
+        assert!(!p.is_null());
+        ptr::write_bytes(p, 0xa5, size);
+        for next in [word + 2, word + 1, word + 1, word * 2] {
+            let address = p.addr();
+            let q = a.realloc(p, layout, next);
+            assert_eq!(q.addr(), address);
+            for i in 0..size.min(next) {
+                assert_eq!(*q.add(i), 0xa5);
+            }
+            ptr::write_bytes(q, 0xa5, next);
+            p = q;
+            size = next;
+            layout = Layout::from_size_align(size, word).unwrap();
+        }
+        a.dealloc(p, layout);
+    }
+}
+
 #[test]
 fn alignment_zeroed_realloc_and_live_payloads() {
     #[cfg(not(target_arch = "wasm32"))]
@@ -27,6 +56,44 @@ fn alignment_zeroed_realloc_and_live_payloads() {
         }
     }
 }
+
+#[cfg(feature = "realloc_in_place")]
+#[test]
+fn realloc_across_classes_preserves_live_neighbor() {
+    #[cfg(not(target_arch = "wasm32"))]
+    let _arena = crate::imp::scope();
+    let a = WeeAlloc::INIT;
+    let word = core::mem::size_of::<usize>();
+    let guard_layout = Layout::from_size_align(64, word * 2).unwrap();
+    unsafe {
+        let guard = a.alloc(guard_layout);
+        assert!(!guard.is_null());
+        ptr::write_bytes(guard, 0x3c, guard_layout.size());
+        for start in [1, word, word + 1, word * 32, word * 32 + 1] {
+            let mut layout = Layout::from_size_align(start, word).unwrap();
+            let mut p = a.alloc(layout);
+            assert!(!p.is_null());
+            ptr::write_bytes(p, 0xa5, start);
+            for next in [start + word, 1, word * 33 + 1, start] {
+                let q = a.realloc(p, layout, next);
+                assert!(!q.is_null());
+                assert_eq!(q.addr() % word, 0);
+                for i in 0..layout.size().min(next) {
+                    assert_eq!(*q.add(i), 0xa5);
+                }
+                for i in 0..guard_layout.size() {
+                    assert_eq!(*guard.add(i), 0x3c);
+                }
+                ptr::write_bytes(q, 0xa5, next);
+                p = q;
+                layout = Layout::from_size_align(next, word).unwrap();
+            }
+            a.dealloc(p, layout);
+        }
+        a.dealloc(guard, guard_layout);
+    }
+}
+
 #[test]
 fn seeded_interleaved_allocations_preserve_live_bytes() {
     #[cfg(not(target_arch = "wasm32"))]

@@ -32,7 +32,7 @@ const run = (cmd, args) =>
 const hash = (b) => createHash("sha256").update(b).digest("hex");
 const report = {
   created_at: new Date().toISOString(),
-  baseline: "44bf8b09c61a53368e28821874ab874258f6b1cd",
+  baseline: "8cb75b788a4720753ac6fd30f64615f575e8761e",
   engine: `Node ${process.version} / V8 ${process.versions.v8} (--no-liftoff)`,
   machine: { cpu: os.cpus()[0]?.model, os: os.release(), arch: process.arch },
   rust: run("rustc", ["--version"]).toString().trim(),
@@ -43,7 +43,7 @@ const report = {
 };
 const guests = new Map();
 try {
-  for (const backend of ["before", "current", "wee"])
+  for (const backend of ["before", "current", "inplace", "wee"])
     for (const mode of ["no_std", "std"])
       for (const classes of [false, true]) {
         const id = `${backend}-${mode}-${classes ? "classes" : "small"}`;
@@ -59,7 +59,8 @@ try {
           "--no-default-features",
           "--features",
           [
-            backend,
+            backend === "inplace" ? "current" : backend,
+            ...(backend === "inplace" ? ["realloc"] : []),
             ...(mode === "std" ? ["std"] : []),
             ...(classes ? ["classes"] : []),
           ].join(","),
@@ -91,11 +92,18 @@ try {
           assert.match(String(e), /adjacent free blocks must be reusable/);
           verification = { all_passed: false, error: String(e) };
         }
+        if (backend === "inplace")
+          assert.equal(
+            verification.realloc_word_roundtrips.stationary,
+            64,
+            `${id}: all within-word reallocations must stay in place`,
+          );
         const row = {
           id,
           backend,
           mode,
           classes,
+          realloc_in_place: backend === "inplace",
           raw_bytes: raw.length,
           wasm_bytes: bytes.length,
           sha256: hash(bytes),
@@ -195,7 +203,7 @@ try {
     ].map((p) => [p, hash(readFileSync(p))]),
   );
   report.all_current_passed = report.entries
-    .filter((e) => e.backend === "current")
+    .filter((e) => ["current", "inplace"].includes(e.backend))
     .every((e) => e.verification.all_passed);
   writeFileSync(`${out}/check.json`, JSON.stringify(report, null, 2) + "\n");
   if (process.argv.includes("--require-improvement"))
@@ -223,7 +231,7 @@ try {
       "",
       `${report.engine}; ${report.rust}; Binaryen 133。変更前は ${report.baseline}。`,
       "",
-      "同じ Rust kernel と allocator oracle を使い、同じ wasm-opt 設定で比較する。Wasm は probe・検証・計算コードを含み、allocator 単体の固定費ではない。全体の oracle に失敗した wee_alloc は同等性を満たす比較対象から除外する。以下の時間は同じ検査を通った変更前後だけを測り、wee_alloc が高速かどうかの順位は付けない。",
+      "同じ9種類の Rust kernel と allocator oracle を使い、同じ wasm-opt 設定で比較する。Wasm は probe・検証・計算コードを含み、allocator 単体の固定費ではない。全体の oracle に失敗した wee_alloc は同等性を満たす比較対象から除外する。以下の時間は同じ検査を通った変更前後だけを測り、wee_alloc が高速かどうかの順位は付けない。",
       "",
       "| 構成 | mode | classes | Wasm B | 全体 oracle |",
       "|---|---|---|---:|---|",
@@ -234,17 +242,19 @@ try {
       );
     lines.push(
       "",
-      "size classes 有効時は全32クラスの補充領域を固定8 KiBとする。wasm32 では従来の二乗・max 計算も全クラスで8 KiBになっていたため、補充サイズを変えずに計算を除去できる。classes 無効の最小構成には影響しない。",
+      "current は GlobalAlloc の非ゼロサイズ・有効な Layout・生存中ポインタという契約を使い、サイズ0・align 0・null 解放の分岐を除去した。raw ABI 側では引き続きサイズ0等を拒否してから呼び出す。[Rust の契約](https://doc.rust-lang.org/stable/core/alloc/trait.GlobalAlloc.html)も参照。",
+      "",
+      "inplace は current に任意 feature `realloc_in_place` を加えた構成。wasm32 の4 B単位の丸め結果が変わらない realloc でポインタを保ち、その他は allocate/copy/free に戻る。クラス変更時の誤った free list への解放を避け、既定では無効。realloc_same_word は25→28→25 Bを繰り返す専用ケースで、一般的な Vec の倍増を代表しない。",
       "",
       "最適化済み Wasm（--no-liftoff）に固定し、kernel/instance ごとに50 ms以上ウォームアップ。21回の測定順を循環させた中央値 ns/job。JIT・instance 生成は除外し、各 sample で結果と memory plateau を確認する。数%の差や今回1回の測定だけで速度の優劣を断定しない。JS→Wasm 呼び出しを含む V8 上の結果で、Criterion/Wasmtime の過去結果とは混ぜない。",
       "",
-      "| mode / classes / kernel | 変更前 | 現在 | wee_alloc（除外） |",
-      "|---|---:|---:|---:|",
+      "| mode / classes / kernel | 変更前 | 現在 | inplace | wee_alloc（除外） |",
+      "|---|---:|---:|---:|---:|",
     );
     for (const mode of ["no_std", "std"])
       for (const classes of [false, true])
         for (const c of cases) {
-          const rows = ["before", "current", "wee"].map(
+          const rows = ["before", "current", "inplace", "wee"].map(
             (b) =>
               report.entries
                 .find(

@@ -20,7 +20,7 @@ setup installs dependencies, the Wasm Rust target, Binaryen 133 and wasm-tools 1
 | `just package-check` | Packages all three crates, installs an unpacked CLI, repeats external consumers and npm library generation |
 | `just compare-async-size` | Fresh common sync/async implementations with Embassy/wasm-bindgen; writes docs/async-size.{json,md} and Japanese report |
 | `just check-async-size` | Same comparison and correctness checks; writes only .cache/async-size |
-| `just compare-allocator` / `just check-allocator` | Common allocator oracle and V8 kernels for the fixed reference, current implementation and wee_alloc; check writes .cache only |
+| `just compare-allocator` / `just check-allocator` | Common allocator oracle and nine V8 kernels for the fixed reference, current default/optional realloc feature and wee_alloc; check writes .cache only |
 | `just workers --jspi-concurrent` | Existing fixtures on local workerd, including unadopted concurrent experiment |
 | `just modern` | Optional js-string, GC, exnref and funcref capability probes |
 | `just stress 60` | Runtime churn/ownership stress |
@@ -29,6 +29,12 @@ setup installs dependencies, the Wasm Rust target, Binaryen 133 and wasm-tools 1
 Before registry publication, package-check patches dependencies to unpacked .crate archives. That proves archive contents and external consumer builds, not a successful crates.io install. No task publishes to npm or crates.io. The usage guide's registry commands describe the intended post-publication workflow.
 
 When changing unsafe ownership/lifetimes, run check, miri, kani and stress. Native component proofs do not cover JS, V8/WebKit, generated Wasm, the full intrusive WAT pool, or the benchmark's upstream Embassy executor. Browser JSPI and Component Canonical ABI behavior require runtime tests as well.
+
+The active realloc Kani harness verifies the native64 word-class/capacity predicate
+for every valid positive size. Pointer/payload/free-list proofs in `just kani-explore`
+and `just kani-realloc-explore`
+have exceeded the 60-second limit and are unproved. Miri and the Wasm oracle test
+payloads, updated-layout deallocation, class changes and failed-realloc preservation.
 
 ## Measurements
 
