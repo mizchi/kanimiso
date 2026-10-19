@@ -16,7 +16,7 @@ setup は依存・Rust Wasm target・Binaryen 133・wasm-tools 1.245.1 を用意
 | タスク | 検証・出力 |
 |---|---|
 | `just check` | Rust/JS、format、Core の fatal/所有権、JSPI stack spill、npm 利用側、現在のドキュメントリンク |
-| `just library-check` | 現在の CLI から pack・外部 install・strict TS、3構成×std/no_std、Component のドメイン値とエラー |
+| `just library-check` | 現在の CLI から pack・外部 install・strict TS、3構成×std/no_std、Component のドメイン値とエラー、Core の共通 ESM と instance 分離 |
 | `just package-check` | 3 crate を package し、展開した CLI で外部アプリと npm 生成を再検証 |
 | `just compare-async-size` | Embassy / Tokio / async-executor / async-std / wasm-bindgen / FuturesUnordered と同じ同期・非同期処理をビルドし、日英の結果を更新 |
 | `just check-async-size` | 同じサイズ・正当性検証。出力は .cache/async-size のみ |

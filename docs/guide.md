@@ -220,6 +220,8 @@ Core/JSPI serializes each instance across I/O waits; a slow call blocks later ca
 
 ## Size, compatibility and verification
 
+Multiple Core libraries can share their JS runtime when imports resolve to the same ESM URL. Default npm output carries a copy per package, so sharing requires a common chunk. See [ESM cache checks and the build example](esm-cache.md) for measured sizes and instance-isolation checks.
+
 The JavaScript async baseline is Safari 27+ / JSPI-capable V8. Real Safari 27 browser execution remains unverified. Component async/jco is experimental upstream. Its scheduler/ownership/cancellation contract comes from the Component toolchain and is not the Core Future contract.
 
 Current scalar async comparison: [taraba / Embassy / wasm-bindgen](async-size.md). Earlier snapshots: [WIT/Core/Component](wit-comparison.md), [parallel JSPI](jspi-concurrent.md). These dated measurements are not the sizes of every generated npm package. npm `build.json` separately records JS, declarations and packaged Wasm bytes, including the optional Component container. A tarball includes declarations and the container; runtime download size depends on which entry is used.

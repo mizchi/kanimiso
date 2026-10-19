@@ -21,9 +21,14 @@ test("English/Japanese usage, reference, development and comparison pages have v
   const pages = [
     "README.md",
     "README.ja.md",
-    ...["README", "guide", "core-runtime", "development", "async-size"].flatMap(
-      (name) => [`docs/${name}.md`, `docs/${name}.ja.md`],
-    ),
+    ...[
+      "README",
+      "guide",
+      "core-runtime",
+      "development",
+      "async-size",
+      "esm-cache",
+    ].flatMap((name) => [`docs/${name}.md`, `docs/${name}.ja.md`]),
   ];
   for (const page of pages) {
     assert.ok(existsSync(page), `missing ${page}`);

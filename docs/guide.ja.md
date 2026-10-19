@@ -219,6 +219,8 @@ Core/JSPI は I/O 待ちも含めて instance ごとに直列化します。host
 
 ## サイズ・互換性・検証
 
+複数の Core ライブラリは、同じ URL の ESM に解決すれば JS ランタイムを共有できます。既定の npm 出力はパッケージごとにコピーを持つため、共通チャンクへの集約が必要です。[ESM キャッシュの検証とビルド例](esm-cache.ja.md)にサイズの実測と instance 分離の確認を載せています。
+
 JavaScript の async 実行環境は Safari 27+ / JSPI 対応 V8 を前提とします。Safari 27 実ブラウザーは未検証です。Component async / jco は upstream でも実験扱いです。その scheduler・所有権・キャンセルの契約は Component toolchain のもので、Core Future の契約とは区別します。
 
 現在の scalar async 比較は [taraba / Embassy / wasm-bindgen](async-size.ja.md)です。過去のスナップショットは [WIT / Core / Component](wit-comparison.md)、[並行 JSPI](jspi-concurrent.md)に分けています。これらは測定時点の値で、すべての npm 出力のサイズではありません。npm の `build.json` には JS、型定義、配布する Wasm のサイズを分けて記録します。Component container も配布に含めるため、tarball 全体と実際の実行時ダウンロード量は異なります。

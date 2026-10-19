@@ -16,6 +16,7 @@ import { rustEnvironment } from "./rust-toolchain.mjs";
 import { verifyWit } from "../tests/support/wit-contract.mjs";
 import { verifyScheduling } from "../tests/support/scheduling.mjs";
 import { asyncCases } from "../tests/support/async-contract.mjs";
+import { verifyEsmCache } from "./check-esm-cache.mjs";
 
 const root = resolve(".");
 const temp = mkdtempSync(join(tmpdir(), "taraba-library-"));
@@ -208,11 +209,14 @@ ${profile === "future" ? "// @ts-expect-error opaque Promise resource payload mu
     instantiate,
     load,
     installed,
+    tarball,
+    name: pkg.name,
     bytes: readFileSync(tarball).length,
     files: contents.trim().split("\n"),
   };
 }
 try {
+  const corePackages = [];
   for (const profile of ["jspi", "future", "component"]) {
     const project = scaffold(profile);
     for (const std of [false, true]) {
@@ -223,6 +227,7 @@ try {
       writeFileSync(join(out, "stale.wasm"), "not a build output");
       build(raw, project, profile, out, `@taraba-tests/${id}`);
       const installed = await install(out, profile, id);
+      if (profile !== "component") corePackages.push({ ...installed, profile });
       const factory = async (add) => {
         if (profile === "component")
           return (
@@ -301,6 +306,29 @@ try {
       );
     }
   }
+  // Install four independent npm artifacts into one app, then share only matching JS runtimes.
+  const sharedConsumer = join(temp, "consumer-shared");
+  mkdirSync(sharedConsumer);
+  writeFileSync(
+    join(sharedConsumer, "package.json"),
+    JSON.stringify({ private: true, type: "module" }),
+  );
+  run(
+    "pnpm",
+    ["add", "--offline", ...corePackages.map((p) => p.tarball)],
+    sharedConsumer,
+  );
+  report.esm_cache = await verifyEsmCache(
+    corePackages.map((p) => ({
+      profile: p.profile,
+      name: p.name,
+      installed: join(sharedConsumer, "node_modules", p.name),
+    })),
+    join(sharedConsumer, "bundles"),
+  );
+  console.log(
+    "library ESM cache: JSPI/Future each share one runtime chunk; per-instance state isolated",
+  );
   // Rich WIT domain values and typed async application errors use Canonical ABI.
   const project = scaffold("component", "rich");
   // Recreate with Component dependencies rather than the default JSPI scaffold.
@@ -391,6 +419,8 @@ export!(App);`,
   report.inputs = Object.fromEntries(
     [
       "tools/check-library.mjs",
+      "tools/check-esm-cache.mjs",
+      "tools/shared-runtime.mjs",
       "Cargo.lock",
       "pnpm-lock.yaml",
       ...readdirSync("crates/taraba-cli/src", { recursive: true })

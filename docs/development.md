@@ -16,7 +16,7 @@ setup installs dependencies, the Wasm Rust target, Binaryen 133 and wasm-tools 1
 | Task | Verifies / produces |
 |---|---|
 | `just check` | Rust/JS tests, formatting, Core fatal/ownership behavior, JSPI spills, npm consumer checks and active documentation links |
-| `just library-check` | Current CLI: pack/install outside the repo, strict TS, three profiles × std/no_std, rich Component domain/error round trips |
+| `just library-check` | Current CLI: pack/install outside the repo, strict TS, three profiles × std/no_std, rich Component domain/errors, shared Core ESM and instance isolation |
 | `just package-check` | Packages all three crates, installs an unpacked CLI, repeats external consumers and npm library generation |
 | `just compare-async-size` | Common sync/async implementations with Embassy, Tokio, async-executor, async-std, wasm-bindgen and FuturesUnordered; writes docs/async-size.{json,md} and Japanese report |
 | `just check-async-size` | Same comparison and correctness checks; writes only .cache/async-size |

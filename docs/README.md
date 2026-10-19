@@ -10,6 +10,7 @@ English | [日本語](README.ja.md)
 | How do I write WIT, Rust async and a typed npm library? | [Usage guide](guide.md) |
 | What do JSPI / Future ownership, cancellation and errors guarantee? | [Core API reference](core-runtime.md) |
 | How much does the same async workflow add versus Embassy or wasm-bindgen? | [Current async size comparison](async-size.md) |
+| Can multiple libraries share one JS runtime? | [ESM caching and shared chunks](esm-cache.md) |
 | How do I build, test or reproduce measurements? | [Development guide](development.md) |
 
 The usage guide describes supported product commands. `experiments/` is research, not an alternative public API. Component Canonical ABI and the private Core ABI are distinct; npm is a distribution format for either.

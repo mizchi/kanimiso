@@ -53,6 +53,7 @@ JSPI は instance を直列実行し、Component は型付き WIT async / Canoni
 
 - [利用ガイド](docs/guide.ja.md): インストール、WIT/Rust async、ドメインモデル例、Node/browser のロード、TS、npm、編集から配布までの手順。
 - [Core API リファレンス](docs/core-runtime.ja.md): JSPI/Future の契約、所有権、task 上限とエラー。
+- [JS ランタイムの共有](docs/esm-cache.ja.md): 複数の Core ライブラリを共通 ESM チャンクに集約し、instance の状態を分離する検証。
 - [現在の非同期サイズ比較](docs/async-size.ja.md): taraba・Embassy・Tokio・async-executor・async-std・wasm-bindgen-futures、FuturesUnordered 参考値の同等処理。同期→async 増分と必要な全 JS/Wasm を計上。
 - [ドキュメント一覧](docs/README.ja.md): 過去の測定と未採用の実験。
 - [開発・検証手順](docs/development.ja.md): テスト、パッケージ検証、測定の再実行。

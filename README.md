@@ -53,6 +53,7 @@ Contracts differ: JSPI serializes an instance; Component includes typed WIT asyn
 
 - [Usage guide](docs/guide.md): installation, WIT/Rust async, domain model example, Node/browser loading, TS, npm and daily workflow.
 - [Core API reference](docs/core-runtime.md): JSPI/Future contracts, ownership, task limits and errors.
+- [Sharing the JS runtime](docs/esm-cache.md): one ESM chunk for multiple Core libraries, with independent instance state.
 - [Current async size comparison](docs/async-size.md): taraba, Embassy, Tokio, async-executor, async-std, wasm-bindgen-futures and a FuturesUnordered reference; sync-to-async growth and all runtime JS/Wasm counted.
 - [Documentation index](docs/README.md): earlier measurements and experiments.
 - [Development and verification](docs/development.md): tests, package checks and reproduction commands.

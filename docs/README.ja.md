@@ -9,6 +9,7 @@
 | どの実行方式・配布形式を選ぶか | [概要と選択表](../README.ja.md) |
 | WIT と Rust async を書き、型付き npm ライブラリを作る | [利用ガイド](guide.ja.md) |
 | JSPI / Future の所有権・キャンセル・エラーの保証 | [Core API リファレンス](core-runtime.ja.md) |
+| 複数ライブラリで JS ランタイムを共有できるか | [ESM キャッシュと共通チャンク](esm-cache.ja.md) |
 | Embassy などと同等の処理で、async が何 B 増えるか | [現在の非同期サイズ比較](async-size.ja.md) |
 | ビルド・テスト・測定を再実行する | [開発ガイド](development.ja.md) |
 
