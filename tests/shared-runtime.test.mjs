@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
-import { build } from "esbuild";
+import { build } from "rolldown";
 import { sharedRuntimePlugin } from "../tools/shared-runtime.mjs";
 
 test("identical taraba runtimes share one ESM chunk; different profiles stay separate", async () => {
@@ -40,16 +40,16 @@ test("identical taraba runtimes share one ESM chunk; different profiles stay sep
     assert.notEqual(original[0].instantiate, original[1].instantiate);
     assert.equal(original[0], await import(pathToFileURL(entries[0])));
     const output = await build({
-      entryPoints: Object.fromEntries(entries.map((p, i) => [`lib-${i}`, p])),
-      outdir: join(dir, "bundled"),
-      bundle: true,
-      splitting: true,
-      format: "esm",
+      input: Object.fromEntries(entries.map((p, i) => [`lib-${i}`, p])),
       platform: "neutral",
-      target: "es2022",
-      minify: true,
-      outExtension: { ".js": ".mjs" },
-      metafile: true,
+      transform: { target: "es2022" },
+      output: {
+        dir: join(dir, "bundled"),
+        format: "esm",
+        minify: true,
+        entryFileNames: "[name].mjs",
+        chunkFileNames: "[name]-[hash].mjs",
+      },
       plugins: [sharedRuntimePlugin(runtimes.slice(0, 4))],
     });
     const bundled = await Promise.all(
@@ -65,15 +65,22 @@ test("identical taraba runtimes share one ESM chunk; different profiles stay sep
       bundled[4].instantiate,
       "unselected runtimes must not be redirected, even with identical contents",
     );
-    const inputs = Object.keys(output.metafile.inputs).filter((p) =>
-      p.endsWith("/taraba.mjs"),
-    );
+    const emitted = output.output.filter((o) => o.type === "chunk");
+    const inputs = [
+      ...new Set(emitted.flatMap((o) => Object.keys(o.modules))),
+    ].filter((p) => p.endsWith("/taraba.mjs"));
     assert.equal(inputs.length, 4);
-    const chunks = Object.entries(output.metafile.outputs).filter(
-      ([, o]) => !o.entryPoint,
+    const chunks = emitted.filter(
+      (o) =>
+        !o.isEntry &&
+        Object.keys(o.modules).some((p) => p.endsWith("/taraba.mjs")),
     );
     assert.equal(chunks.length, 1);
-    assert.equal(Object.keys(chunks[0][1].inputs).length, 1);
+    assert.equal(
+      Object.keys(chunks[0].modules).filter((p) => p.endsWith("/taraba.mjs"))
+        .length,
+      1,
+    );
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

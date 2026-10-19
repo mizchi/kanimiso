@@ -2,7 +2,7 @@
 
 English | [日本語](async-size.ja.md)
 
-2026-10-19T03:43:24.195Z
+2026-10-19T04:15:20.692Z
 
 Fresh builds of taraba, Embassy, wasm-bindgen-futures, Tokio, async-executor, async-std and FuturesUnordered. Every async build compiles the same two-await Rust source and passes 3,507 inputs, all I/O arguments and two externally controlled waits. These are dated application snapshots, not fixed library overhead or rankings for every workload.
 

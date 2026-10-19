@@ -8,12 +8,12 @@ taraba の Core/JSPI・Core/Future は、**同じ ESM URL に解決すれば JS 
 
 ## 共通チャンクとして配信する
 
-リポジトリの `tools/shared-runtime.mjs` は esbuild 用のビルド時ヘルパーです。明示した生成済み `taraba.mjs` の内容が一致する場合だけ、参照を一つのファイルへ集約します。ESM の code splitting と組み合わせると、複数の entry が同じ共通チャンクを import します。JSPI/Future や debug/release など、内容の異なるランタイムは集約しません。
+リポジトリの `tools/shared-runtime.mjs` は Rolldown 用のビルド時ヘルパーです。明示した生成済み `taraba.mjs` の内容が一致する場合だけ、参照を一つのファイルへ集約します。ESM の code splitting と組み合わせると、複数の entry が同じ共通チャンクを import します。JSPI/Future や debug/release など、内容の異なるランタイムは集約しません。
 
-たとえば taraba を `./taraba` に checkout し、二つの Core パッケージをインストールした利用アプリのビルドスクリプトで使います。`src/a.mjs` と `src/b.mjs` はそれぞれのパッケージを import するアプリの entry です。
+たとえば taraba を `./taraba` に checkout し、二つの Core パッケージをインストールした利用アプリのビルドスクリプトで使います。`src/a.mjs` と `src/b.mjs` はそれぞれのパッケージを import するアプリの entry です。利用アプリに `pnpm add -D rolldown@1.2.14` でビルド依存を追加し、[Rolldown の build API](https://rolldown.rs/guide/getting-started#using-the-api) を使います。
 
 ```js
-import { build } from 'esbuild';
+import { build } from 'rolldown';
 import { fileURLToPath } from 'node:url';
 import { sharedRuntimePlugin } from './taraba/tools/shared-runtime.mjs';
 
@@ -21,15 +21,16 @@ const runtimes = ['@example/a', '@example/b'].map(name =>
   fileURLToPath(new URL('taraba.mjs', import.meta.resolve(`${name}/package.json`))),
 );
 await build({
-  entryPoints: { a: 'src/a.mjs', b: 'src/b.mjs' },
-  outdir: 'public/lib',
-  bundle: true,
-  splitting: true,
-  format: 'esm',
+  input: { a: 'src/a.mjs', b: 'src/b.mjs' },
   platform: 'neutral',
-  target: 'es2022',
-  minify: true,
-  outExtension: { '.js': '.mjs' },
+  transform: { target: 'es2022' },
+  output: {
+    dir: 'public/lib',
+    format: 'esm',
+    minify: true,
+    entryFileNames: '[name].mjs',
+    chunkFileNames: '[name]-[hash].mjs',
+  },
   plugins: [sharedRuntimePlugin(runtimes)],
 });
 ```
@@ -42,10 +43,10 @@ await build({
 
 | 同じ profile の2ライブラリ | ランタイム元ファイル | 集約前の JS | 集約後の JS | ランタイムの実体 |
 |---|---:|---:|---:|---|
-| Core/JSPI | 1,295 B | 3,086 B | 1,804 B | 2 → 1 |
-| Core/Future | 3,874 B | 8,334 B | 4,462 B | 2 → 1 |
+| Core/JSPI | 1,295 B | 3,164 B | 1,848 B | 2 → 1 |
+| Core/Future | 3,874 B | 8,460 B | 4,538 B | 2 → 1 |
 
-Node.js 24 / V8、esbuild 0.28.2 の検証用 ESM bundle の全 JS を計上しています。関数の同一性を検査する export も含むため、配布パッケージ単体のサイズ表とは別の測定です。Wasm・型定義・圧縮はこの表に含めません。Safari 実ブラウザーは未検証です。
+Node.js 24 / V8、Rolldown 1.2.14 の検証用 ESM bundle の全 JS を計上しています。関数の同一性を検査する export も含むため、配布パッケージ単体のサイズ表とは別の測定です。Wasm・型定義・圧縮はこの表に含めません。Safari 実ブラウザーは未検証です。
 
 検証では、集約前はランタイム関数が別オブジェクト、集約後は同一オブジェクトであることと、二つの entry が同じチャンクを import することを確認します。集約前後の両ライブラリで、サイズ比較と共通の3,507ケースを通します。さらに片方の I/O を止めたまま他方を完了し、bindings と stats の独立、再開後の結果、片方の fatal 後も他方が動くこと、Future の externref slot の独立を検査します。異なる profile、debug/release、集約対象に指定しないファイルの分離は JS テストで確認します。
 

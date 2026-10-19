@@ -8,12 +8,12 @@ Default npm output has each package import its own `./taraba.mjs`. Identical con
 
 ## Serve a shared chunk
 
-The checkout's `tools/shared-runtime.mjs` provides an esbuild build-time helper. It redirects explicitly selected, generated `taraba.mjs` files to one file only when their contents match. With ESM code splitting, multiple entries import one shared chunk. Different runtime contents, including JSPI/Future and debug/release variants, remain separate.
+The checkout's `tools/shared-runtime.mjs` provides a Rolldown build-time helper. It redirects explicitly selected, generated `taraba.mjs` files to one file only when their contents match. With ESM code splitting, multiple entries import one shared chunk. Different runtime contents, including JSPI/Future and debug/release variants, remain separate.
 
-For example, check out taraba at `./taraba` and install two generated Core packages in the consuming app. Its `src/a.mjs` and `src/b.mjs` entries import the respective packages.
+For example, check out taraba at `./taraba` and install two generated Core packages in the consuming app. Its `src/a.mjs` and `src/b.mjs` entries import the respective packages. Add the build dependency with `pnpm add -D rolldown@1.2.14` and use the [Rolldown build API](https://rolldown.rs/guide/getting-started#using-the-api).
 
 ```js
-import { build } from 'esbuild';
+import { build } from 'rolldown';
 import { fileURLToPath } from 'node:url';
 import { sharedRuntimePlugin } from './taraba/tools/shared-runtime.mjs';
 
@@ -21,15 +21,16 @@ const runtimes = ['@example/a', '@example/b'].map(name =>
   fileURLToPath(new URL('taraba.mjs', import.meta.resolve(`${name}/package.json`))),
 );
 await build({
-  entryPoints: { a: 'src/a.mjs', b: 'src/b.mjs' },
-  outdir: 'public/lib',
-  bundle: true,
-  splitting: true,
-  format: 'esm',
+  input: { a: 'src/a.mjs', b: 'src/b.mjs' },
   platform: 'neutral',
-  target: 'es2022',
-  minify: true,
-  outExtension: { '.js': '.mjs' },
+  transform: { target: 'es2022' },
+  output: {
+    dir: 'public/lib',
+    format: 'esm',
+    minify: true,
+    entryFileNames: '[name].mjs',
+    chunkFileNames: '[name]-[hash].mjs',
+  },
   plugins: [sharedRuntimePlugin(runtimes)],
 });
 ```
@@ -42,10 +43,10 @@ Use this helper for generated, self-contained Core runtimes. It does not merge a
 
 | Two libraries with the same profile | Runtime source | JS before sharing | JS after sharing | Runtime copies |
 |---|---:|---:|---:|---|
-| Core/JSPI | 1,295 B | 3,086 B | 1,804 B | 2 → 1 |
-| Core/Future | 3,874 B | 8,334 B | 4,462 B | 2 → 1 |
+| Core/JSPI | 1,295 B | 3,164 B | 1,848 B | 2 → 1 |
+| Core/Future | 3,874 B | 8,460 B | 4,538 B | 2 → 1 |
 
-These are total JavaScript bytes in verification ESM bundles on Node.js 24 / V8 with esbuild 0.28.2. They include exports used to inspect function identity, so they are a separate measurement from the single-package distribution size table. Wasm, declarations and compression are excluded here. A real Safari browser has not been tested.
+These are total JavaScript bytes in verification ESM bundles on Node.js 24 / V8 with Rolldown 1.2.14. They include exports used to inspect function identity, so they are a separate measurement from the single-package distribution size table. Wasm, declarations and compression are excluded here. A real Safari browser has not been tested.
 
 Checks establish that runtime functions are distinct before sharing and identical afterwards, and that both entries import one chunk. Both libraries pass the size comparison's common 3,507 cases before and after sharing. Checks then suspend one instance while completing the other, check independent bindings and stats, resume the suspended computation, close one instance with a fatal error and reuse the other. Future externref slots are checked for isolation too. JavaScript tests cover different profiles, debug/release variants and files not selected for sharing.
 

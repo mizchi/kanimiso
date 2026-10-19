@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { build } from "esbuild";
+import { build, VERSION } from "rolldown";
 import { sharedRuntimePlugin } from "./shared-runtime.mjs";
 import { verifyWit } from "../tests/support/wit-contract.mjs";
 import { asyncCases } from "../tests/support/async-contract.mjs";
@@ -100,32 +100,33 @@ export async function verifyEsmCache(packages, dir) {
     for (const shared of [false, true]) {
       const outdir = join(dir, `${profile}-${shared ? "shared" : "separate"}`);
       const result = await build({
-        entryPoints,
-        outdir,
-        bundle: true,
-        splitting: true,
-        format: "esm",
+        input: entryPoints,
         platform: "neutral",
-        target: "es2022",
-        minify: true,
-        metafile: true,
-        outExtension: { ".js": ".mjs" },
+        transform: { target: "es2022" },
+        output: {
+          dir: outdir,
+          format: "esm",
+          minify: true,
+          entryFileNames: "[name].mjs",
+          chunkFileNames: "[name]-[hash].mjs",
+        },
         plugins: shared ? [sharedRuntimePlugin(runtimes)] : [],
       });
-      const inputs = Object.keys(result.metafile.inputs).filter((p) =>
-        p.endsWith("/taraba.mjs"),
-      );
+      const emitted = result.output.filter((o) => o.type === "chunk");
+      const inputs = [
+        ...new Set(emitted.flatMap((o) => Object.keys(o.modules))),
+      ].filter((p) => p.endsWith("/taraba.mjs"));
       assert.equal(inputs.length, shared ? 1 : 2);
       if (shared) {
-        const chunks = Object.entries(result.metafile.outputs).filter(
-          ([, o]) => !o.entryPoint,
+        const chunks = emitted.filter(
+          (o) =>
+            !o.isEntry &&
+            Object.keys(o.modules).some((p) => p.endsWith("/taraba.mjs")),
         );
         assert.equal(chunks.length, 1);
-        const chunk = chunks[0][0];
-        for (const output of Object.values(result.metafile.outputs).filter(
-          (o) => o.entryPoint,
-        )) {
-          assert.ok(output.imports.some((i) => i.path === chunk));
+        const chunk = chunks[0].fileName;
+        for (const output of emitted.filter((o) => o.isEntry)) {
+          assert.ok(output.imports.includes(chunk));
         }
       }
       const libraries = await Promise.all(
@@ -153,8 +154,8 @@ export async function verifyEsmCache(packages, dir) {
         runtime_copies: inputs.length,
         common_cases_per_library: 3507,
         // Include identity-probe exports; these are verification bundles, not the published artifacts.
-        probe_bundle_js_bytes: Object.values(result.metafile.outputs).reduce(
-          (n, o) => n + o.bytes,
+        probe_bundle_js_bytes: emitted.reduce(
+          (n, o) => n + Buffer.byteLength(o.code),
           0,
         ),
       });
@@ -175,5 +176,10 @@ export async function verifyEsmCache(packages, dir) {
       bundles,
     });
   }
-  return { same_realm: true, safari_browser_verified: false, cases };
+  return {
+    bundler: { name: "rolldown", version: VERSION },
+    same_realm: true,
+    safari_browser_verified: false,
+    cases,
+  };
 }

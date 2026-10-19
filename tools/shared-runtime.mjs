@@ -1,15 +1,18 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { isAbsolute, resolve } from "node:path";
+import { dirname, isAbsolute, resolve } from "node:path";
 
-/** esbuild plugin for explicitly selected, self-contained CLI-generated taraba.mjs files.
+/** Rolldown plugin for explicitly selected, self-contained CLI-generated taraba.mjs files.
  * Only byte-identical runtimes resolve to the same module; applications are never aliased.
+ * @param {Iterable<string>} runtimePaths
+ * @returns {import("rolldown").Plugin}
  */
 export function sharedRuntimePlugin(runtimePaths) {
+  const aliases = new Map();
   return {
     name: "taraba-shared-runtime",
-    setup(build) {
-      const contents = new Map(),
-        aliases = new Map();
+    buildStart() {
+      const contents = new Map();
+      aliases.clear();
       for (const file of runtimePaths) {
         const path = realpathSync(file),
           source = readFileSync(path, "utf8");
@@ -17,17 +20,19 @@ export function sharedRuntimePlugin(runtimePaths) {
         contents.set(source, canonical);
         aliases.set(path, canonical);
       }
-      build.onResolve({ filter: /(^|\/)taraba\.mjs$/ }, (args) => {
-        if (
-          args.namespace !== "file" ||
-          (!args.path.startsWith(".") && !isAbsolute(args.path))
-        )
-          return;
-        const candidate = resolve(args.resolveDir, args.path);
-        if (!existsSync(candidate)) return;
-        const path = aliases.get(realpathSync(candidate));
-        if (path) return { path };
-      });
+    },
+    resolveId(source, importer) {
+      if (
+        !/(^|\/)taraba\.mjs$/.test(source) ||
+        (!source.startsWith(".") && !isAbsolute(source)) ||
+        (!isAbsolute(source) && (!importer || importer.startsWith("\0")))
+      )
+        return null;
+      const candidate = isAbsolute(source)
+        ? resolve(source)
+        : resolve(dirname(importer), source);
+      if (!existsSync(candidate)) return null;
+      return aliases.get(realpathSync(candidate)) ?? null;
     },
   };
 }
