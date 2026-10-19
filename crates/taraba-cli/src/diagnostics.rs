@@ -13,31 +13,8 @@ pub struct Config {
 }
 
 fn dependency_hints(data: &serde_json::Value, selected: &str) -> Vec<(String, &'static str)> {
-    let mut pending = vec![selected.to_owned()];
-    let mut reachable = BTreeSet::new();
-    let nodes = data["resolve"]["nodes"].as_array();
-    while let Some(id) = pending.pop() {
-        if !reachable.insert(id.clone()) {
-            continue;
-        }
-        if let Some(node) = nodes.and_then(|ns| ns.iter().find(|n| n["id"] == id)) {
-            for dep in node["deps"].as_array().into_iter().flatten() {
-                if dep["dep_kinds"]
-                    .as_array()
-                    .is_some_and(|kinds| kinds.iter().any(|k| k["kind"].is_null()))
-                {
-                    if let Some(id) = dep["pkg"].as_str() {
-                        pending.push(id.to_owned());
-                    }
-                }
-            }
-        }
-    }
     let mut hints = std::collections::BTreeMap::new();
-    for p in data["packages"].as_array().into_iter().flatten() {
-        if !p["id"].as_str().is_some_and(|id| reachable.contains(id)) {
-            continue;
-        }
+    for p in crate::compatibility::normal_packages(data, selected) {
         let Some(name) = p["name"].as_str() else {
             continue;
         };

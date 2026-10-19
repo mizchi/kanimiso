@@ -4,10 +4,12 @@ use taraba_cli::{
     detect_core_profile, new_component_project, new_future_project, new_project, package_component,
     package_core,
 };
+mod compatibility;
 mod diagnostics;
 mod insight_command;
 mod npm;
 mod project_build;
+mod rebuild;
 mod watch;
 
 fn profile(args: &[String]) -> Result<ExecutionProfile, Box<dyn std::error::Error>> {
@@ -45,8 +47,9 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
     match args.first().map(String::as_str) {
         Some("--version") => println!("taraba {}", env!("CARGO_PKG_VERSION")),
         Some("insight") => insight_command::run(&args[1..])?,
+        Some("update") => rebuild::run(&args[1..])?,
         None | Some("--help") => println!(
-            "taraba insight [pkg | file.wasm] [--top 20] [--filter <substring>] [--retained] [--paths <substring>] [--json]\ntaraba new <directory> [--no-std] [--component | --future | --jspi]\ntaraba build <raw.wasm> --wit <path> [--watch] [--world <name>] [--out-dir pkg] [--binaryen <bin-directory>] [--component | --future | --jspi]\ntaraba build [--watch] [--manifest-path Cargo.toml] [--package <name>] [--wit wit] [--features <list>] [--no-default-features]\n  Without a Wasm input: compile the Cargo cdylib in release mode for wasm32-unknown-unknown; defaults: Cargo.toml, package wit/, pkg/ output\n  Core runtime: auto-detect JSPI/Future from compiled runtime imports/exports and WIT resources; explicit flags override\n  --watch: rebuild on Rust/WIT/local dependency changes; Cargo release wasm32 builds without a Wasm input, otherwise watch the supplied Wasm/WIT; failed builds retain previous output\n  --component: standard Component Model / Canonical ABI, native WIT async and rich types; requires wasm-tools\n  --jspi: force the scalar WIT/Core JSPI, serialized per instance; rejection/traps are fatal, no cancellation\n  --future: force the Rust Future / spawn_local / cancel runtime; opaque resource payloads\n  Core builds always generate pkg/index.js, index.d.ts and package.json; publish the pkg directory with npm/pnpm\n  --npm-name <name> / --npm-version <version> / --license <SPDX>: override Cargo package identity; raw Wasm defaults to its filename, 0.1.0, UNLICENSED; never publishes\n  --component --npm-name additionally requires jco (use --jco <executable>); generates standard jco bindings\n  --wasm-tools <executable>: component tool path\n  --debug / --probes: Core profiles only\n  --insight: retain optimized Core analysis under pkg/.taraba; excluded from npm packages\n  --no-size-warnings: suppress advisory formatting and dependency-size warnings (enabled by default)\nBinaryen 133. JavaScript async baseline: Safari 27+ / JSPI-capable V8. No automatic fallback between execution contracts."
+            "taraba update [--out-dir pkg] [--check] (sync with installed CLI; never publishes)\ntaraba insight [pkg | file.wasm] [--top 20] [--filter <substring>] [--retained] [--paths <substring>] [--json]\ntaraba new <directory> [--no-std] [--component | --future | --jspi]\ntaraba build <raw.wasm> --wit <path> [--watch] [--world <name>] [--out-dir pkg] [--binaryen <bin-directory>] [--component | --future | --jspi]\ntaraba build [--watch] [--manifest-path Cargo.toml] [--package <name>] [--wit wit] [--features <list>] [--no-default-features]\n  Without a Wasm input: compile the Cargo cdylib in release mode for wasm32-unknown-unknown; defaults: Cargo.toml, package wit/, pkg/ output\n  Core runtime: auto-detect JSPI/Future from compiled runtime imports/exports and WIT resources; explicit flags override\n  --watch: rebuild on Rust/WIT/local dependency changes; Cargo release wasm32 builds without a Wasm input, otherwise watch the supplied Wasm/WIT; failed builds retain previous output\n  --component: standard Component Model / Canonical ABI, native WIT async and rich types; requires wasm-tools\n  --jspi: force the scalar WIT/Core JSPI, serialized per instance; rejection/traps are fatal, no cancellation\n  --future: force the Rust Future / spawn_local / cancel runtime; opaque resource payloads\n  Core builds always generate pkg/index.js, index.d.ts and package.json; publish the pkg directory with npm/pnpm\n  --npm-name <name> / --npm-version <version> / --license <SPDX>: override Cargo package identity; raw Wasm defaults to its filename, 0.1.0, UNLICENSED; never publishes\n  --component --npm-name additionally requires jco (use --jco <executable>); generates standard jco bindings\n  --wasm-tools <executable>: component tool path\n  --debug / --probes: Core profiles only\n  --insight: retain optimized Core analysis under pkg/.taraba; excluded from npm packages\n  --no-size-warnings: suppress advisory formatting and dependency-size warnings (enabled by default)\nBinaryen 133. JavaScript async baseline: Safari 27+ / JSPI-capable V8. No automatic fallback between execution contracts."
         ),
         Some("new") => {
             let profile = profile(args.get(2..).unwrap_or_default())?;
@@ -181,7 +184,8 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
                         &wasm_tools,
                         &jco,
                         !args.iter().any(|a| a == "--no-size-warnings"),
-                    )
+                    )?;
+                    rebuild::record(output, &args[1..])
                 };
                 if watching {
                     watch::run(project, generate)?;
@@ -202,6 +206,10 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
                     &wasm_tools,
                     &jco,
                     !args.iter().any(|a| a == "--no-size-warnings"),
+                )?;
+                rebuild::record(
+                    &PathBuf::from(value("--out-dir")?.unwrap_or_else(|| "pkg".into())),
+                    &args[1..],
                 )?;
             }
         }

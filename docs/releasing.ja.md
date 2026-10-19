@@ -5,6 +5,11 @@
 publish は明示的なリリース依頼を受けて行います。以下は手順であり、自動公開タスクではありません。
 4 crate、scaffold、埋め込みの通知、ドキュメントの版番号を揃えます。
 
+CLI の互換系列内では private Rust/JS ABI を維持します。非互換の変更は 0.x なら minor、
+0.0.x なら patch、1.0 以降は major を上げます。Cargo ビルドは runtime/helper crate の版を検査し、
+raw Wasm の系列をまたぐ update はソースからの明示的な再ビルドを求めます。
+private WIT の import の版も、その ABI に合わせて管理します。
+
 `just check`、`just msrv-check`、`just package-check` を実行します。
 unsafe・所有権を変えた場合は `just miri`、`just kani`、`just stress 60` も実行します。
 リリース候補を commit・push し、その SHA の CI 成功を確認します。

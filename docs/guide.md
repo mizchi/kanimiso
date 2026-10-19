@@ -81,6 +81,45 @@ Standalone `--component` still generates a standard Component. Add `--npm-name`
 and jco for Component npm distribution; it also uses `index.js` / `index.d.ts`,
 with jco's native WIT async API.
 
+## Updating generated assets
+
+Runtime assets come from the installed CLI. Upgrade it, then refresh a library
+from its source project:
+
+```sh
+cargo install taraba-cli --locked --force
+taraba update --check
+taraba update
+```
+
+`--check` compares the recorded CLI version and embedded asset hashes with the
+installed CLI. It performs no build or network lookup and exits nonzero when
+they differ. It does not check crates.io for a newer CLI or inspect source edits.
+
+`taraba update` replays the last successful build, including package/features,
+WIT/world, execution profile, debug/insight, tool paths and npm overrides. Cargo
+input recompiles Rust; raw Wasm input regenerates from the original Wasm. Wasm,
+JS and TS are generated together in a staging directory, then replace the output
+only on success. Watch recipes replay once, without starting a watcher.
+Use `--out-dir path` to select a nondefault output. The generated `just update`
+shortcut invokes the same command.
+
+Build options live in `pkg/.taraba/rebuild.json`, alongside local analysis,
+and are excluded from npm tarballs. They contain local source paths. For an old
+output without a recipe, or after moving the project, run `taraba build` once
+with the original options. The public `build.json` records the generator version
+and sizes; consumers of a published npm library update that library normally.
+
+Rust requirements remain in Cargo.toml/Cargo.lock. If needed, update the used
+`taraba` / `taraba-helpers` requirements and lockfile before regenerating. Cargo
+builds reject a private runtime from another compatibility line, including renamed
+and transitive dependencies. During 0.x, the minor version must match; 0.0.x and
+prereleases require the same patch/version. At 1.x and above, the major must match.
+The allocator is independent of this JS ABI check. Raw Wasm cannot disclose its
+Rust dependency versions, so an update across CLI compatibility lines requires an
+explicit source rebuild and `taraba build`. These commands do not bump the
+application/npm version or publish.
+
 ## Automatic rebuilds
 
 Run `taraba build --watch` in a Cargo project to build immediately and rebuild after changes. It runs Cargo in release mode for wasm32-unknown-unknown, then generates the distribution artifacts. WIT defaults to the selected package's `wit/` directory. Core JSPI/Future is detected on each build; use `--component` for Component output.

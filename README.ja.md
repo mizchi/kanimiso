@@ -4,6 +4,10 @@
 
 **WebAssembly のフットプリントに最適化した、Rust 向けの async runtime と allocator。**
 
+<p align="center">
+  <img src="docs/assets/taraba.png" alt="taraba のマスコット" width="256">
+</p>
+
 Rust でフロントエンドのミドルウェアを書くために、Wasm と JavaScript の配布サイズを小さくします。専用の `taraba-allocator` と最新の Wasm 仕様を使い、非同期処理は JavaScript の Promise とイベントループに委ねます。std / no_std に対応します。
 
 正規表現や文字列処理を JS の標準機能に委ねる [`taraba-helpers`](docs/helpers.ja.md) も用意しています。文字列ヘルパーは使う関数と共通基盤だけを生成し、未使用なら追加 JS は 0 B です。
@@ -92,6 +96,10 @@ console.log(await host.run(20, 21)); // Promise<number> → 42
 Wasm の読み込みと生成は標準の `WebAssembly.instantiate` が担当します。taraba は import と安全な呼び出しを提供します。`host` ごとに一つの instance を接続し、export は `host.run(a, b)` のように直接呼びます。
 
 開発中は `taraba build --watch` で Rust・WIT・ローカル依存を監視し、Cargo のコンパイルから成果物の生成まで自動実行できます。
+
+CLI の更新後は `taraba update --check` で埋め込みアセットの差分を確認し、
+`taraba update` で前回の条件を使って Wasm・JS・TS を再生成できます。
+更新に失敗した場合は既存の出力を保持します。[アセットの更新手順](docs/guide.ja.md#生成アセットの更新)。
 
 ## JSPI と Future はどう選ぶか
 

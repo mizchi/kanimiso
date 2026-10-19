@@ -182,6 +182,23 @@ try {
           project,
           env,
         );
+        const beforeUpdate = new Map(
+          [
+            "app.wasm",
+            "index.js",
+            "runtime.mjs",
+            "index.d.ts",
+            "runtime.d.mts",
+          ].map((file) => [file, readFileSync(`${out}/${file}`)]),
+        );
+        run(cli, ["update", "--out-dir", out], project, env);
+        run(cli, ["update", "--out-dir", out, "--check"], project, env);
+        for (const [file, bytes] of beforeUpdate)
+          assert.deepEqual(
+            readFileSync(`${out}/${file}`),
+            bytes,
+            `archived CLI update changed ${profile}/${mode}/${debug}: ${file}`,
+          );
         const { createHost } = await import(pathToFileURL(`${out}/index.js`));
         const instantiate = async (source, options) => {
           const host = createHost(options);

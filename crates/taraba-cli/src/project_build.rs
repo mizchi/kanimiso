@@ -140,6 +140,10 @@ pub(crate) fn project(o: &Options) -> Result<Project> {
             .ok_or("invalid Cargo manifest")?,
     ))?;
     let full = metadata(o, true, Some(&package))?;
+    crate::compatibility::validate(
+        &full,
+        selected["id"].as_str().ok_or("invalid Cargo package id")?,
+    )?;
     if o.size_warnings {
         crate::diagnostics::warn_dependencies(
             &full,

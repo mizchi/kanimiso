@@ -110,7 +110,7 @@ codegen-units = 1
     fs::write(
         path.join("justfile"),
         format!(
-            "# Build the library for its selected execution contract.\nbuild:\n    taraba build{profile}\n\n# Watch Rust/WIT changes and rebuild the selected library.\nwatch *args:\n    taraba build --watch{profile} {{{{args}}}}\n\n# Build and pack the generated npm directory. Component builds need --npm-name.\npack *args:\n    taraba build{profile} {{{{args}}}}\n    pnpm --dir pkg pack\n\n# Prepare a publishable package; inspect it with pnpm pack before publishing.\nnpm name version=\"0.1.0\" license=\"UNLICENSED\":\n    taraba build{profile} --npm-name {{{{name}}}} --npm-version {{{{version}}}} --license \"{{{{license}}}}\"\n"
+            "# Build the library for its selected execution contract.\nbuild:\n    taraba build{profile}\n\n# Watch Rust/WIT changes and rebuild the selected library.\nwatch *args:\n    taraba build --watch{profile} {{{{args}}}}\n\n# Refresh generated assets with the installed CLI and saved build options.\nupdate *args:\n    taraba update {{{{args}}}}\n\n# Build and pack the generated npm directory. Component builds need --npm-name.\npack *args:\n    taraba build{profile} {{{{args}}}}\n    pnpm --dir pkg pack\n\n# Prepare a publishable package; inspect it with pnpm pack before publishing.\nnpm name version=\"0.1.0\" license=\"UNLICENSED\":\n    taraba build{profile} --npm-name {{{{name}}}} --npm-version {{{{version}}}} --license \"{{{{license}}}}\"\n"
         ),
     )?;
     println!(

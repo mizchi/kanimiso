@@ -109,6 +109,46 @@ function build(raw, project, profile, out, name) {
     "MIT",
   ]);
 }
+function verifyUpdate(output) {
+  const recipeFile = join(output, ".taraba/rebuild.json");
+  const recipe = JSON.parse(readFileSync(recipeFile));
+  assert.ok(!recipe.args.includes("--watch"));
+  const pkg = JSON.parse(readFileSync(join(output, "package.json")));
+  assert.ok(!pkg.files.some((f) => f.startsWith(".taraba/")));
+  const expected = new Map(
+    [...pkg.files, "package.json"].map((f) => [
+      f,
+      readFileSync(join(output, f)),
+    ]),
+  );
+  run(cli, ["update", "--out-dir", output, "--check"]);
+  // A changed asset with the same CLI version must also be detected.
+  recipe.assets.assets["taraba.mjs"] = "older runtime";
+  writeFileSync(recipeFile, JSON.stringify(recipe));
+  assert.throws(
+    () => run(cli, ["update", "--out-dir", output, "--check"]),
+    (e) => String(e.stderr).includes("update available"),
+  );
+  for (const [file, bytes] of expected)
+    assert.deepEqual(readFileSync(join(output, file)), bytes);
+  writeFileSync(join(output, "index.js"), "stale generated entry");
+  run(cli, ["update", "--out-dir", output]);
+  run(cli, ["update", "--out-dir", output, "--check"]);
+  for (const [file, bytes] of expected)
+    assert.deepEqual(
+      readFileSync(join(output, file)),
+      bytes,
+      `update changed build options: ${file}`,
+    );
+  const updated = JSON.parse(readFileSync(recipeFile));
+  assert.deepEqual(updated.args, recipe.args);
+  assert.deepEqual(updated.cwd, recipe.cwd);
+  return {
+    assets_regenerated: true,
+    build_options_preserved: true,
+    local_recipe_excluded_from_npm: true,
+  };
+}
 async function install(out, profile, id, rich = false, license = "MIT") {
   const consumer = join(temp, `consumer-${id}`),
     packs = join(temp, `packs-${id}`);
@@ -120,6 +160,10 @@ async function install(out, profile, id, rich = false, license = "MIT") {
     readdirSync(packs).find((f) => f.endsWith(".tgz")),
   );
   const contents = run("tar", ["-tzf", tarball]).toString();
+  assert.ok(
+    !contents.includes(".taraba/"),
+    "local source paths/build recipes must not enter npm packages",
+  );
   assert.ok(contents.includes("package/index.d.ts"));
   const notices = [
     "LICENSE.taraba",
@@ -439,6 +483,37 @@ try {
             },
           )
         : null;
+      const update = {
+        raw: verifyUpdate(out),
+        cargo: verifyUpdate(projectOut),
+        watch: watch ? verifyUpdate(join(temp, `watch-${id}`)) : null,
+      };
+      if (id === "jspi-no-std") {
+        // A second update must reuse the source paths, not a deleted staging directory.
+        verifyUpdate(projectOut);
+        const source = join(project, "src/lib.rs");
+        const bytes = readFileSync(source);
+        const previous = readFileSync(join(projectOut, "app.wasm"));
+        const receipt = readFileSync(join(projectOut, ".taraba/rebuild.json"));
+        try {
+          writeFileSync(source, "intentional Rust syntax error");
+          assert.throws(
+            () => run(cli, ["update", "--out-dir", projectOut]),
+            (e) => String(e.stderr).includes("previous output was preserved"),
+          );
+          assert.deepEqual(
+            readFileSync(join(projectOut, "app.wasm")),
+            previous,
+          );
+          assert.deepEqual(
+            readFileSync(join(projectOut, ".taraba/rebuild.json")),
+            receipt,
+          );
+        } finally {
+          writeFileSync(source, bytes);
+        }
+        update.failed_build_preserves_output = true;
+      }
       const installed = await install(projectOut, profile, id);
       if (profile !== "component") corePackages.push({ ...installed, profile });
       const factory = async (add) => {
@@ -507,10 +582,17 @@ try {
           readFileSync(join(out, "app.component.wasm")),
         );
         assert.ok(!readdirSync(componentOut).includes("package.json"));
+        run(cli, ["update", "--out-dir", componentOut]);
+        run(cli, ["update", "--out-dir", componentOut, "--check"]);
+        assert.deepEqual(
+          readFileSync(join(componentOut, "app.component.wasm")),
+          readFileSync(join(out, "app.component.wasm")),
+        );
       }
       report.cases.push({
         id,
         watch,
+        update,
         ...verified,
         scheduling,
         typescript_strict: true,

@@ -4,6 +4,10 @@ English | [日本語](README.ja.md)
 
 **An async runtime and allocator for Rust, optimized for a small WebAssembly footprint.**
 
+<p align="center">
+  <img src="docs/assets/taraba.png" alt="taraba mascot" width="256">
+</p>
+
 Build frontend middleware in Rust with less Wasm and JavaScript to ship. taraba uses a dedicated `taraba-allocator`, modern Wasm features, and JavaScript's Promises and event loop for async execution. Supports std and no_std.
 
 Optional [`taraba-helpers`](docs/helpers.md) borrow JavaScript regex and string APIs. String helpers emit the operations you use and their shared infrastructure; unused helpers add 0 B of JS.
@@ -96,6 +100,10 @@ console.log(await host.run(20, 21)); // Promise<number> → 42
 Standard `WebAssembly.instantiate` handles loading and instantiation. taraba supplies imports and guarded calls. Attach one instance per host, and call WIT exports directly, for example `host.run(a, b)`.
 
 Use `taraba build --watch` during development to watch Rust, WIT and local dependencies, running Cargo compilation and artifact generation automatically.
+
+After upgrading the CLI, use `taraba update --check` to detect changed embedded
+assets and `taraba update` to regenerate Wasm/JS/TS with the previous build
+options. Failed updates retain the previous output. See [asset updates](docs/guide.md#updating-generated-assets).
 
 ## When do I need JSPI or Future?
 

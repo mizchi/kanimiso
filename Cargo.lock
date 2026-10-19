@@ -523,6 +523,7 @@ dependencies = [
  "ctrlc",
  "notify",
  "proc-macro2",
+ "semver",
  "serde_json",
  "syn 2.0.119",
  "tempfile",

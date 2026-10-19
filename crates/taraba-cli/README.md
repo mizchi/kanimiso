@@ -28,6 +28,18 @@ Core package names, versions and licenses default to the selected Cargo package 
 
 The generated justfile provides optional shortcuts for the CLI commands. `taraba build` runs Cargo release compilation for wasm32-unknown-unknown, using Cargo.toml, the selected package's wit/ and pkg/ output by default. Core JSPI/Future is detected from compiled runtime imports/exports and WIT resources, not Rust source keywords. `--jspi` / `--future` override detection. Component output remains explicit with `--component`.
 
+After upgrading the CLI with `cargo install taraba-cli --locked --force`, use
+`taraba update --check` to compare installed assets with a previous build, and
+`taraba update` to regenerate Wasm/JS/TS using its saved options. Check is
+read-only and exits nonzero for a different version or asset hash; it does not
+query crates.io. `--out-dir` selects an output other than pkg. Failed updates
+keep the previous output. The local `.taraba/rebuild.json` recipe is excluded
+from npm; old outputs or relocated projects need one explicit `taraba build`.
+Rust dependencies remain governed by Cargo.toml/Cargo.lock and must match the
+CLI's compatibility line (0.x minor, 0.0.x patch, exact prereleases; 1.x+ major).
+Update does not change dependency requirements, bump the application's npm version
+or publish. See the guide for raw Wasm and compatibility-line migrations.
+
 Use `taraba build --watch` to watch a Cargo project and its WIT/local path dependencies. It runs Cargo release builds for wasm32-unknown-unknown, then regenerates the selected output. Core JSPI/Future is detected after compilation; pass `--component` for Component output; npm options work in watch mode too. Select workspace packages with `--manifest-path` / `--package`, and features with `--features` / `--no-default-features`. WIT defaults to the selected package's `wit/` directory. Custom target and library names are read from Cargo artifact messages.
 
 Builds are serialized and debounced; edits during a build are queued. The output directory is reserved for generated files and is replaced only after successful generation. Failed builds keep the previous output and retry after edits. Cargo's target directory, generated output and dependency caches are excluded from monitoring. Stop with Ctrl-C. With a positional input (`taraba build input.wasm --wit wit --watch`), only Wasm/WIT regeneration is watched; Cargo compilation stays with the external build process.

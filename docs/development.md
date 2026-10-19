@@ -19,7 +19,7 @@ setup installs dependencies, the Wasm Rust target, Binaryen 133 and wasm-tools 1
 | `just panic-check` | Core std/no_std × JSPI/Future panic reports, release/debug, ordinary formatting/traps and payload formatting before the hook; also part of check |
 | `just insight-check` | Formatting hints, optimized size/retention inspection, common cases against ordinary builds, npm analysis exclusion and stale-view rejection |
 | `just check` | Rust/JS tests, formatting, Core fatal/ownership behavior, JSPI spills, npm consumer checks and active documentation links |
-| `just library-check` | Current CLI: pack/install outside the repo, strict TS, three profiles × std/no_std, rich Component domain/errors, shared Core ESM and instance isolation |
+| `just library-check` | Current CLI: pack/install, strict TS, three profiles × std/no_std, raw/Cargo/watch update replay and rollback, rich Component domain/errors, shared Core ESM and instance isolation |
 | `just package-check` | Packages all four crates, installs an unpacked CLI, repeats external consumers and npm library generation |
 | `just watch-check` | Real Cargo/CLI watch: workspace/features/local dependencies, recovery, output exclusions, edits during builds and Ctrl-C |
 | `just compare-async-size` | Common sync/async implementations with Embassy, Tokio, async-executor, async-std, wasm-bindgen and FuturesUnordered; writes docs/async-size.{json,md} and Japanese report |

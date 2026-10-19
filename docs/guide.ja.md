@@ -71,6 +71,41 @@ pnpm publish --access public
 
 `--component` 単体は引き続き標準 Component を生成します。Component を npm 形式で配布する時は `--npm-name` と jco を指定し、入口を同じ `index.js` / `index.d.ts` に揃えます。WIT native async の API は jco の契約に従います。
 
+## 生成アセットの更新
+
+ランタイムのアセットは、導入済み CLI に同梱された版を使います。
+CLI を更新してから、ライブラリの生成元プロジェクトで再生成します。
+
+```sh
+cargo install taraba-cli --locked --force
+taraba update --check
+taraba update
+```
+
+`--check` は記録済みの CLI バージョン・埋め込みアセットのハッシュを導入済み CLI と比較し、
+異なれば非ゼロで終了します。ビルドやネットワークアクセスは行いません。
+crates.io の新しい CLI や、Rust/WIT ソースの変更を調べるコマンドではありません。
+
+`taraba update` は前回成功したビルドの package・feature・WIT/world・実行方式・
+debug/insight・ツールのパス・npm の上書き設定を再利用します。
+Cargo 入力なら Rust から再ビルドし、raw Wasm 入力なら元の Wasm から生成し直します。
+Wasm・JS・TS を一緒に一時ディレクトリへ生成し、成功した時だけ出力を置き換えます。
+watch の記録も一度だけ再生し、監視は起動しません。
+出力先を変更していた場合は `--out-dir path` で選びます。生成 justfile の `just update` も同じコマンドです。
+
+ビルド条件は `pkg/.taraba/rebuild.json` に記録し、解析データと同様に npm tarball から除外します。
+ここにはローカルのソースパスも含まれます。記録がない旧出力やプロジェクトの移動後は、
+元のオプションで一度 `taraba build` を実行してください。
+公開用 `build.json` は生成元の版やサイズを記録します。公開済み npm ライブラリの利用者は、通常通りそのライブラリを更新します。
+
+Rust の要求バージョンは Cargo.toml/Cargo.lock に従います。必要なら使用中の
+`taraba` / `taraba-helpers` の要求版と lockfile を更新してから再生成します。
+Cargo ビルドは、別名・推移的依存も含めて private runtime の互換系列を検査します。
+0.x では minor が一致する版、0.0.x では同じ patch、prerelease は同じ版が必要です。1.x 以降は major を揃えます。
+allocator はこの JS ABI の版検査とは独立です。raw Wasm からは Rust の依存版を取得できないため、
+CLI の互換系列をまたぐ更新ではソースから再ビルドし、明示的に `taraba build` を実行します。
+アプリ/npm の version の引き上げや publish は行いません。
+
 ## 開発中の自動ビルド
 
 Cargo プロジェクト内で `taraba build --watch` を実行すると、起動直後とファイル変更時に Cargo の release / wasm32-unknown-unknown ビルドから成果物生成まで実行します。WIT の既定値は選んだ package の `wit/` です。Core の JSPI/Future はビルドごとに自動選択します。Component は `--component` を指定します。

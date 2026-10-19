@@ -6,6 +6,12 @@ Publishing requires an explicit release request. These commands are a procedure,
 not an automated publishing task. Keep version numbers consistent across the
 four crates, scaffold templates, embedded notices and documentation.
 
+Keep the private Rust/JS ABI stable within a CLI compatibility line. An
+incompatible change requires a new minor for 0.x, a new patch for 0.0.x, or a new
+major from 1.0 onward. Cargo builds check runtime/helper crate versions; raw
+Wasm updates across lines require an explicit source rebuild. Keep the private
+WIT import versions aligned with the ABI they describe.
+
 Before publishing, run `just check`, `just msrv-check` and `just package-check`.
 For unsafe/ownership changes also run `just miri`, `just kani` and `just stress 60`.
 Commit the release candidate, push it and confirm CI succeeds for that exact SHA.
