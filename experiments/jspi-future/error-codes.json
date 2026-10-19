@@ -1,16 +1,11 @@
 {
   "1": "waiter capacity exceeded",
   "2": "waiter table borrow conflict",
-  "3": "JSPI required",
-  "4": "add binding required",
   "5": "unknown gate",
   "6": "job IDs exhausted",
   "7": "unknown job",
   "8": "job pending",
-  "9": "shared memory unsupported",
-  "10": "unknown export",
   "11": "gate IDs exhausted",
   "12": "already parked",
-  "13": "gate closed",
-  "14": "dropped binding must be a function"
+  "13": "gate closed"
 }

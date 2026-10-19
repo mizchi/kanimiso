@@ -79,7 +79,7 @@ pub extern "C" fn forget_waker() {
 }
 
 extern crate alloc;
-use jsrt::storage::{release, reserve, used};
+use jsrt::__private::{release, reserve, used};
 #[unsafe(no_mangle)]
 pub extern "C" fn mem_reserve(size: u32) -> u32 {
     unsafe { reserve(size, 8) }

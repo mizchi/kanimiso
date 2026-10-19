@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-// Public host methods, rt_* exports, __values and task_start/task_wake keep
+// Managed host methods, rt_* exports, __values and task_start/task_wake keep
 // their names. Only private Wasm function imports and private record fields move.
 export const importNames = [
   "__root",
@@ -17,7 +17,6 @@ export const importNames = [
   "task_finish",
   "subscribe",
   "unsubscribe",
-  "deferred_add",
 ];
 export const mangleProps = `^(${[...importNames, "state", "ptr", "queued", "value", "rejected"].join("|")})$`;
 

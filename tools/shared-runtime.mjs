@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
 
-/** Rolldown plugin for explicitly selected, self-contained CLI-generated taraba.mjs files.
+/** Rolldown plugin for explicitly selected, self-contained CLI-generated runtime.mjs files.
  * Only byte-identical runtimes resolve to the same module; applications are never aliased.
  * @param {Iterable<string>} runtimePaths
  * @returns {import("rolldown").Plugin}
@@ -23,7 +23,7 @@ export function sharedRuntimePlugin(runtimePaths) {
     },
     resolveId(source, importer) {
       if (
-        !/(^|\/)taraba\.mjs$/.test(source) ||
+        !/(^|\/)runtime\.mjs$/.test(source) ||
         (!source.startsWith(".") && !isAbsolute(source)) ||
         (!isAbsolute(source) && (!importer || importer.startsWith("\0")))
       )

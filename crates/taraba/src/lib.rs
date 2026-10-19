@@ -10,8 +10,9 @@ compile_error!("js-local runtime requires a wasm32 single-agent JS host");
 extern crate std;
 
 mod ffi;
+pub mod panic;
 mod promise;
-pub mod storage;
+mod storage;
 mod task;
 mod value;
 mod waker;
@@ -21,7 +22,11 @@ pub use value::{HostError, JsValue};
 
 /// Internal ABI: pointers come only from this instance's host registry, and calls
 /// are serialized. The host never polls/drops an active task or settles a freed wait.
-pub mod abi {
+/// Macro implementation detail, not a supported application API.
+#[doc(hidden)]
+pub mod __private {
+    #[cfg(feature = "test-api")]
+    pub use crate::storage::{release, reserve, used};
     /// # Safety
     /// `pointer` is a live task allocated by this runtime; no reentrant poll/drop.
     pub unsafe fn poll(pointer: u32) -> i32 {
@@ -42,7 +47,7 @@ pub mod abi {
 /// Export the host-managed runtime ABI once from a wasm32 cdylib.
 ///
 /// All three exports are private to the matching taraba JS host. Applications
-/// must call user exports through its guarded `call` / `promise` methods.
+/// must call user exports through the generated typed host methods.
 #[macro_export]
 macro_rules! export_runtime {
     () => {
@@ -50,19 +55,19 @@ macro_rules! export_runtime {
         /// Called only by the matching host with a live, exclusively polled task.
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn rt_poll(pointer: u32) -> i32 {
-            unsafe { $crate::abi::poll(pointer) }
+            unsafe { $crate::__private::poll(pointer) }
         }
         /// # Safety
         /// Called only by the matching host after poll has returned, once per task.
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn rt_drop(pointer: u32) {
-            unsafe { $crate::abi::drop_task(pointer) }
+            unsafe { $crate::__private::drop_task(pointer) }
         }
         /// # Safety
         /// Called only with a live pinned subscription and one transferred root.
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn rt_settle(pointer: u32, value: u32, rejected: i32) {
-            unsafe { $crate::abi::settle(pointer, value, rejected) }
+            unsafe { $crate::__private::settle(pointer, value, rejected) }
         }
     };
 }

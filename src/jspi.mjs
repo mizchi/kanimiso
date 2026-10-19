@@ -1,22 +1,15 @@
 import { runtimeError } from "./errors.mjs";
+import { panicImports } from "./panic.mjs";
 
 // Default scalar WIT/Core profile. JSPI owns the suspended Wasm stack.
 // Serial entry also protects LLVM's shared linear-memory stack pointer.
-export async function instantiate(
-  source,
-  { bindings = {}, compileOptions } = {},
-) {
-  if (
-    typeof WebAssembly.promising !== "function" ||
-    typeof WebAssembly.Suspending !== "function"
-  )
-    throw runtimeError("RT15", TypeError);
+export function createHost({ bindings = {} } = {}, exportNames = []) {
   let dead = false,
     fatal,
     calls = 0,
     completions = 0,
     queued = 0;
-  let functions = Object.create(null);
+  let functions, memory;
   const alive = () => {
     if (dead) throw fatal;
   };
@@ -26,12 +19,12 @@ export async function instantiate(
       fatal = error;
       // Queued entries check alive() before touching the dispatch table.
       functions = null;
+      if (__JSRT_DEBUG_ERRORS__) memory = null;
     }
     return fatal;
   };
   const app = Object.create(null);
   for (const [name, fn] of Object.entries(bindings)) {
-    if (typeof fn !== "function") throw runtimeError("RT14", TypeError);
     app[name] = new WebAssembly.Suspending(async (...args) => {
       alive();
       try {
@@ -43,32 +36,21 @@ export async function instantiate(
       }
     });
   }
-  const loaded = await WebAssembly.instantiate(source, { app }, compileOptions);
-  const instance =
-    loaded instanceof WebAssembly.Instance ? loaded : loaded.instance;
-  if (
-    typeof SharedArrayBuffer !== "undefined" &&
-    instance.exports.memory?.buffer instanceof SharedArrayBuffer
-  )
-    throw runtimeError("RT13");
-  for (const [name, value] of Object.entries(instance.exports)) {
-    if (
-      typeof value === "function" &&
-      !name.startsWith("rt_") &&
-      !name.startsWith("cabi_")
-    )
-      functions[name] = WebAssembly.promising(value);
-  }
+  const attach = (exports) => {
+    if (functions || dead) throw runtimeError("RT12");
+    const next = Object.create(null);
+    for (const name of exportNames)
+      next[name] = WebAssembly.promising(exports[name]);
+    functions = next;
+    if (__JSRT_DEBUG_ERRORS__) memory = exports.memory;
+  };
   let tail = Promise.resolve();
   const call = (name, ...args) => {
+    if (!functions && !dead) return Promise.reject(runtimeError("RT06"));
     queued++;
     const result = tail
       .then(async () => {
         alive();
-        if (name.startsWith("rt_") || name.startsWith("cabi_"))
-          throw runtimeError("RT11");
-        if (typeof functions[name] !== "function")
-          throw runtimeError("RT06", Error, name);
         calls++;
         try {
           const value = await functions[name](...args);
@@ -85,8 +67,9 @@ export async function instantiate(
     return result;
   };
   return {
+    imports: { app, "taraba:panic": panicImports(() => memory, poison) },
+    attach,
     call,
-    promise: call,
     stats: () => ({ calls, completions, queued, dead }),
   };
 }

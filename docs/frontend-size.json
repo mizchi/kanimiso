@@ -1,0 +1,87 @@
+{
+  "created_at": "2026-10-19T06:39:25.427Z",
+  "node": "v24.21.0",
+  "rolldown": "1.2.14",
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "preact": "11.0.1",
+    "zod": "4.6.7",
+    "hono": "4.13.13",
+    "valibot": "1.5.0"
+  },
+  "overrides": {
+    "scheduler": "0.28.0"
+  },
+  "options": {
+    "platform": "browser",
+    "transform": {
+      "target": "es2022",
+      "define": {
+        "process.env.NODE_ENV": "\"production\""
+      }
+    }
+  },
+  "output": {
+    "format": "esm",
+    "minify": true
+  },
+  "gzip_level": 9,
+  "note": "Representative entry bundles, not complete packages or equivalent workloads. DOM rendering is not executed.",
+  "entries": [
+    {
+      "id": "react",
+      "name": "React (core)",
+      "version": "19.3.1",
+      "source": "export {createElement, useState} from 'react';",
+      "raw_bytes": 1916,
+      "gzip_bytes": 934,
+      "sha256": "042c4f27f6a49591bc3f2c8eee9eac7543f43faf8c196233bed61e8629bdcc82"
+    },
+    {
+      "id": "react-dom",
+      "name": "React + React DOM",
+      "version": "19.3.1",
+      "source": "import {createElement} from 'react';\nimport {createRoot} from 'react-dom/client';\nexport function mount(target) {createRoot(target).render(createElement('span', null, 'ok'));}",
+      "raw_bytes": 220025,
+      "gzip_bytes": 67524,
+      "sha256": "1b71ceaff932d19883adda07890e80fdc1c32af7b2c31ea11087f0ad9b2c4023"
+    },
+    {
+      "id": "preact",
+      "name": "Preact",
+      "version": "11.0.1",
+      "source": "import {h, render} from 'preact';\nexport function mount(target) {render(h('span', null, 'ok'), target);}",
+      "raw_bytes": 10598,
+      "gzip_bytes": 4535,
+      "sha256": "60e49e30a8826d53808283c019be3bf35c2c41375a18c10f8b7265442a952eda"
+    },
+    {
+      "id": "zod",
+      "name": "Zod",
+      "version": "4.6.7",
+      "source": "import {object, string} from 'zod';\nconst schema = object({name: string()});\nexport function parse(value) {return schema.parse(value);}",
+      "raw_bytes": 83101,
+      "gzip_bytes": 22759,
+      "sha256": "9664f1853cfe973357537b8ef025420d768ecacea0614bb153b1b20e855b193d"
+    },
+    {
+      "id": "hono",
+      "name": "Hono",
+      "version": "4.13.13",
+      "source": "import {Hono} from 'hono';\nconst app = new Hono();\napp.get('/', c => c.text('ok'));\nexport const fetch = app.fetch;",
+      "raw_bytes": 18228,
+      "gzip_bytes": 7410,
+      "sha256": "872fc84b527d7533b4e96aae0d61290a0e60f4cfa36b68df363989b1fefd5046"
+    },
+    {
+      "id": "valibot",
+      "name": "Valibot",
+      "version": "1.5.0",
+      "source": "import {object, string, parse as validate} from 'valibot';\nconst schema = object({name: string()});\nexport function parse(value) {return validate(schema, value);}",
+      "raw_bytes": 2909,
+      "gzip_bytes": 1169,
+      "sha256": "54c8d09abf5d2599730c8515620d3754ef69fd12a9deb3dc450164cc276d7aae"
+    }
+  ]
+}

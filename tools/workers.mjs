@@ -54,7 +54,9 @@ const parallelBoundedModules={no_std:parallelBounded_no_std,std:parallelBounded_
     `
 import {createHost as release} from "../../dist/release.mjs";
 import {createHost as debug} from "../../dist/debug.mjs";
-import {instantiate as instantiateJspi} from "../../dist/jspi.mjs";
+import {createHost as createJspiHost} from "../../dist/jspi.mjs";
+import {createLoader} from "../../tests/support/core-host.mjs";
+const instantiateJspi=createLoader(createJspiHost);
 import {verifyWit} from "../../tests/support/wit-contract.mjs";
 import {asyncCases} from "../../tests/support/async-contract.mjs";
 import {workerService} from "../../tests/support/worker.mjs";
@@ -95,8 +97,6 @@ export default {async fetch(request) {
      : ""
  }
  if(variant==="jspi") {
-   const capabilities={promising:typeof WebAssembly.promising,suspending:typeof WebAssembly.Suspending};
-   if(capabilities.promising!=="function"||capabilities.suspending!=="function") return Response.json({mode,eligible:false,capabilities,reason:"JSPI is unavailable in this local workerd"});
    try {
      const result=await verifyWit(async add=>{const h=await instantiateJspi(jspiModules[mode],{bindings:{add}});return(...a)=>h.promise("run",...a)},[1,16,128,1024].flatMap(asyncCases));
      return Response.json({mode,eligible:true,...result});
@@ -199,14 +199,11 @@ try {
     });
     const entry = await response.json();
     assert.equal(response.status, 200, JSON.stringify(entry));
-    if (entry.eligible) {
-      assert.equal(entry.all_passed, true);
-      assert.equal(entry.tasks, 3507);
-    }
+    assert.equal(entry.eligible, true);
+    assert.equal(entry.all_passed, true);
+    assert.equal(entry.tasks, 3507);
     jspi.push(entry);
-    console.log(
-      `jspi/${mode}: ${entry.eligible ? "local workerd passed" : "JSPI unavailable in local workerd"}`,
-    );
+    console.log(`jspi/${mode}: local workerd passed`);
   }
   const jspi_future = [];
   if (future)

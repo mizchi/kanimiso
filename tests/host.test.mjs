@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createHost } from "../dist/canonical.mjs";
+import { createHost as runtimeHost } from "../dist/canonical.mjs";
+import { withTestApi } from "./support/core-host.mjs";
+const createHost = (...args) => withTestApi(runtimeHost(...args));
 const task = (host) => {
   const f = host.imports.jsrt,
     id = f.task_new(),
@@ -104,9 +106,9 @@ test("managed exports cannot resume after a nested fatal error is caught by JS",
 test("configured root limit fails closed with a typed OOM error", () => {
   const h = createHost({ maxValues: 1 });
   h.attach({});
-  h.root({});
+  h.imports.jsrt.__root({});
   assert.throws(
-    () => h.root({}),
+    () => h.imports.jsrt.__root({}),
     (e) => e.name === "WasmOutOfMemoryError" && e.code === "ERR_WASM_OOM",
   );
   assert.equal(h.stats().dead, true);

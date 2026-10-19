@@ -2,13 +2,13 @@
 
 English | [日本語](esm-cache.ja.md)
 
-Core/JSPI and Core/Future libraries can **share their JavaScript runtime when imports resolve to the same ESM URL**. The module code and evaluation result are shared. Each instantiate call creates its own queue, bindings, counters and fatal state.
+Core/JSPI and Core/Future libraries can **share their JavaScript runtime when imports resolve to the same ESM URL**. The module code and evaluation result are shared. Each createHost call creates its own queue, bindings, counters and fatal state.
 
-Default npm output has each package import its own `./taraba.mjs`. Identical contents at different paths do not share an ESM cache entry across libraries. Repeated imports of the same package URL do share one entry.
+Default npm output has each package import its own `./runtime.mjs`. Identical contents at different paths do not share an ESM cache entry across libraries. Repeated imports of the same package URL do share one entry.
 
 ## Serve a shared chunk
 
-The checkout's `tools/shared-runtime.mjs` provides a Rolldown build-time helper. It redirects explicitly selected, generated `taraba.mjs` files to one file only when their contents match. With ESM code splitting, multiple entries import one shared chunk. Different runtime contents, including JSPI/Future and debug/release variants, remain separate.
+The checkout's `tools/shared-runtime.mjs` provides a Rolldown build-time helper. It redirects explicitly selected, generated `runtime.mjs` files to one file only when their contents match. With ESM code splitting, multiple entries import one shared chunk. Different runtime contents, including JSPI/Future and debug/release variants, remain separate.
 
 For example, check out taraba at `./taraba` and install two generated Core packages in the consuming app. Its `src/a.mjs` and `src/b.mjs` entries import the respective packages. Add the build dependency with `pnpm add -D rolldown@1.2.14` and use the [Rolldown build API](https://rolldown.rs/guide/getting-started#using-the-api).
 
@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { sharedRuntimePlugin } from './taraba/tools/shared-runtime.mjs';
 
 const runtimes = ['@example/a', '@example/b'].map(name =>
-  fileURLToPath(new URL('taraba.mjs', import.meta.resolve(`${name}/package.json`))),
+  fileURLToPath(new URL('runtime.mjs', import.meta.resolve(`${name}/package.json`))),
 );
 await build({
   input: { a: 'src/a.mjs', b: 'src/b.mjs' },
@@ -43,8 +43,8 @@ Use this helper for generated, self-contained Core runtimes. It does not merge a
 
 | Two libraries with the same profile | Runtime source | JS before sharing | JS after sharing | Runtime copies |
 |---|---:|---:|---:|---|
-| Core/JSPI | 1,295 B | 3,164 B | 1,848 B | 2 → 1 |
-| Core/Future | 3,874 B | 8,460 B | 4,538 B | 2 → 1 |
+| Core/JSPI | 975 B | 2,524 B | 1,537 B | 2 → 1 |
+| Core/Future | 3,470 B | 7,652 B | 4,145 B | 2 → 1 |
 
 These are total JavaScript bytes in verification ESM bundles on Node.js 24 / V8 with Rolldown 1.2.14. They include exports used to inspect function identity, so they are a separate measurement from the single-package distribution size table. Wasm, declarations and compression are excluded here. A real Safari browser has not been tested.
 

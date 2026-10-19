@@ -10,10 +10,10 @@
 |---|---|---|---|
 | async 対応 Component host 向けのライブラリ | `--component` | npm 指定なし | WIT `async func` と Rust `async fn`。Canonical ABI の `app.component.wasm` |
 | async・ドメインモデルに型のある npm ライブラリ | `--component` | `--npm-name @scope/library` | 公式 wit-bindgen と jco による JS/TS。record / string / list / result と型付き async 戻り値 |
-| 数値 API を持つ省サイズな JS ライブラリ | 既定 / `--jspi` | `--npm-name @scope/library` | Rust は同期形。Promise 待機は JSPI が担当。WIT から `Promise<number>` などの TS 型を生成 |
-| Rust Future の並行タスク・spawn_local・明示的キャンセル | `--future` | 必要なら `--npm-name` | 既存の Core Promise/resource ランタイム。opaque resource の中身は TS では `unknown` |
+| 数値 API を持つ省サイズな JS ライブラリ | 既定 / `--jspi` | 既定で npm 形式 | Rust は同期形。Promise 待機は JSPI が担当。WIT から `Promise<number>` などの TS 型を生成 |
+| Rust Future の並行タスク・spawn_local・明示的キャンセル | `--future` | 既定で npm 形式 | 既存の Core Promise/resource ランタイム。opaque resource の中身は TS では `unknown` |
 
-**WIT から async を含むアプリ用ライブラリを作る場合は Component を選びます。** サイズを優先し、s32 / u32 / f64 の境界で足りるなら Core/JSPI を選びます。CLI の既定値は引き続き Core/JSPI です。`new` と `build` で同じ実行方式を指定してください。
+**WIT から async を含むアプリ用ライブラリを作る場合は Component を選びます。** サイズを優先し、s32 / u32 / f64 の境界で足りるなら Core/JSPI を選びます。`taraba new` の既定は JSPI 用の雛形です。`taraba build` は生成 Wasm の jsrt/pool import・rt_poll/rt_drop/rt_settle export と WIT resource から Core の JSPI/Future を自動選択します。必要に応じて WIT の resource drop import も確認します。Rust ソースのキーワードでは判定しません。`--jspi` / `--future` で強制指定でき、Component 出力は `--component` を明示します。
 
 `--component` は標準の Component Model / Canonical ABI を使います。二つの Core 構成は JS 向けの独自 ABI で、成果物の契約は異なります。npm 化は実行方式とは別の選択肢です。
 
@@ -25,22 +25,60 @@
 | `src/lib.rs` | 生成された Guest を実装する。業務ロジックは通常の Rust module へ分離できる |
 | `Cargo.toml` | std/no_std、allocator、依存、release 設定 |
 | `.cargo/config.toml` | 雛形の stack 64 KiB / memory 上限 1 MiB。アプリに合わせて調整する |
-| `justfile` | 選んだ実行方式を固定した build / npm タスク |
+| `justfile` | 任意で使える、選んだ実行方式の build / npm タスク |
 | `pkg/` | 生成物。API の変更は WIT と Rust に加え、ここは再生成する |
 
-WIT を変更 → Rust の型エラーに従って Guest/import を更新 → cargo build → taraba build → 利用側の tsc と実行テスト、の順に確認します。std と no_std で契約は同じでも、panic/allocator を含む配布サイズは変わります。
+WIT を変更 → Rust の型エラーに従って Guest/import を更新 → taraba build → 利用側の tsc と実行テスト、の順に確認します。std と no_std で契約は同じでも、panic/allocator を含む配布サイズは変わります。
 
-雛形の `just build` は選択した成果物をビルドし、`just npm @example/orders 0.1.0 MIT` は npm 用に再生成します。後者はローカルの node_modules/.bin も PATH に追加するため、jco は `pnpm add -D` で用意できます。
+Cargo プロジェクト内で `taraba build` を実行します。CLI が Cargo の release / wasm32-unknown-unknown ビルドと成果物生成を行います。既定は `Cargo.toml`、選んだ package の `wit/`、出力先 `pkg/` です。Cargo の JSON 出力から実際の Wasm を取得するため、target directory や lib 名を指定する必要はありません。Core は既定で `index.js`・`index.d.ts`・`package.json` を持つ npm 形式を生成します。`--npm-name` はパッケージ名の上書きです。Component の npm 出力に使う jco は `pnpm add -D` で用意し、`--jco node_modules/.bin/jco` で指定できます。
+
+出力先は生成物専用です。単発の `taraba build` も、生成に成功してから出力先を置き換えます。失敗時は非ゼロで終了し、前回の正常な成果物を保持します。
+
+## 生成する npm パッケージ
+
+Core の `taraba build` は、既定で次のファイルを `pkg/` に揃えます。`--npm-name` は不要です。
+
+| ファイル | 役割 |
+|---|---|
+| `index.js` | アプリ固有の `createHost` と型付きメソッドの入口 |
+| `index.d.ts` | WIT 由来の `AppBindings` / `AppExports` / `AppHost` |
+| `app.wasm` | 最適化した Wasm。`package-name/app.wasm` から参照可能 |
+| `runtime.mjs` / `runtime.d.mts` | JS ランタイムと型定義 |
+| `package.json` | `type: module`、`main` / `module`、`types`、`exports`、配布する `files` |
+| `wit/` | 公開 WIT と解決した WIT 依存 |
+| `helpers-*.mjs` | ヘルパーを使う時だけ生成 |
+| `LICENSE.taraba` / `build.json` | taraba のライセンスとビルド・サイズの記録 |
+
+package.json の `main` / `module` は `./index.js`、`types` と exports の types 条件は `./index.d.ts` を指します。以前の `taraba.mjs` への別名エントリーは生成しません。
+
+| npm の項目 | Cargo プロジェクトでの既定値 | 上書き |
+|---|---|---|
+| `name` | 選んだ package の名前を小文字化 | `--npm-name @scope/library` |
+| `version` | package の version | `--npm-version 1.2.3` |
+| `license` | package の license。未指定なら `UNLICENSED` | `--license MIT` |
+
+workspace では `--package` で選んだ package の情報を使い、`[lib].name` は npm 名に影響しません。Cargo の workspace 継承にも対応し、watch では metadata の変更も次の生成に反映します。既存の Wasm を直接指定する場合はファイル名の stem を小文字化し、版は `0.1.0`、ライセンスは `UNLICENSED` を既定値にします。
+
+```sh
+taraba build
+cd pkg
+pnpm pack
+# npm に公開する場合
+pnpm publish --access public
+```
+
+出力には JS・Wasm・型定義が揃うため、公開後の利用者に taraba CLI、Cargo、jco は不要です。解析用の `.taraba/` は npm の配布ファイルから除外します。ビルドをやり直すと出力を置き換えるので、名前・版・ライセンスの変更は Cargo.toml または CLI オプションへ反映します。
+
+`--component` 単体は引き続き標準 Component を生成します。Component を npm 形式で配布する時は `--npm-name` と jco を指定し、入口を同じ `index.js` / `index.d.ts` に揃えます。WIT native async の API は jco の契約に従います。
 
 ## 開発中の自動ビルド
 
-Cargo プロジェクト内で `taraba build --watch` を実行すると、起動直後とファイル変更時に Cargo の release / wasm32-unknown-unknown ビルドから成果物生成まで実行します。WIT の既定値は選んだ package の `wit/` です。Core/JSPI が既定で、他の実行方式は明示します。
+Cargo プロジェクト内で `taraba build --watch` を実行すると、起動直後とファイル変更時に Cargo の release / wasm32-unknown-unknown ビルドから成果物生成まで実行します。WIT の既定値は選んだ package の `wit/` です。Core の JSPI/Future はビルドごとに自動選択します。Component は `--component` を指定します。
 
 ```sh
 taraba build --watch
 taraba build --watch --future
 taraba build --watch --component --npm-name @example/orders --license MIT
-# 新しい雛形の justfile から: just watch
 ```
 
 workspace や Cargo feature は次のように指定します。Cargo の JSON 出力から実際の Wasm を取得するため、独自の target directory や `[lib].name` にも対応します。
@@ -62,11 +100,11 @@ taraba build target/wasm32-unknown-unknown/release/orders.wasm \
   --wit wit --watch --out-dir pkg
 ```
 
-`--manifest-path` / `--package` / `--features` / `--no-default-features` は、Wasm 入力を省略した project watch 専用です。`--world`、実行方式、`--debug`、`--npm-name` など、各ビルド形式のオプションは再ビルドにも引き継ぎます。
+`--manifest-path` / `--package` / `--features` / `--no-default-features` は、Wasm 入力を省略した Cargo プロジェクトの build / watch で使えます。`--world`、実行方式、`--debug`、`--npm-name` など、各ビルド形式のオプションは再ビルドにも引き継ぎます。
 
 ## インストール
 
-`taraba-cli`、`taraba`、`taraba-allocator` の初回 crates.io 公開を準備しています。レジストリ公開・レジストリからのインストールはまだ実施していません。以下は公開後の利用手順で、現在は .crate アーカイブとリポジトリ外の利用アプリで検証しています。
+Rust 1.85 以上を用意し、crates.io から CLI をインストールして Wasm ターゲットを追加します。ライブラリの依存クレートは `taraba new` が生成する Cargo.toml に定義され、Cargo が取得します。
 
 ```sh
 rustup target add wasm32-unknown-unknown
@@ -112,10 +150,7 @@ export!(App);
 雛形には allocator、no_std の panic handler、async binding の feature、release 設定を含みます。std 版は `--no-std` を省きます。WIT と実装を編集し、ビルドします。
 
 ```sh
-cargo build --release --target wasm32-unknown-unknown
-taraba build target/wasm32-unknown-unknown/release/orders.wasm \
-  --wit wit --component --out-dir pkg
-# 生成された justfile から: just build
+taraba build --component --out-dir pkg
 ```
 
 `pkg/app.component.wasm` を最適化・Component 化・validate し、選択した WIT world との適合も検査します。`app.wit` は生成された Component の契約、`build.json` は ABI 情報です。複数の world は `--world` で選択します。Canonical ABI のメタデータを保ち、Core 用の externref lowering は適用しません。
@@ -145,14 +180,13 @@ taraba build target/wasm32-unknown-unknown/release/orders.wasm \
 
 ```sh
 pnpm add -D @bytecodealliance/jco@1.39.0
-taraba build target/wasm32-unknown-unknown/release/orders.wasm \
-  --wit wit --component --jco node_modules/.bin/jco \
+taraba build --component --jco node_modules/.bin/jco \
   --npm-name @example/orders --npm-version 0.1.0 --license MIT --out-dir pkg
 cd pkg
 pnpm pack
 ```
 
-ESM exports、`types` 条件、配布ファイルの明示的な `files` 一覧を持つ `package.json` と、実行に必要な JS / Wasm / 型定義を生成します。jco が WIT からアプリ固有の型、`Promise<T>`、ドメイン型を生成します。元の Component は `@example/orders/component.wasm`、その WIT は `@example/orders/wit` からも参照できます。jco / wasm-tools / taraba はビルド時のツールで、生成パッケージの実行時依存には入りません。ビルド処理は publish を行いません。`--license` の既定値は `UNLICENSED` で、配布時にはアプリのライセンスを指定します。
+ESM exports、`types` 条件、配布ファイルの明示的な `files` 一覧を持つ `package.json` と、実行に必要な JS / Wasm / 型定義を生成します。jco が WIT からアプリ固有の型、`Promise<T>`、ドメイン型を生成します。元の Component は `@example/orders/component.wasm`、その WIT は `@example/orders/wit` からも参照できます。jco / wasm-tools / taraba はビルド時のツールで、生成パッケージの実行時依存には入りません。ビルド処理は publish を行いません。名前以外の既定値は選んだ Cargo package の版・ライセンスを引き継ぎ、ライセンス未指定時は `UNLICENSED` とします。
 
 Node の利用側では tarball（公開後はパッケージ）をインストールし、import と core module loader を渡します。
 
@@ -229,25 +263,36 @@ const label: string = order.label;
 ```sh
 taraba new tiny --no-std
 cd tiny
-cargo build --release --target wasm32-unknown-unknown
-taraba build target/wasm32-unknown-unknown/release/tiny.wasm --wit wit \
+taraba build \
   --npm-name @example/tiny --npm-version 0.1.0 --license MIT
 ```
 
 ```js
 import { readFile } from 'node:fs/promises';
-import { instantiate } from '@example/tiny';
+import { createHost } from '@example/tiny';
 
-const host = await instantiate(
+const host = createHost({ bindings: { add: async (a, b) => (a + b) | 0 } });
+const { instance } = await WebAssembly.instantiate(
   await readFile(new URL(import.meta.resolve('@example/tiny/app.wasm'))),
-  { bindings: { add: async (a, b) => (a + b) | 0 } },
+  host.imports,
 );
-console.log(await host.exports.run(20, 21)); // 型は Promise<number>
+host.attach(instance.exports);
+console.log(await host.run(20, 21)); // 型は Promise<number>
 ```
 
-Core では WIT から `AppBindings`、`AppExports`、`AppHost` を生成し、関数名と引数を TypeScript で検査します。`--npm-name` を省いたビルドは従来の `taraba.mjs` / `taraba.d.mts` を出力します。どちらも `--debug` で説明付きエラーを選べ、release では短いコードと外部辞書に分離します。
+Core の JSPI/Future は `createHost` → 標準の Wasm instantiation → `attach` を基本にします。`WebAssembly.compile` した Module や `instantiateStreaming` も利用者が選べます。Core の export は `createHost` のみとし、独自の loader は生成しません。Component の例は引き続き jco の生成した `instantiate` を使います。
+
+Core では WIT から `AppBindings`、`AppExports`、`AppHost` を生成し、関数名と引数を TypeScript で検査します。既定の `pkg/index.js` / `index.d.ts` と package.json の exports から同じ型付き API を利用できます。メソッドを静的に生成するため、文字列による呼び出しなしで `host.run(a, b)` を補完できます。共有ランタイムは `runtime.mjs` / `runtime.d.mts` に分離します。どちらも `--debug` で説明付きエラーを選べ、release ではコードと[説明ページ](error-codes.md)へのリンクを出力し、説明辞書は同梱しません。
 
 Core/JSPI は I/O 待ちも含めて instance ごとに直列化します。host reject / trap は instance を閉じ、キャンセルやその経路での Rust Drop は保証しません。任意の Rust Future や native WIT async を駆動する executor ではありません。既存 executor の独立タスク進行・キャンセルが必要なら `--future` を選びます。こちらの WIT Promise resource には中身の型がないため、TS も正確に `Promise<unknown>` とします。WIT から async 戻り値まで型を付ける場合は Component を使います。[Core ランタイムの詳細](core-runtime.ja.md)に所有権・task 上限・エラー契約を分離しています。
+
+## JS の標準機能を使うヘルパー
+
+Core JSPI / Future の Rust 実装内では、オプションの `taraba-helpers` で RegExp、JS 文字列、Unicode 正規化、分割、文字コード変換を使えます。crates.io の依存で必要な feature を有効にし、通常通り `taraba build` します。アプリの公開 WIT にヘルパーの private WIT を追加したり、手動で JS bindings を渡したりする必要はありません。
+
+ビルドは wasm-opt 後の import から必要な文字列・Iterator・Segmenter・Decoder 関数だけを生成します。未使用のヘルパーによる追加 JS は 0 B です。文字列機能の使用時には共通ハンドル基盤も含めます。[選択できる機能](helpers.ja.md#使う機能だけを含める)・[文字列サンプルと実測サイズ](strings.ja.md)を参照してください。
+
+この private Core ABI は、公開 WIT の `string` / record / list を扱う Component の Canonical ABI とは別です。ヘルパーは `--component` や JS のない WASI host には対応しません。
 
 ## サイズ・互換性・検証
 
@@ -262,3 +307,7 @@ JSPI Future adapter と stack snapshot による並行 JSPI は `experiments/` �
 検証コマンドと検証範囲は[開発ガイド](development.ja.md)にまとめています。
 
 runtime / CLI / JS は MIT、任意で使う `taraba-allocator` は wee_alloc 由来の MPL-2.0 です。配布時も allocator のライセンスとソースに関する条件を維持してください。[THIRD_PARTY.md](../THIRD_PARTY.md)。
+
+生成 npm には MIT/MPL の通知と、allocator の版を指定したソース取得先を同梱します。
+アプリ自身のライセンスは別です。別版・改変版の MPL 対象依存を使う場合は通知を更新してください。
+[ライセンスと来歴](https://github.com/mizchi/taraba/blob/main/THIRD_PARTY.md)を参照してください。

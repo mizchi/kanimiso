@@ -22,9 +22,9 @@ impl IntoFuture for JsPromise {
     type IntoFuture = JsFuture;
     fn into_future(self) -> Self::IntoFuture {
         JsFuture {
-            promise: self,
+            value: self.0,
             wait: 0,
-            result: None,
+            rejected: None,
             waker: None,
             _pinned: PhantomPinned,
         }
@@ -33,9 +33,12 @@ impl IntoFuture for JsPromise {
 
 /// The host holds this state's pointer only while its non-reused subscription ID is live.
 pub struct JsFuture {
-    promise: JsPromise,
+    // Before completion this owns the Promise root; afterwards it owns its
+    // result. A subscription keeps the JS Promise alive, so no second root is
+    // needed once completion has transferred the result into this state.
+    value: JsValue,
     wait: u32,
-    result: Option<Result<JsValue, JsValue>>,
+    rejected: Option<bool>,
     waker: Option<Waker>,
     _pinned: PhantomPinned,
 }
@@ -43,13 +46,14 @@ impl Future for JsFuture {
     type Output = Result<JsValue, JsValue>;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = unsafe { self.get_unchecked_mut() };
-        if let Some(result) = this.result.take() {
+        if let Some(rejected) = this.rejected.take() {
             this.wait = 0;
-            return Poll::Ready(result);
+            let value = core::mem::replace(&mut this.value, JsValue::undefined());
+            return Poll::Ready(if rejected { Err(value) } else { Ok(value) });
         }
         this.waker = Some(cx.waker().clone());
         if this.wait == 0 {
-            this.wait = unsafe { ffi::subscribe(this.promise.0.raw(), this as *mut Self as u32) };
+            this.wait = unsafe { ffi::subscribe(this.value.raw(), this as *mut Self as u32) };
             if this.wait == 0 {
                 return Poll::Ready(Err(unsafe { JsValue::from_abi(ffi::exhausted()) }));
             }
@@ -66,11 +70,21 @@ impl Drop for JsFuture {
         }
     }
 }
+impl JsFuture {
+    fn complete(&mut self, value: JsValue, rejected: bool) {
+        self.value = value;
+        self.rejected = Some(rejected);
+        if let Some(waker) = self.waker.take() {
+            waker.wake();
+        }
+    }
+}
 pub(crate) unsafe fn settle(pointer: u32, value: u32, rejected: i32) {
     let this = unsafe { &mut *(pointer as *mut JsFuture) };
     let value = unsafe { JsValue::from_abi(value) };
-    this.result = Some(if rejected == 0 { Ok(value) } else { Err(value) });
-    if let Some(waker) = this.waker.take() {
-        waker.wake();
-    }
+    this.complete(value, rejected != 0);
 }
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+#[path = "promise_tests.rs"]
+mod tests;

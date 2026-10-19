@@ -36,8 +36,6 @@ export function createStacks(alive) {
         exports.rt_jspi_stack?.value !== 1 ||
         !(memory instanceof WebAssembly.Memory) ||
         !(pointer instanceof WebAssembly.Global) ||
-        (typeof SharedArrayBuffer !== "undefined" &&
-          memory.buffer instanceof SharedArrayBuffer) ||
         !Number.isInteger(low) ||
         !Number.isInteger(high) ||
         low < 0 ||

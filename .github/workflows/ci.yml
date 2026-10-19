@@ -5,6 +5,14 @@ on:
 permissions:
   contents: read
 jobs:
+  msrv:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: extractions/setup-just@v4
+      - run: rustup toolchain install 1.85.0 --profile minimal --target wasm32-unknown-unknown
+      - run: just msrv-check
   check:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -21,7 +29,7 @@ jobs:
       - run: just check-jspi-concurrent
       - run: just check-async-size
       - run: just check-allocator
-      - run: just package-check
+      - run: just package-check --require-clean
       - run: just modern
       - run: just stress 60
       - run: just workers --jspi-concurrent
@@ -32,6 +40,10 @@ jobs:
           path: |
             .cache/check.json
             .cache/jspi-check.json
+            .cache/panic-reporting/check.json
+            .cache/insight-check.json
+            .cache/helpers/report.json
+            .cache/strings/report.json
             .cache/jspi-future-experiment/check.json
             .cache/jspi-concurrent/check.json
             .cache/jspi-concurrent/failure.log

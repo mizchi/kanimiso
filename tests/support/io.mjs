@@ -7,3 +7,5 @@ export function createIO() {
     },
   };
 }
+
+export const add = (a, b) => Promise.resolve((a + b) | 0);

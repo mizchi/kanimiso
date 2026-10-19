@@ -7,7 +7,7 @@ struct Bytes(UnsafeCell<[MaybeUninit<u8>; 131072]>);
 unsafe impl Sync for Bytes {}
 static STORAGE: Bytes = Bytes(UnsafeCell::new([MaybeUninit::uninit(); 131072]));
 /// Exposes the address, without creating a reference to any live Future.
-pub fn base() -> *mut u8 {
+pub(crate) fn base() -> *mut u8 {
     STORAGE.0.get().cast::<u8>()
 }
 #[cfg(test)]
@@ -21,15 +21,18 @@ mod tests {
 
 /// # Safety
 /// Private raw fixture ABI: release each returned live pointer once only.
+#[cfg(feature = "test-api")]
 pub unsafe fn reserve(bytes: u32, align: u32) -> u32 {
     unsafe { crate::ffi::allocate(base() as u32, bytes, align) }
 }
 /// # Safety
 /// Pointer must be an unreleased slot belonging to this instance.
+#[cfg(feature = "test-api")]
 pub unsafe fn release(pointer: u32) {
     unsafe { crate::ffi::free(pointer) }
 }
 /// Private fixture diagnostics, eliminated from shipping modules.
+#[cfg(feature = "test-api")]
 pub fn used() -> u32 {
     unsafe { crate::ffi::used() }
 }

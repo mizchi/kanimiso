@@ -1,3 +1,5 @@
+import { withTestApi } from "./core-host.mjs";
+import { add } from "./io.mjs";
 import assert from "node:assert/strict";
 import { createHost } from "../../dist/release.mjs";
 
@@ -27,7 +29,7 @@ export async function fuzz(
   const kinds = [0, 0, 0, 0];
   let reentrantCancels = 0,
     cancelledCount = 0;
-  const host = factory();
+  const host = withTestApi(factory({ bindings: { add } }));
   const trace = (op) => {
     history.push(op);
     if (history.length > 80) history.shift();

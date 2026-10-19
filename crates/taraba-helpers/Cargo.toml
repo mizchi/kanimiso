@@ -1,0 +1,28 @@
+[package]
+name = "taraba-helpers"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+description = "Opt-in JavaScript builtins for small Rust/Wasm applications"
+repository = "https://github.com/mizchi/taraba"
+readme = "README.md"
+include = ["src/**", "wit/**", "Cargo.toml", "README.md", "LICENSE"]
+
+[package.metadata.docs.rs]
+default-target = "wasm32-unknown-unknown"
+targets = ["wasm32-unknown-unknown"]
+all-features = true
+
+[features]
+default = []
+regexp = []
+values = []
+strings = ["values"]
+iterator = ["values"]
+segmenter = ["strings", "iterator"]
+encoding = ["strings"]
+alloc = []
+
+[lib]
+doctest = false

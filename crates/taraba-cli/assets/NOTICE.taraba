@@ -1,0 +1,29 @@
+Third-party notices for taraba-generated packages
+================================================
+
+The taraba JavaScript runtime and generated binding support are MIT licensed;
+see LICENSE.taraba. The application's own license is set in package.json.
+
+If the Wasm includes taraba-allocator, its covered portions are MPL-2.0,
+including modifications derived from wee_alloc_bw / wee_alloc. The MPL source
+rights are independent of the application's license. See LICENSE.taraba-allocator
+and UPSTREAM.taraba-allocator.json for the license and upstream provenance.
+
+The source of unmodified taraba-allocator 0.1.0 is available as
+a Cargo source archive, including its license, provenance and build files:
+https://crates.io/api/v1/crates/taraba-allocator/0.1.0/download
+Project: https://github.com/mizchi/taraba
+
+The allocator uses memory_units 0.4.0 (MPL-2.0), by Nick Fitzgerald and Sergey
+Pepyakin. Its source, including its MPL license, is available at:
+https://crates.io/api/v1/crates/memory_units/0.4.0/download
+Project: https://github.com/pepyakin/memory_units
+
+These notices are included for all builds, even if optimization removes the
+allocator or a different allocator is selected. They describe the version
+bundled with this CLI's scaffolds, not an inspection of arbitrary input Wasm.
+If you use another version or modified covered source (including path/patch
+dependencies), update the source locations to the exact version/modifications
+you distribute and make that source available under MPL-2.0. Review licenses
+of other application dependencies separately. Keep applicable notices and source
+access information available when redistributing the Wasm outside this package.

@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import esbuild from "esbuild";
+import { readFileSync } from "node:fs";
+const messages = JSON.parse(readFileSync("src/error-codes.json", "utf8"));
+const reference = (code) =>
+  `https://github.com/mizchi/taraba/blob/main/docs/error-codes.md#${code.toLowerCase()}`;
+const message = (code, debug) =>
+  `${code}${debug ? `: ${messages[code]}` : ""} ${reference(code)}`;
 
 for (const debug of [false, true])
   test(`runtime error codes are stable and ${debug ? "debug descriptions remain" : "release descriptions are absent"}`, async () => {
@@ -21,11 +27,8 @@ for (const debug of [false, true])
     const e = runtimeError("RT01", RangeError);
     assert.ok(e instanceof RangeError);
     assert.equal(e.code, "RT01");
-    assert.equal(e.message, debug ? "invalid token range" : "RT01");
-    assert.equal(
-      runtimeError("RT06", Error, "start").message,
-      debug ? "missing export: start" : "RT06",
-    );
+    assert.equal(e.message, message("RT01", debug));
+    assert.equal(runtimeError("RT06").message, message("RT06", debug));
     assert.equal(runtimeError("RT09").code, "RT09");
     assert.equal(
       code.includes("invalid token range"),
@@ -72,13 +75,13 @@ for (const debug of [false, true])
       () => h.call("absent"),
       (e) => {
         fatal = e;
-        return (
-          e.code === "RT06" &&
-          e.message === (debug ? "missing export: absent" : "RT06")
-        );
+        return e instanceof TypeError && e.code === undefined;
       },
     );
-    await assert.rejects(h.promise("another"), (e) => e === fatal);
+    await assert.rejects(
+      Promise.resolve().then(() => h.call("another")),
+      (e) => e === fatal,
+    );
     assert.equal(h.stats().dead, true);
     const external = Object.assign(new TypeError("provider failed"), {
       code: "PROVIDER_CODE",
@@ -96,13 +99,46 @@ for (const debug of [false, true])
     assert.equal(external.code, "PROVIDER_CODE");
     assert.equal(external.message, "provider failed");
     const oom = createHost({ maxValues: 1 });
-    oom.root({});
+    oom.imports.jsrt.__root({});
     assert.throws(
-      () => oom.root({}),
+      () => oom.imports.jsrt.__root({}),
       (e) =>
         e instanceof RangeError &&
         e.name === "WasmOutOfMemoryError" &&
         e.code === "ERR_WASM_OOM" &&
-        e.message === (debug ? "Wasm allocation failed" : "RT03"),
+        e.message === message("RT03", debug),
     );
   });
+
+for (const profile of ["", "-jspi"]) {
+  for (const debug of [false, true]) {
+    test(`${profile || "future"} emitted ${debug ? "debug" : "release"} errors link to the code reference`, async () => {
+      const file = `../crates/taraba-cli/assets/taraba${profile}${debug ? "-debug" : ""}.mjs`;
+      const { createHost } = await import(file);
+      const host = createHost();
+      host.attach({});
+      assert.throws(
+        () => host.attach({}),
+        (error) => {
+          assert.equal(error.code, "RT12");
+          assert.equal(error.message, message("RT12", debug));
+          return true;
+        },
+      );
+      if (!debug) {
+        const source = readFileSync(new URL(file, import.meta.url), "utf8");
+        for (const text of Object.values(messages))
+          assert.ok(!source.includes(text), text);
+      }
+    });
+  }
+}
+
+test("every current error code has a documented URL anchor and description", () => {
+  const page = readFileSync("docs/error-codes.md", "utf8");
+  for (const [code, text] of Object.entries(messages)) {
+    assert.match(page, new RegExp(`^## ${code}$`, "m"));
+    assert.ok(page.includes(text), code);
+    assert.equal(new URL(reference(code)).hash, `#${code.toLowerCase()}`);
+  }
+});

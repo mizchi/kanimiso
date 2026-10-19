@@ -1,17 +1,16 @@
 {
   "__root": "o",
   "__take": "i",
-  "retain": "f",
-  "release": "a",
-  "oom": "c",
+  "retain": "a",
+  "release": "c",
+  "oom": "f",
   "exhausted": "u",
   "number": "l",
-  "as_i32": "d",
-  "task_new": "h",
-  "task_promise": "p",
-  "task_cancel": "m",
-  "task_finish": "g",
-  "subscribe": "R",
-  "unsubscribe": "T",
-  "deferred_add": "w"
+  "as_i32": "m",
+  "task_new": "d",
+  "task_promise": "h",
+  "task_cancel": "p",
+  "task_finish": "R",
+  "subscribe": "g",
+  "unsubscribe": "T"
 }

@@ -35,6 +35,14 @@ pub(crate) struct Bindings {
     pub(crate) exports: std::collections::BTreeMap<String, Signature>,
     pub(crate) drops: Vec<(String, String)>,
 }
+impl Bindings {
+    pub(crate) fn uses_resource_handles(&self) -> bool {
+        self.imports
+            .values()
+            .chain(self.exports.values())
+            .any(|(args, result)| args.iter().chain(result.iter()).any(|ty| ty.reference()))
+    }
+}
 // JS-local contract: Number tokens and f64 scalar codec; no i64 boundary values.
 fn import_abi(name: &str) -> Option<(&'static [Abi], Option<Abi>)> {
     Some(match name {
@@ -44,7 +52,6 @@ fn import_abi(name: &str) -> Option<(&'static [Abi], Option<Abi>)> {
         "task_promise" => (&[I32], Some(Own)),
         "task_finish" => (&[I32, Own, I32], None),
         "subscribe" => (&[Borrow, I32], Some(I32)),
-        "deferred_add" => (&[I32, I32], Some(Own)),
         _ => return None,
     })
 }
@@ -63,6 +70,10 @@ pub(crate) fn lower_with_abi(
     abi: &Bindings,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut m = Module::from_buffer(bytes)?;
+    if m.memories.iter().any(|memory| memory.shared) {
+        return Err("Core profile does not support shared memory".into());
+    }
+    crate::helpers::validate(&m)?;
     // Generated Canonical-ABI metadata/realloc are inapplicable after Core
     // externref lowering. They must not claim this module is a Component guest.
     let sections: Vec<_> = m
@@ -105,6 +116,13 @@ pub(crate) fn lower_with_abi(
     for import in m.imports.iter() {
         if import.module != "jsrt"
             && import.module != "pool"
+            && !crate::helpers::known_module(&import.module)
+            && !(import.module == "taraba:panic"
+                && import.name == "report"
+                && matches!(import.kind, ImportKind::Function(f) if {
+                    let ty = m.types.get(m.funcs.get(f).ty());
+                    ty.params() == [ValType::I32, ValType::I32] && ty.results().is_empty()
+                }))
             && !abi
                 .imports
                 .contains_key(&(import.module.clone(), import.name.clone()))
@@ -257,6 +275,74 @@ pub(crate) fn lower_with_abi(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn panic_report_has_one_synchronous_borrowed_slice_signature() {
+        for (signature, allowed) in [
+            ("(param i32 i32)", true),
+            ("(param i64 i32)", false),
+            ("(param i32)", false),
+            ("(param i32 i32) (result i32)", false),
+        ] {
+            let raw = wat::parse_str(format!(
+                r#"(module (import "taraba:panic" "report" (func $report {signature})) (export "report" (func $report)))"#
+            )).unwrap();
+            assert_eq!(lower(&raw).is_ok(), allowed);
+        }
+    }
+    #[test]
+    fn shared_memory_is_rejected_by_the_core_builder() {
+        for text in [
+            "(module (memory 1 2 shared))",
+            "(module (import \"app\" \"memory\" (memory 1 2 shared)))",
+        ] {
+            let bytes = wat::parse_str(text).unwrap();
+            assert!(
+                lower(&bytes)
+                    .unwrap_err()
+                    .to_string()
+                    .contains("shared memory")
+            );
+        }
+    }
+    #[test]
+    fn helpers_validate_versioned_wit_signatures_and_require_exported_memory() {
+        for (name, signature, memory, allowed) in [
+            (
+                "compile",
+                "(param i32 i32) (result i32)",
+                "(memory (export \"memory\") 1)",
+                true,
+            ),
+            (
+                "test",
+                "(param i32 i32 i32) (result i32)",
+                "(memory (export \"memory\") 1)",
+                true,
+            ),
+            (
+                "drop",
+                "(param i32)",
+                "(memory (export \"memory\") 1)",
+                true,
+            ),
+            (
+                "compile",
+                "(param i64 i32) (result i32)",
+                "(memory (export \"memory\") 1)",
+                false,
+            ),
+            ("hidden", "", "(memory (export \"memory\") 1)", false),
+            (
+                "compile",
+                "(param i32 i32) (result i32)",
+                "(memory 1)",
+                false,
+            ),
+        ] {
+            let raw = wat::parse_str(format!(r#"(module (import "taraba:helpers/regexp@0.1.0" "{name}" (func $f {signature})) {memory} (export "keep" (func $f)))"#)).unwrap();
+            assert_eq!(lower(&raw).is_ok(), allowed, "{name} {signature} {memory}");
+        }
+    }
     #[test]
     fn rejects_old_i64_tokens() {
         let old = wat::parse_str(

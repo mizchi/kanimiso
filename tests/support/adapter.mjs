@@ -1,3 +1,4 @@
+import { withTestApi } from "./core-host.mjs";
 import { createHost } from "../../dist/release.mjs";
 import { createIO } from "./io.mjs";
 export async function instantiate(
@@ -6,10 +7,12 @@ export async function instantiate(
   hostFactory = createHost,
 ) {
   const io = createIO();
-  const host = hostFactory({
-    deferredAdd: (a, b) => io.defer(a, b),
-    ...options,
-  });
+  const host = withTestApi(
+    hostFactory({
+      bindings: { add: (a, b) => io.defer(a, b) },
+      ...options,
+    }),
+  );
   const events = [];
   let onEvent = () => {};
   host.imports.jsrt.probe_event = (event) => {

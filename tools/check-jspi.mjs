@@ -17,10 +17,10 @@ const report = {
   engines: [],
 };
 for (const debug of [false, true]) {
-  const { instantiate } = await import(
+  const { createHost } = await import(
     `../dist/jspi${debug ? "-debug" : ""}.mjs`
   );
-  const result = await verifyJspi(instantiate, modules, cases);
+  const result = await verifyJspi(createHost, modules, cases);
   assert.equal(result.all_passed, true);
   report.engines.push({
     name: `Node ${process.version} / V8 ${process.versions.v8}`,
@@ -34,7 +34,7 @@ mkdirSync(dir, { recursive: true });
 const jsc =
   "/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc";
 if (existsSync(jsc)) {
-  const source = `import {instantiate} from ${JSON.stringify(resolve("dist/jspi.mjs"))};import {verifyJspi} from ${JSON.stringify(resolve("tests/support/jspi.mjs"))};const capabilities={promising:typeof WebAssembly.promising,suspending:typeof WebAssembly.Suspending};if(capabilities.promising!=='function'||capabilities.suspending!=='function'){print(JSON.stringify({eligible:false,reason:'JSPI unavailable; outside Safari 27+ baseline',capabilities}));}else{verifyJspi(instantiate,${JSON.stringify(modules)},${JSON.stringify(cases)}).then(result=>print(JSON.stringify({eligible:true,result})),error=>print(JSON.stringify({eligible:true,error:String(error)})));}`;
+  const source = `import {createHost} from ${JSON.stringify(resolve("dist/jspi.mjs"))};import {verifyJspi} from ${JSON.stringify(resolve("tests/support/jspi.mjs"))};const capabilities={promising:typeof WebAssembly.promising,suspending:typeof WebAssembly.Suspending};if(capabilities.promising!=='function'||capabilities.suspending!=='function'){print(JSON.stringify({eligible:false,reason:'JSPI unavailable; outside Safari 27+ baseline',capabilities}));}else{verifyJspi(createHost,${JSON.stringify(modules)},${JSON.stringify(cases)}).then(result=>print(JSON.stringify({eligible:true,result})),error=>print(JSON.stringify({eligible:true,error:String(error)})));}`;
   const built = await esbuild.build({
     stdin: { contents: source, resolveDir: resolve(".") },
     bundle: true,

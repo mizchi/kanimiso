@@ -15,6 +15,7 @@ pub struct BuildOptions {
     pub binaryen: Option<PathBuf>,
     pub debug: bool,
     pub probes: bool,
+    pub insight: bool,
     pub profile: ExecutionProfile,
 }
 const FEATURES: &[&str] = &[
@@ -96,18 +97,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
     }
     let abi = crate::wit::parse(&o.wit, o.world.as_deref())?;
     if jspi {
-        use crate::abi::Abi;
-        if o.probes
-            || abi
-                .imports
-                .values()
-                .chain(abi.exports.values())
-                .any(|(args, result)| {
-                    args.iter()
-                        .chain(result.iter())
-                        .any(|t| matches!(t, Abi::Own | Abi::Borrow))
-                })
-        {
+        if o.probes || abi.uses_resource_handles() {
             return Err("JSPI profile supports only scalar WIT functions (s32/u32/f64), without resources or --probes".into());
         }
     }
@@ -133,14 +123,15 @@ pub fn build(o: &BuildOptions) -> Result<()> {
                 include_bytes!("../assets/intrusive.wat").as_slice()
             },
         )?;
-        run(
-            &tool("wasm-as"),
-            &[
-                text(&path("slots.wat")),
-                "-o".into(),
-                text(&path("slots.wasm")),
-            ],
-        )?;
+        let mut assemble = vec![
+            text(&path("slots.wat")),
+            "-o".into(),
+            text(&path("slots.wasm")),
+        ];
+        if o.insight {
+            assemble.push("--debuginfo".into());
+        }
+        run(&tool("wasm-as"), &assemble)?;
         let mut merge = vec![
             text(&path("core.wasm")),
             "taraba:core".into(),
@@ -148,6 +139,9 @@ pub fn build(o: &BuildOptions) -> Result<()> {
             "pool".into(),
         ];
         merge.extend(features.clone());
+        if o.insight {
+            merge.push("--debuginfo".into());
+        }
         merge.extend(["-o".into(), text(&path("merged.wasm"))]);
         run(&tool("wasm-merge"), &merge)?;
         let graph: Vec<_> = exports
@@ -164,6 +158,9 @@ pub fn build(o: &BuildOptions) -> Result<()> {
         fs::write(path("graph.json"), serde_json::to_vec(&graph)?)?;
         let mut dce = vec![text(&path("merged.wasm"))];
         dce.extend(features.clone());
+        if o.insight {
+            dce.push("--debuginfo".into());
+        }
         dce.extend([
             "--graph-file".into(),
             text(&path("graph.json")),
@@ -173,36 +170,62 @@ pub fn build(o: &BuildOptions) -> Result<()> {
         run(&tool("wasm-metadce"), &dce)?;
     }
     let mut opt = vec![text(&path("linked.wasm"))];
-    opt.extend(optimization_flags());
+    let mut flags = optimization_flags();
+    if o.insight {
+        for flag in &mut flags {
+            if flag == "--strip-debug" {
+                *flag = "--strip-dwarf".into();
+            }
+        }
+        flags.push("--debuginfo".into());
+    }
+    opt.extend(flags);
     opt.extend(["-o".into(), text(&path("optimized.wasm"))]);
     run(&tool("wasm-opt"), &opt)?;
     let optimized = fs::read(path("optimized.wasm"))?;
     let names = serde_json::from_str(include_str!("../assets/private-imports.json"))?;
-    let bytes = crate::imports::rename(&optimized, &names)?;
+    let named = crate::imports::rename(&optimized, &names)?;
+    let bytes = if o.insight {
+        crate::insight::strip_names(&named)?
+    } else {
+        named.clone()
+    };
+    let analysis = if o.insight {
+        Some(crate::insight::analyze(&named)?.json(usize::MAX, None, false, false))
+    } else {
+        None
+    };
     let finished = walrus::Module::from_buffer(&bytes)?;
     let actual: std::collections::BTreeSet<_> =
         finished.exports.iter().map(|e| e.name.clone()).collect();
     if actual != exports.iter().cloned().collect() {
         return Err("link changed exported API".into());
     }
-    if finished
-        .imports
-        .iter()
-        .any(|i| i.module != "jsrt" && i.module != "app")
-    {
+    if finished.imports.iter().any(|i| {
+        !matches!(i.module.as_str(), "jsrt" | "app" | "taraba:panic")
+            && !crate::helpers::known_module(&i.module)
+    }) {
         return Err("unexpected import after Core linking".into());
     }
-    if jspi && finished.imports.iter().any(|i| i.module != "app") {
+    if jspi
+        && finished.imports.iter().any(|i| {
+            !matches!(i.module.as_str(), "app" | "taraba:panic")
+                && !crate::helpers::known_module(&i.module)
+        })
+    {
         return Err(
             "JSPI profile requires a synchronous scalar guest without taraba task/runtime imports"
                 .into(),
         );
     }
     fs::create_dir_all(&o.output)?;
+    let helpers = crate::helpers::Features::detect(&finished);
+    let (bindings_js, bindings_types) = crate::bindings::generate(&abi, jspi, helpers.clone())?;
     let dest = o.output.join("app.wasm");
     if dest.exists() && fs::canonicalize(&dest)? == fs::canonicalize(&o.input)? {
         return Err("output must not overwrite input".into());
     }
+    let helpers_js = helpers.write(&o.output, o.debug)?;
     let js = if jspi {
         if o.debug {
             include_bytes!("../assets/taraba-jspi-debug.mjs").as_slice()
@@ -215,20 +238,31 @@ pub fn build(o: &BuildOptions) -> Result<()> {
         include_bytes!("../assets/taraba.mjs").as_slice()
     };
     fs::write(dest, &bytes)?;
-    fs::write(o.output.join("taraba.mjs"), js)?;
+    fs::write(o.output.join("runtime.mjs"), js)?;
+    fs::write(o.output.join("index.js"), &bindings_js)?;
+    fs::write(o.output.join("index.d.ts"), bindings_types)?;
     fs::write(
-        o.output.join("taraba.d.mts"),
+        o.output.join("runtime.d.mts"),
         if jspi {
             include_bytes!("../assets/taraba-jspi.d.mts").as_slice()
         } else {
             include_bytes!("../assets/taraba.d.mts").as_slice()
         },
     )?;
-    fs::write(
-        o.output.join("error-codes.json"),
-        include_bytes!("../assets/error-codes.json"),
-    )?;
-    let info = serde_json::json!({"builder":env!("CARGO_PKG_VERSION"),"profile":if jspi {"wit-core-jspi"}else{"wit-core-externref"},"engine_baseline":"Safari 27+ / JSPI-capable V8","binaryen":133,"wasm_bytes":bytes.len(),"js_bytes":js.len(),"debug":o.debug,"assets":serde_json::from_str::<serde_json::Value>(include_str!("../assets/provenance.json"))?});
+    let mut info = serde_json::json!({"builder":env!("CARGO_PKG_VERSION"),"profile":if jspi {"wit-core-jspi"}else{"wit-core-externref"},"engine_baseline":"Safari 27+ / JSPI-capable V8","binaryen":133,"wasm_bytes":bytes.len(),"js_bytes":js.len()+bindings_js.len()+helpers_js,"runtime_js_bytes":js.len(),"bindings_js_bytes":bindings_js.len(),"debug":o.debug,"assets":serde_json::from_str::<serde_json::Value>(include_str!("../assets/provenance.json"))?});
+    if helpers.any() {
+        info["helpers_js_bytes"] = helpers_js.into();
+    }
+    if let Some(mut report) = analysis {
+        fs::create_dir_all(o.output.join(".taraba"))?;
+        report["deployment_bytes"] = bytes.len().into();
+        fs::write(o.output.join(".taraba/insight.wasm"), &named)?;
+        fs::write(
+            o.output.join(".taraba/insight.json"),
+            serde_json::to_vec_pretty(&report)?,
+        )?;
+        info["insight"] = serde_json::json!({"wasm":".taraba/insight.wasm","report":".taraba/insight.json","local_only":true});
+    }
     fs::write(
         o.output.join("build.json"),
         serde_json::to_vec_pretty(&info)?,
@@ -237,7 +271,7 @@ pub fn build(o: &BuildOptions) -> Result<()> {
         "{}: {} B Wasm + {} B JS",
         o.output.display(),
         bytes.len(),
-        js.len()
+        js.len() + bindings_js.len() + helpers_js
     );
     Ok(())
 }

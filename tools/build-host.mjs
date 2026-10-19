@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { stripUsedCounter } from "./import-contract.mjs";
 import esbuild from "esbuild";
+import { helperOperations } from "./helper-assets.mjs";
 import { importNames, mangleProps } from "./import-contract.mjs";
 mkdirSync("dist", { recursive: true });
 let names;
@@ -38,24 +39,9 @@ writeFileSync(
   JSON.stringify(names, null, 2) + "\n",
 );
 console.log("Built release/debug JS host and private import map");
-for (const debug of [false, true]) {
-  const b = await esbuild.build({
-    entryPoints: ["src/index.mjs"],
-    bundle: true,
-    minify: true,
-    format: "esm",
-    platform: "neutral",
-    target: "es2022",
-    write: false,
-    define: { __JSRT_DEBUG_ERRORS__: String(debug) },
-    mangleProps: new RegExp(mangleProps),
-    mangleCache: { ...names },
-  });
-  writeFileSync(
-    `dist/${debug ? "index-debug" : "index"}.mjs`,
-    b.outputFiles[0].contents,
-  );
-}
+// Discard obsolete loader artifacts from earlier local builds.
+for (const file of ["dist/index.mjs", "dist/index-debug.mjs"])
+  rmSync(file, { force: true });
 
 for (const debug of [false, true]) {
   const b = await esbuild.build({
@@ -75,17 +61,32 @@ for (const debug of [false, true]) {
 }
 
 // The crates.io CLI embeds these ready-to-use assets. Consumers need neither
-// this repository nor Node/esbuild to generate matching JS and Wasm.
+// this repository nor a JavaScript bundler to generate matching JS and Wasm.
 const assetsRoot = "crates/taraba-cli/assets";
 mkdirSync(assetsRoot, { recursive: true });
+rmSync(`${assetsRoot}/error-codes.json`, { force: true });
 const assets = {
-  "taraba.mjs": readFileSync("dist/index.mjs"),
-  "taraba-debug.mjs": readFileSync("dist/index-debug.mjs"),
+  "LICENSE.taraba-allocator": readFileSync("crates/taraba-allocator/LICENSE"),
+  "UPSTREAM.taraba-allocator.json": readFileSync(
+    "crates/taraba-allocator/UPSTREAM.json",
+  ),
+  "NOTICE.taraba": Buffer.from(
+    readFileSync("tools/npm-notice.txt", "utf8").replaceAll(
+      "__ALLOCATOR_VERSION__",
+      readFileSync("crates/taraba-allocator/Cargo.toml", "utf8").match(
+        /^version = "([^"]+)"/m,
+      )[1],
+    ),
+  ),
+  "helper-operations.json": await helperOperations(),
+  "regexp.wit": readFileSync("crates/taraba-helpers/wit/regexp.wit"),
+  "text.wit": readFileSync("crates/taraba-helpers/wit/text.wit"),
+  "taraba.mjs": readFileSync("dist/release.mjs"),
+  "taraba-debug.mjs": readFileSync("dist/debug.mjs"),
   "taraba-jspi.mjs": readFileSync("dist/jspi.mjs"),
   "taraba-jspi-debug.mjs": readFileSync("dist/jspi-debug.mjs"),
   "taraba-jspi.d.mts": readFileSync("src/jspi.d.ts"),
-  "taraba.d.mts": readFileSync("src/index.d.ts"),
-  "error-codes.json": readFileSync("src/error-codes.json"),
+  "taraba.d.mts": readFileSync("src/host.d.ts"),
   "private-imports.json": readFileSync("dist/private-imports.json"),
   "intrusive.wat": Buffer.from(
     stripUsedCounter(readFileSync("src/intrusive.wat", "utf8")).replace(
@@ -100,19 +101,57 @@ const assets = {
     ),
   ),
 };
+for (const debug of [false, true]) {
+  for (const [entry, name, strings] of [
+    ["regexp", "regexp", false],
+    ["regexp", "regexp-strings", true],
+    ["helper-values", "helper-values", false],
+  ]) {
+    const b = await esbuild.build({
+      entryPoints: [`src/${entry}.mjs`],
+      bundle: true,
+      minify: true,
+      format: "esm",
+      platform: "neutral",
+      target: "es2022",
+      write: false,
+      define: {
+        __JSRT_DEBUG_ERRORS__: String(debug),
+        __TARABA_STRINGS__: String(strings),
+      },
+    });
+    assets[`${name}${debug ? "-debug" : ""}.mjs`] = b.outputFiles[0].contents;
+  }
+}
+for (const name of ["strings", "iterator", "segmenter", "encoding"])
+  for (const suffix of ["", "-debug"])
+    rmSync(`${assetsRoot}/${name}${suffix}.mjs`, { force: true });
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
 for (const [name, bytes] of Object.entries(assets))
   writeFileSync(`${assetsRoot}/${name}`, bytes);
 const inputs = [
+  "tools/npm-notice.txt",
+  "crates/taraba-allocator/Cargo.toml",
+  "crates/taraba-allocator/LICENSE",
+  "crates/taraba-allocator/UPSTREAM.json",
   "src/host.mjs",
   "src/errors.mjs",
+  "src/panic.mjs",
+  "src/regexp.mjs",
+  "src/helper-values.mjs",
+  "src/strings.mjs",
+  "src/iterator.mjs",
+  "src/segmenter.mjs",
+  "src/encoding.mjs",
+  "crates/taraba-helpers/wit/regexp.wit",
+  "crates/taraba-helpers/wit/text.wit",
   "src/error-codes.json",
-  "src/index.mjs",
-  "src/index.d.ts",
+  "src/host.d.ts",
   "src/jspi.mjs",
   "src/jspi.d.ts",
   "src/intrusive.wat",
   "tools/build-host.mjs",
+  "tools/helper-assets.mjs",
   "tools/import-contract.mjs",
   "package.json",
   "pnpm-lock.yaml",

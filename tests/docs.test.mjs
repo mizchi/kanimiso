@@ -3,6 +3,52 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { summary } from "../experiments/async-size/report.mjs";
+import {
+  regexTable,
+  auditTable,
+  stringsTable,
+} from "../tools/helpers-report.mjs";
+
+test("string tables match the same-corpus size snapshot", () => {
+  const report = JSON.parse(readFileSync("docs/strings-size.json"));
+  assert.equal(report.all_passed, true);
+  for (const lang of ["ja", "en"]) {
+    const text = readFileSync(
+      lang === "ja" ? "docs/strings.ja.md" : "docs/strings.md",
+      "utf8",
+    );
+    assert.equal(
+      text.match(
+        /<!-- strings-size:begin -->\n([\s\S]*?)\n<!-- strings-size:end -->/,
+      )[1],
+      stringsTable(report, lang),
+    );
+  }
+});
+
+test("helper tables match the same-test size snapshot", () => {
+  const report = JSON.parse(readFileSync("docs/helpers-size.json"));
+  assert.equal(report.all_passed, true);
+  for (const lang of ["ja", "en"]) {
+    const text = readFileSync(
+      lang === "ja" ? "docs/helpers.ja.md" : "docs/helpers.md",
+      "utf8",
+    );
+    for (const [name, content] of [
+      ["regex", regexTable(report, lang)],
+      ["audit", auditTable(report, lang)],
+    ]) {
+      assert.equal(
+        text.match(
+          new RegExp(
+            `<!-- helpers-${name}:begin -->\\n([\\s\\S]*?)\\n<!-- helpers-${name}:end -->`,
+          ),
+        )[1],
+        content,
+      );
+    }
+  }
+});
 
 test("both READMEs show the measured size table without snapshot drift", () => {
   const report = JSON.parse(readFileSync("docs/async-size.json", "utf8"));
@@ -21,13 +67,20 @@ test("English/Japanese usage, reference, development and comparison pages have v
   const pages = [
     "README.md",
     "README.ja.md",
+    "docs/error-codes.md",
+    "docs/panic-reporting.md",
+    "docs/wasm-size-analysis.md",
     ...[
       "README",
       "guide",
       "core-runtime",
       "development",
+      "releasing",
       "async-size",
       "esm-cache",
+      "insight",
+      "helpers",
+      "strings",
     ].flatMap((name) => [`docs/${name}.md`, `docs/${name}.ja.md`]),
   ];
   for (const page of pages) {

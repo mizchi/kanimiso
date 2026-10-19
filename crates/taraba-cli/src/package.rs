@@ -1,8 +1,9 @@
 //! Distribution is separate from execution: prepare npm files without publishing them.
-use crate::{BuildOptions, ComponentOptions, ExecutionProfile, component};
+use crate::{BuildOptions, ComponentOptions, component};
 use std::{error::Error, fs, path::Path};
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
+#[derive(Clone)]
 pub struct NpmOptions {
     pub name: String,
     pub version: String,
@@ -81,13 +82,16 @@ fn manifest(
     }
     Ok(serde_json::to_vec_pretty(&serde_json::json!({
         "name":o.name, "version":o.version, "license":o.license, "type":"module",
-        "main":format!("./{entry}"),"types":format!("./{types}"),"exports":exports,"files":files,
+        "main":format!("./{entry}"),"module":format!("./{entry}"),"types":format!("./{types}"),"exports":exports,"files":files,
         "sideEffects":false
     }))?)
 }
 fn collect(root: &Path, dir: &Path, files: &mut Vec<String>) -> Result<()> {
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
+        if dir == root && entry.file_name() == ".taraba" {
+            continue;
+        }
         if entry.file_type()?.is_dir() {
             collect(root, &entry.path(), files)?;
         } else if entry.file_type()?.is_file() {
@@ -114,6 +118,22 @@ fn finish(
     component: bool,
 ) -> Result<()> {
     fs::write(temp.join("LICENSE.taraba"), include_bytes!("../LICENSE"))?;
+    for (name, bytes) in [
+        (
+            "LICENSE.taraba-allocator",
+            &include_bytes!("../assets/LICENSE.taraba-allocator")[..],
+        ),
+        (
+            "UPSTREAM.taraba-allocator.json",
+            &include_bytes!("../assets/UPSTREAM.taraba-allocator.json")[..],
+        ),
+        (
+            "NOTICE.taraba",
+            &include_bytes!("../assets/NOTICE.taraba")[..],
+        ),
+    ] {
+        fs::write(temp.join(name), bytes)?;
+    }
     let mut files = Vec::new();
     collect(temp, temp, &mut files)?;
     files.sort();
@@ -136,6 +156,18 @@ fn finish(
         fs::copy(temp.join(file), out)?;
     }
     fs::write(dest.join("package.json"), package)?;
+    // Analysis contains symbols and is local-only, outside package.json's files.
+    let analysis = temp.join(".taraba");
+    if analysis.is_dir() {
+        fs::create_dir_all(dest.join(".taraba"))?;
+        for entry in fs::read_dir(analysis)? {
+            let entry = entry?;
+            if !entry.file_type()?.is_file() {
+                return Err("unexpected analysis file type".into());
+            }
+            fs::copy(entry.path(), dest.join(".taraba").join(entry.file_name()))?;
+        }
+    }
     println!(
         "Prepared {}@{} in {} (not published)",
         o.name,
@@ -223,7 +255,9 @@ fn component_entry(dir: &Path) -> Result<(&'static str, &'static str)> {
         }
     }
     if aliases.is_empty() {
-        return Ok(("app.js", "app.d.ts"));
+        fs::rename(dir.join("app.js"), dir.join("index.js"))?;
+        fs::rename(dir.join("app.d.ts"), dir.join("index.d.ts"))?;
+        return Ok(("index.js", "index.d.ts"));
     }
     let mut source = String::from(
         "import { instantiate as component } from './app.js';\nexport function instantiate(load, imports, ...options) {\nconst mapped = Object.assign(Object.create(null), imports);\n",
@@ -237,30 +271,16 @@ fn component_entry(dir: &Path) -> Result<(&'static str, &'static str)> {
         ));
     }
     source.push_str("return component(load, mapped, ...options);\n}\n");
-    fs::write(dir.join("index.mjs"), source)?;
-    fs::write(dir.join("index.d.mts"), "export * from './app.js';\n")?;
-    Ok(("index.mjs", "index.d.mts"))
+    fs::write(dir.join("index.js"), source)?;
+    fs::write(dir.join("index.d.ts"), "export * from './app.js';\n")?;
+    Ok(("index.js", "index.d.ts"))
 }
 
-fn ts_type(ty: crate::abi::Abi) -> &'static str {
-    match ty {
-        crate::abi::Abi::I32 | crate::abi::Abi::U32 | crate::abi::Abi::F64 => "number",
-        _ => "unknown",
-    }
-}
-fn arguments(args: &[crate::abi::Abi]) -> String {
-    args.iter()
-        .enumerate()
-        .map(|(i, t)| format!("a{i}: {}", ts_type(*t)))
-        .collect::<Vec<_>>()
-        .join(", ")
-}
 /// Produce a lightweight Core npm package with an application-specific typed exports object.
 /// Opaque WIT resource payloads stay `unknown`; use Component WIT for typed async results.
 pub fn package_core(o: &BuildOptions, npm: &NpmOptions) -> Result<()> {
     npm.validate()?;
     prevent_input_overwrite(&o.input, &o.output.join("app.wasm"))?;
-    let abi = crate::wit::parse(&o.wit, o.world.as_deref())?;
     let temp = tempfile::tempdir()?;
     let local = BuildOptions {
         input: o.input.clone(),
@@ -270,65 +290,12 @@ pub fn package_core(o: &BuildOptions, npm: &NpmOptions) -> Result<()> {
         binaryen: o.binaryen.clone(),
         debug: o.debug,
         probes: o.probes,
+        insight: o.insight,
         profile: o.profile,
     };
     crate::build(&local)?;
-    let jspi = o.profile == ExecutionProfile::Jspi;
-    let mut js = String::from(
-        "import { instantiate as runtime } from './taraba.mjs';\nexport async function instantiate(source, options) {\nconst host = await runtime(source, options);\nreturn { exports: {\n",
-    );
-    let mut types = String::from("export interface AppBindings {\n");
-    for ((_, name), (args, result)) in &abi.imports {
-        let ret = result.map(ts_type).unwrap_or("void");
-        types.push_str(&format!(
-            "{}: ({}) => {ret}{};\n",
-            json(name),
-            arguments(args),
-            if jspi {
-                format!(" | PromiseLike<{ret}>")
-            } else {
-                String::new()
-            }
-        ));
-    }
-    types.push_str("}\nexport interface AppExports {\n");
-    for (name, (args, result)) in &abi.exports {
-        js.push_str(&format!(
-            "[{}]: (...args) => host.promise({}, ...args),\n",
-            json(name),
-            json(name)
-        ));
-        types.push_str(&format!(
-            "{}({}): Promise<{}>;\n",
-            json(name),
-            arguments(args),
-            result.map(ts_type).unwrap_or("void")
-        ));
-    }
-    js.push_str("}, stats: host.stats");
-    let (runtime_host, options) = if jspi {
-        ("JspiHost", "JspiOptions")
-    } else {
-        ("Host", "InstantiateOptions")
-    };
-    types.push_str(&format!("}}\nimport type {{ {runtime_host}, {options} }} from './taraba.mjs';\nexport interface AppHost {{\nexports: AppExports;\nstats: {runtime_host}['stats'];\n"));
-    if !jspi {
-        js.push_str(", cancel: host.cancel, activeTasks: host.activeTasks");
-        types.push_str("cancel: Host['cancel'];\nactiveTasks: Host['activeTasks'];\n");
-    }
-    js.push_str("};\n}\n");
-    types.push_str(&format!("}}\nexport function instantiate(source: BufferSource | WebAssembly.Module, options: Omit<{options}, 'bindings'> & {{ bindings: AppBindings }}): Promise<AppHost>;\n"));
-    fs::write(temp.path().join("index.mjs"), js)?;
-    fs::write(temp.path().join("index.d.mts"), types)?;
     copy_wit(&o.wit, &temp.path().join("wit"))?;
-    finish(
-        temp.path(),
-        &o.output,
-        npm,
-        "index.mjs",
-        "index.d.mts",
-        false,
-    )
+    finish(temp.path(), &o.output, npm, "index.js", "index.d.ts", false)
 }
 
 fn prevent_input_overwrite(input: &Path, output: &Path) -> Result<()> {
@@ -356,6 +323,49 @@ fn copy_wit(input: &Path, output: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn npm_distribution_keeps_application_license_and_allocator_source_notice() {
+        let temp = tempfile::tempdir().unwrap();
+        let dest = tempfile::tempdir().unwrap();
+        fs::write(temp.path().join("build.json"), b"{}").unwrap();
+        let npm = NpmOptions {
+            name: "private-app".into(),
+            version: "1.0.0".into(),
+            license: "UNLICENSED".into(),
+        };
+        finish(
+            temp.path(),
+            dest.path(),
+            &npm,
+            "index.js",
+            "index.d.ts",
+            false,
+        )
+        .unwrap();
+        let manifest: serde_json::Value =
+            serde_json::from_slice(&fs::read(dest.path().join("package.json")).unwrap()).unwrap();
+        assert_eq!(manifest["license"], "UNLICENSED");
+        for file in [
+            "LICENSE.taraba",
+            "LICENSE.taraba-allocator",
+            "NOTICE.taraba",
+            "UPSTREAM.taraba-allocator.json",
+        ] {
+            assert!(
+                manifest["files"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|f| f == file)
+            );
+            assert!(fs::metadata(dest.path().join(file)).unwrap().len() > 0);
+        }
+        let notice = fs::read_to_string(dest.path().join("NOTICE.taraba")).unwrap();
+        assert!(notice.contains("https://crates.io/api/v1/crates/taraba-allocator/0.1.0/download"));
+        assert!(notice.contains("MPL-2.0"));
+        assert!(notice.contains("modified"));
+    }
     #[test]
     fn rejects_invalid_npm_identity_before_building() {
         for (name, version) in [

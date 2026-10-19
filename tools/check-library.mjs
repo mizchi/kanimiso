@@ -45,6 +45,7 @@ const report = {
   published: false,
   safari_browser_verified: false,
   cases: [],
+  default_npm: [],
   rich_types: [],
 };
 const batches = [1, 16, 128, 1024].flatMap((c) => asyncCases(c));
@@ -108,7 +109,7 @@ function build(raw, project, profile, out, name) {
     "MIT",
   ]);
 }
-async function install(out, profile, id, rich = false) {
+async function install(out, profile, id, rich = false, license = "MIT") {
   const consumer = join(temp, `consumer-${id}`),
     packs = join(temp, `packs-${id}`);
   mkdirSync(consumer);
@@ -119,11 +120,14 @@ async function install(out, profile, id, rich = false) {
     readdirSync(packs).find((f) => f.endsWith(".tgz")),
   );
   const contents = run("tar", ["-tzf", tarball]).toString();
-  assert.ok(
-    contents.includes(
-      profile === "component" ? "package/app.d.ts" : "package/index.d.mts",
-    ),
-  );
+  assert.ok(contents.includes("package/index.d.ts"));
+  const notices = [
+    "LICENSE.taraba",
+    "LICENSE.taraba-allocator",
+    "NOTICE.taraba",
+    "UPSTREAM.taraba-allocator.json",
+  ];
+  for (const file of notices) assert.ok(contents.includes(`package/${file}`));
   assert.ok(
     contents.includes(
       profile === "component"
@@ -137,7 +141,17 @@ async function install(out, profile, id, rich = false) {
   );
   const pkg = JSON.parse(readFileSync(join(out, "package.json")));
   assert.equal(Object.keys(pkg.exports["."])[0], "types");
-  assert.equal(pkg.license, "MIT");
+  assert.equal(pkg.license, license);
+  assert.equal(pkg.main, "./index.js");
+  assert.equal(pkg.module, "./index.js");
+  assert.equal(pkg.types, "./index.d.ts");
+  if (profile !== "component") {
+    assert.ok(!contents.includes("package/taraba.mjs"));
+    assert.ok(
+      !contents.includes("package/error-codes.json"),
+      "runtime descriptions belong in docs, not in the npm payload",
+    );
+  }
   writeFileSync(
     join(consumer, "package.json"),
     JSON.stringify({ private: true, type: "module" }),
@@ -145,12 +159,25 @@ async function install(out, profile, id, rich = false) {
   run("pnpm", ["add", "--offline", tarball], consumer);
   writeFileSync(
     join(consumer, "entry.mjs"),
-    `export {instantiate} from ${JSON.stringify(pkg.name)};`,
+    `export {${profile === "component" ? "instantiate" : "createHost"}} from ${JSON.stringify(pkg.name)};`,
   );
-  const { instantiate } = await import(
+  const { instantiate, createHost } = await import(
     pathToFileURL(join(consumer, "entry.mjs"))
   );
   const installed = join(consumer, "node_modules", pkg.name);
+  for (const file of notices)
+    assert.ok(readFileSync(join(installed, file)).length > 0);
+  const notice = readFileSync(join(installed, "NOTICE.taraba"), "utf8");
+  assert.ok(
+    notice.includes(
+      "https://crates.io/api/v1/crates/taraba-allocator/0.1.0/download",
+    ),
+  );
+  assert.ok(
+    notice.includes(
+      "https://crates.io/api/v1/crates/memory_units/0.4.0/download",
+    ),
+  );
   const load = async (file) =>
     WebAssembly.compile(readFileSync(join(installed, file)));
   const ts =
@@ -181,16 +208,73 @@ await api.run('bad',2);
 await instantiate(load, {});
 `
       : `
-import {instantiate} from '${pkg.name}';
-const api = await instantiate(new Uint8Array(), {bindings: {add: async (a,b) => a+b}});
-const result: ${profile === "jspi" ? "number" : "unknown"} = await api.exports.run(1,2);
+import {createHost} from '${pkg.name}';
+const api = createHost({bindings: {add: async (a,b) => a+b}});
+api.attach((await WebAssembly.instantiate(new Uint8Array(), api.imports)).instance.exports);
+// @ts-expect-error the Core entry has no convenience loader
+import {instantiate as removedLoader} from '${pkg.name}';
+const explicit = createHost({bindings: {add: async (a,b) => a+b}});
+const loaded = await WebAssembly.instantiate(new Uint8Array(), explicit.imports);
+explicit.attach(loaded.instance.exports);
+const explicitResult: ${profile === "jspi" ? "number" : "unknown"} = await explicit.run(1,2);
+// @ts-expect-error bindings must match WIT
+createHost({bindings: {add: async (_: string) => 1}});
+const result: ${profile === "jspi" ? "number" : "unknown"} = await api.run(1,2);
 // @ts-expect-error invalid argument
-await api.exports.run('bad',2);
+await api.run('bad',2);
+// @ts-expect-error generic dispatch is private
+api.call('run', 1, 2);
+// @ts-expect-error ownership helpers are private Wasm imports
+api.root({});
 // @ts-expect-error unknown export
-await api.exports.missing(1,2);
-${profile === "future" ? "// @ts-expect-error opaque Promise resource payload must stay unknown\nconst scalar: number = await api.exports.run(1,2);" : ""}
+await api.missing(1,2);
+${profile === "future" ? "// @ts-expect-error opaque Promise resource payload must stay unknown\nconst scalar: number = await api.run(1,2);" : ""}
 `;
-  writeFileSync(join(consumer, "consumer.mts"), ts);
+  const plainTypes =
+    profile === "component"
+      ? ""
+      : `
+import {createHost as plainHost, type AppBindings} from './node_modules/${pkg.name}/index.js';
+const bindings: AppBindings = {add: async (a,b) => { const n: number = a; return n+b; }};
+const plain = plainHost({bindings});
+plain.attach((await WebAssembly.instantiate(new Uint8Array(), plain.imports)).instance.exports);
+const plainResult: ${profile === "jspi" ? "number" : "unknown"} = await plain.run(1,2);
+// @ts-expect-error callback argument comes from WIT
+plainHost({bindings: {add: (_: string) => 1}});
+// @ts-expect-error missing WIT import
+plainHost({bindings: {}});
+// @ts-expect-error required bindings cannot be omitted
+plainHost();
+// @ts-expect-error unknown binding
+plainHost({bindings: {add: async (a,b) => a+b, missing: () => 1}});
+// @ts-expect-error invalid export argument
+plain.run('bad',2);
+// @ts-expect-error unknown export
+plain.missing(1,2);
+// @ts-expect-error direct methods always return Promises
+const synchronous: number = plain.run(1,2);
+${profile === "jspi" ? "// @ts-expect-error scalar callback result must match WIT\nplainHost({bindings: {add: async (a,b) => 'bad'}});" : "// @ts-expect-error opaque Promise payload stays unknown\nconst opaque: number = await plain.run(1,2);"}
+`;
+  writeFileSync(join(consumer, "consumer.mts"), ts + plainTypes);
+  if (profile !== "component") {
+    writeFileSync(
+      join(consumer, "editor.mjs"),
+      `// @ts-check
+import {createHost} from './node_modules/${pkg.name}/index.js';
+const host = createHost({bindings: {add: async (a,b) => {
+  a.toFixed(); b.toFixed();
+  // @ts-expect-error callback arguments are numbers, even in JS
+  a.toUpperCase();
+  return a+b;
+}}});
+host.run(1,2);
+// @ts-expect-error WIT export arguments are checked in JS
+host.run('bad',2);
+// @ts-expect-error method completion must not expose unknown exports
+host.missing();
+`,
+    );
+  }
   run(
     resolve("node_modules/.bin/tsc"),
     [
@@ -203,11 +287,38 @@ ${profile === "future" ? "// @ts-expect-error opaque Promise resource payload mu
       "--lib",
       "ES2022,DOM",
       "consumer.mts",
+      ...(profile === "component"
+        ? []
+        : ["--allowJs", "--checkJs", "editor.mjs"]),
     ],
     consumer,
   );
+  if (profile !== "component") {
+    const wasm = readFileSync(join(installed, "app.wasm"));
+    for (const source of [wasm, new WebAssembly.Module(wasm)]) {
+      const host = createHost({
+        bindings: { add: async (a, b) => (a + b) | 0 },
+      });
+      const loaded = await WebAssembly.instantiate(source, host.imports);
+      host.attach(
+        (loaded instanceof WebAssembly.Instance ? loaded : loaded.instance)
+          .exports,
+      );
+      assert.equal(await host.run(20, 21), 42);
+      for (const removed of [
+        "call",
+        "promise",
+        "root",
+        "get",
+        "take",
+        "release",
+      ])
+        assert.equal(removed in host, false, removed);
+    }
+  }
   return {
     instantiate,
+    createHost,
     load,
     installed,
     tarball,
@@ -221,18 +332,85 @@ try {
   for (const profile of ["jspi", "future", "component"]) {
     const project = scaffold(profile);
     for (const std of [false, true]) {
+      if (!std && profile !== "component") {
+        const defaults = join(temp, `default-${profile}`);
+        run(cli, ["build", "--out-dir", defaults], project);
+        const pkg = JSON.parse(readFileSync(join(defaults, "package.json")));
+        assert.equal(pkg.name, `library-${profile}`);
+        assert.equal(pkg.version, "0.1.0");
+        assert.equal(pkg.license, "UNLICENSED");
+        const ready = await install(
+          defaults,
+          profile,
+          `default-${profile}`,
+          false,
+          "UNLICENSED",
+        );
+        const h = ready.createHost({
+          bindings: { add: async (a, b) => (a + b) | 0 },
+        });
+        const { instance } = await WebAssembly.instantiate(
+          readFileSync(join(ready.installed, "app.wasm")),
+          h.imports,
+        );
+        h.attach(instance.exports);
+        assert.equal(await h.run(20, 21), 42);
+        report.default_npm.push({
+          id: `default-${profile}`,
+          npm_without_flags: true,
+          packed: true,
+          strict_typescript: true,
+        });
+      }
       const raw = compile(project, std),
         id = `${profile}-${std ? "std" : "no-std"}`,
         out = join(temp, `pkg-${id}`);
       mkdirSync(out);
       writeFileSync(join(out, "stale.wasm"), "not a build output");
       build(raw, project, profile, out, `@taraba-tests/${id}`);
+      const projectOut = join(temp, `project-${id}`);
+      run(
+        cli,
+        [
+          "build",
+          ...(profile === "component" ? ["--component"] : []),
+          ...(std ? ["--features", "std"] : []),
+          "--out-dir",
+          projectOut,
+          ...(profile === "component"
+            ? [
+                "--wasm-tools",
+                wasmTools,
+                "--jco",
+                resolve("node_modules/.bin/jco"),
+              ]
+            : []),
+          "--npm-name",
+          `@taraba-tests/${id}`,
+          "--npm-version",
+          "0.1.0-test.1",
+          "--license",
+          "MIT",
+        ],
+        project,
+      );
+      const expectedPackage = JSON.parse(
+        readFileSync(join(out, "package.json")),
+      );
+      for (const file of [...expectedPackage.files, "package.json"].filter(
+        (f) => f !== "build.json",
+      ))
+        assert.deepEqual(
+          readFileSync(join(projectOut, file)),
+          readFileSync(join(out, file)),
+          `${id}: project build differs: ${file}`,
+        );
       const watch = !std
         ? await verifyWatchOutput(
             cli,
             [
               "build",
-              ...(profile === "jspi" ? [] : [`--${profile}`]),
+              ...(profile === "component" ? ["--component"] : []),
               "--watch",
               "--manifest-path",
               join(project, "Cargo.toml"),
@@ -261,7 +439,7 @@ try {
             },
           )
         : null;
-      const installed = await install(out, profile, id);
+      const installed = await install(projectOut, profile, id);
       if (profile !== "component") corePackages.push({ ...installed, profile });
       const factory = async (add) => {
         if (profile === "component")
@@ -270,11 +448,13 @@ try {
               add: { default: add },
             })
           ).run;
-        const host = await installed.instantiate(
+        const host = installed.createHost({ bindings: { add } });
+        const { instance } = await WebAssembly.instantiate(
           readFileSync(join(installed.installed, "app.wasm")),
-          { bindings: { add } },
+          host.imports,
         );
-        return host.exports.run;
+        host.attach(instance.exports);
+        return host.run;
       };
       const verified = await verifyWit(factory, batches);
       const scheduling =

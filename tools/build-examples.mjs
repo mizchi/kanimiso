@@ -46,7 +46,7 @@ for (const mode of ["no_std", "std"])
     const wit = `dist/examples/${mode}-${surface}.wit`;
     writeFileSync(
       wit,
-      `package taraba:fixtures; interface js {resource value;} world app {import js; use js.{value}; export start: func(a:s32,b:s32)->value; ${extra} ${probes}}`,
+      `package taraba:fixtures; interface js {resource value;} world app {import js; use js.{value}; import add: func(a:s32,b:s32)->value; export start: func(a:s32,b:s32)->value; ${extra} ${probes}}`,
     );
     run(process.execPath, [
       "tools/build-wasm.mjs",

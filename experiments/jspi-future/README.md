@@ -82,7 +82,7 @@ host reject / Wasm trap / JF1 / JF2 は instance を閉じ、Rust Drop / unwind 
 
 動作probesは**同じWasmと同じ検証関数をrelease/debugの双方に実行する**。自己wake、join/select、FuturesUnordered、逆順完了、Drop、古い完了、1 KiB Future、reject/trap、JF1/JF2を確認する。`stats()`でしか観測できない内部の解放数・poll回数はdebugで追加検証する。
 
-Dropをreleaseでも直接検証するため、WIT probesの`dropped` importを任意の`bindings.dropped`へ転送する（既定no-op、非関数ならJF14）。検証側で外から回数を数え、releaseへ診断カウンターを戻さない。通常の最小app Wasmはこのimportを持たないが、JS loaderは同じものを使う。
+Dropをreleaseでも直接検証するため、WIT probesの`dropped` importを任意の`bindings.dropped`へ転送する（既定no-op）。検証側で外から回数を数え、releaseへ診断カウンターを戻さない。通常の最小app Wasmはこのimportを持たないが、JS loaderは同じものを使う。
 
 前回のJS 2,700 Bに対しreleaseは306 B減った。一時試算のコード文字列置換版とは異なり、安定した`error.code`とDrop callbackの転送・検査も含めた実測値。gate/完了キューの統合など、別の構造変更は今回に含めない。
 

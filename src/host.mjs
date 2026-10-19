@@ -1,4 +1,5 @@
 import { runtimeError } from "./errors.mjs";
+import { panicImports } from "./panic.mjs";
 // Same public contract as js-local-hardened. Optimize deployment size using two
 // direct maps, a four-state Task and a simple bounded shift queue.
 const CANCELLED = -1,
@@ -7,7 +8,6 @@ const CANCELLED = -1,
   COMMITTED = 2;
 export function createHost({
   bindings = {},
-  deferredAdd = (a, b) => Promise.resolve((a + b) | 0),
   tokens = {},
   maxValues = 0xfffffffe,
 } = {}) {
@@ -122,8 +122,7 @@ export function createHost({
     return value;
   };
   const enter = guard((name, ...args) => {
-    if (!exports || typeof exports[name] !== "function")
-      throw runtimeError("RT06", Error, name);
+    if (!exports) throw runtimeError("RT06");
     return exports[name](...args);
   });
   const schedule = () => {
@@ -199,7 +198,6 @@ export function createHost({
     }
   };
   const jsrt = {
-    __values: table,
     __root: root,
     __take: take,
     retain(slot) {
@@ -257,13 +255,9 @@ export function createHost({
     unsubscribe: (key) => {
       waits.delete(key >>> 0);
     },
-    deferred_add(a, b) {
-      counts.requests++;
-      return deferredAdd(a, b);
-    },
   };
-  for (const key in jsrt)
-    if (typeof jsrt[key] === "function") jsrt[key] = guard(jsrt[key]);
+  for (const key in jsrt) jsrt[key] = guard(jsrt[key]);
+  jsrt.__values = table;
   const call = (name, ...args) => {
     alive();
     if (name.startsWith("rt_")) throw runtimeError("RT11");
@@ -271,33 +265,22 @@ export function createHost({
   };
   const app = Object.create(null);
   for (const [name, fn] of Object.entries(bindings)) {
-    if (typeof fn !== "function") throw runtimeError("RT14", TypeError);
-    app[name] = guard(fn);
+    app[name] = guard((...args) => {
+      counts.requests++;
+      return fn(...args);
+    });
   }
   return {
-    imports: { jsrt, app },
-    root: jsrt.__root,
-    get: guard(get),
-    take: jsrt.__take,
-    // prettier-ignore
-    "release": jsrt.release,
-    call,
-    promise(name, ...args) {
-      try {
-        return Promise.resolve(call(name, ...args));
-      } catch (error) {
-        return Promise.reject(error);
-      }
+    imports: {
+      jsrt,
+      app,
+      "taraba:panic": panicImports(() => exports?.memory, poison),
     },
+    call,
     cancel: (key) => (dead ? false : cancelLive(key)),
     activeTasks: () => [...tasks.keys()],
     attach(wasm) {
       if (exports || dead) throw runtimeError("RT12");
-      if (
-        typeof SharedArrayBuffer !== "undefined" &&
-        wasm.memory?.buffer instanceof SharedArrayBuffer
-      )
-        throw runtimeError("RT13");
       exports = wasm;
     },
     stats: () => ({

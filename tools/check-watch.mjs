@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   mkdtempSync,
   mkdirSync,
@@ -179,6 +179,66 @@ export async function verifyWatch(cli, env = process.env) {
     file(join(shared, "src/lib.rs"), "#![no_std]\npub fn bias()->i32 {1}\n");
     file(join(app, "src/lib.rs"), "deliberate initial Rust error");
     file(join(app, "wit/app.wit"), wit);
+    const once = (args, cwd = app) =>
+      spawnSync(cli, ["build", ...args], {
+        cwd,
+        env: { ...env, CARGO_TARGET_DIR: target },
+        encoding: "utf8",
+      });
+    let built = once([]);
+    assert.notEqual(built.status, 0);
+    assert.ok(built.stderr.includes("cargo build failed"), built.stderr);
+    assert.ok(!existsSync(join(app, "pkg")));
+    file(join(app, "src/lib.rs"), source);
+    built = once([]);
+    assert.equal(built.status, 0, built.stderr);
+    assert.equal(result(join(app, "pkg/app.wasm")), 42);
+    const pkg = JSON.parse(readFileSync(join(app, "pkg/package.json")));
+    assert.equal(
+      pkg.name,
+      "watch-app",
+      "use Cargo package name, not custom lib name",
+    );
+    assert.equal(pkg.version, "0.1.0");
+    assert.equal(pkg.license, "UNLICENSED");
+    assert.equal(pkg.type, "module");
+    assert.equal(pkg.main, "./index.js");
+    assert.equal(pkg.types, "./index.d.ts");
+    assert.ok(existsSync(join(app, "pkg/index.js")));
+    assert.ok(existsSync(join(app, "pkg/index.d.ts")));
+    assert.ok(!existsSync(join(app, "pkg/taraba.mjs")));
+
+    const onceOut = join(workspace, "once-pkg");
+    const onceArgs = [
+      "--manifest-path",
+      join(workspace, "Cargo.toml"),
+      "--package",
+      "watch-app",
+      "--features",
+      "boost",
+      "--no-default-features",
+      "--out-dir",
+      onceOut,
+    ];
+    built = once(onceArgs, workspace);
+    assert.equal(built.status, 0, built.stderr);
+    assert.equal(result(join(onceOut, "app.wasm")), 52);
+    const inherited = JSON.parse(readFileSync(join(onceOut, "package.json")));
+    assert.equal(inherited.name, "watch-app");
+    const overridden = once(["--npm-version", "2.3.4", "--license", "MIT"]);
+    assert.equal(overridden.status, 0, overridden.stderr);
+    const changed = JSON.parse(readFileSync(join(app, "pkg/package.json")));
+    assert.equal(changed.name, "watch-app");
+    assert.equal(changed.version, "2.3.4");
+    assert.equal(changed.license, "MIT");
+
+    const previous = readFileSync(join(onceOut, "app.wasm"));
+    file(join(app, "wit/app.wit"), "deliberate WIT error");
+    built = once(onceArgs, workspace);
+    assert.notEqual(built.status, 0);
+    assert.deepEqual(readFileSync(join(onceOut, "app.wasm")), previous);
+    file(join(app, "wit/app.wit"), wit);
+    file(join(app, "src/lib.rs"), "deliberate initial Rust error");
     active = start([
       "build",
       "--watch",
@@ -297,6 +357,21 @@ export async function verifyWatch(cli, env = process.env) {
       "new directory remains watched",
     );
     assert.equal(result(wasm), 62);
+    const beforeMetadata = active.count("watch build succeeded:");
+    file(
+      manifestFile,
+      originalManifest
+        .toString()
+        .replace('version="0.1.0"', 'version="0.2.0"\nlicense="MIT"'),
+    );
+    await active.until(
+      () => active.count("watch build succeeded:") > beforeMetadata,
+      "package metadata change",
+    );
+    const refreshed = JSON.parse(readFileSync(join(out, "package.json")));
+    assert.equal(refreshed.name, "@taraba-tests/watch");
+    assert.equal(refreshed.version, "0.2.0");
+    assert.equal(refreshed.license, "MIT");
     await active.stop();
     active = null;
     const raw = join(workspace, "input.wasm"),
@@ -317,6 +392,10 @@ export async function verifyWatch(cli, env = process.env) {
       () => active.count("watch build succeeded:") >= 1,
       "raw Wasm initial build",
     );
+    const rawPackage = JSON.parse(readFileSync(join(rawOut, "package.json")));
+    assert.equal(rawPackage.name, "input");
+    assert.equal(rawPackage.version, "0.1.0");
+    assert.equal(rawPackage.license, "UNLICENSED");
     const info = JSON.parse(readFileSync(join(rawOut, "build.json")));
     assert.equal(info.profile, "wit-core-externref");
     assert.equal(info.debug, true);
@@ -335,6 +414,10 @@ export async function verifyWatch(cli, env = process.env) {
     active = null;
     return {
       all_passed: true,
+      project_build_defaults: true,
+      project_build_features_and_artifact: true,
+      project_build_failure_status: true,
+      project_build_preserves_output: true,
       project_cargo: true,
       workspace_package: true,
       features: true,
@@ -377,6 +460,8 @@ if (
       "Cargo.lock",
       "crates/taraba-cli/Cargo.toml",
       "crates/taraba-cli/src/main.rs",
+      "crates/taraba-cli/src/project_build.rs",
+      "crates/taraba-cli/src/detect.rs",
       "crates/taraba-cli/src/watch.rs",
       "tools/check-watch.mjs",
       "tools/rust-toolchain.mjs",

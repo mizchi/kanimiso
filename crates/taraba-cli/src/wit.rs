@@ -9,14 +9,28 @@ pub(crate) fn parse(path: &Path, world: Option<&str>) -> Result<Bindings> {
     let mut r = Resolve::default();
     let (pkg, _) = r.push_path(path)?;
     let world = r.select_world(&[pkg], world)?;
-    convert(&r, world)
+    let bindings = convert(&r, world, true)?;
+    if bindings
+        .imports
+        .keys()
+        .any(|(module, _)| module.starts_with("taraba:helpers/") || module == "taraba:panic")
+    {
+        return Err("reserved private taraba import in application WIT".into());
+    }
+    Ok(bindings)
 }
 #[cfg(test)]
 pub(crate) fn parse_text(text: &str) -> Result<Bindings> {
+    parse_inline(text, true)
+}
+pub(crate) fn parse_private_helpers(text: &str) -> Result<Bindings> {
+    parse_inline(text, false)
+}
+fn parse_inline(text: &str, flatten_imports: bool) -> Result<Bindings> {
     let mut r = Resolve::default();
     let pkg = r.push_str("app.wit", text)?;
     let world = r.select_world(&[pkg], None)?;
-    convert(&r, world)
+    convert(&r, world, flatten_imports)
 }
 fn value(r: &Resolve, ty: Type) -> Result<Abi> {
     Ok(match ty {
@@ -49,7 +63,7 @@ fn signature(r: &Resolve, f: &Function, export: bool) -> Result<Signature> {
     }
     Ok((args, result))
 }
-fn convert(r: &Resolve, world: WorldId) -> Result<Bindings> {
+fn convert(r: &Resolve, world: WorldId, flatten_imports: bool) -> Result<Bindings> {
     let mut b = Bindings::default();
     let mut fields = std::collections::BTreeSet::new();
     for (export, items) in [
@@ -68,14 +82,17 @@ fn convert(r: &Resolve, world: WorldId) -> Result<Bindings> {
                             kind: WasmExportKind::Normal,
                         },
                     );
-                    if name.starts_with("rt_") {
+                    if name.starts_with("rt_") || name.starts_with("cabi_") {
                         return Err("WIT export overrides runtime ABI".into());
                     }
                     b.exports.insert(name, sig);
                 } else {
                     let (module, field) =
                         r.wasm_import_name(ABI, WasmImport::Func { interface, func: f });
-                    if module == "jsrt" || module == "pool" || !fields.insert(field.clone()) {
+                    if module == "jsrt"
+                        || module == "pool"
+                        || (flatten_imports && !fields.insert(field.clone()))
+                    {
                         return Err("reserved or duplicate Core application import".into());
                     }
                     b.imports.insert((module, field), sig);
@@ -119,6 +136,7 @@ mod tests {
             "export x: func(a: string);",
             "export x: async func(a: s32) -> s32;",
             "export rt_poll: func();",
+            "export cabi_hidden: func();",
         ] {
             assert!(parse_text(&format!("package test:app; world app {{ {decl} }}")).is_err());
         }

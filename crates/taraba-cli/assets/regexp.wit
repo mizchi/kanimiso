@@ -1,0 +1,16 @@
+package taraba:helpers@0.1.0;
+
+// Private Core memory ABI, NOT the Component Model canonical string ABI.
+// Pointers/lengths borrow valid UTF-8 from the guest's exported memory, only
+// until the synchronous import returns. Zero is an invalid-pattern sentinel.
+// Nonzero handles own one host RegExp; drop consumes it exactly once.
+interface regexp {
+    compile: func(ptr: u32, len: u32) -> u32;
+    test: func(handle: u32, ptr: u32, len: u32) -> u32;
+    drop: func(handle: u32);
+    // Borrow JS string IDs from the shared values registry. Compiled RegExp IDs
+    // still belong to regexp.drop, not values.drop.
+    compile-string: func(pattern: u32) -> u32;
+    test-string: func(handle: u32, text: u32) -> u32;
+}
+world helpers { import regexp; }

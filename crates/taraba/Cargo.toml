@@ -2,6 +2,7 @@
 name = "taraba"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 license = "MIT"
 description = "Promise-first single-agent Rust/Wasm runtime"
 repository = "https://github.com/mizchi/taraba"
@@ -18,3 +19,7 @@ doctest = false
 [features]
 default = []
 std = []
+# Include detailed Rust panic text in an optimized diagnostic build.
+panic-details = []
+# Internal fixture diagnostics; not an application API.
+test-api = []

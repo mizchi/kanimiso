@@ -4,14 +4,12 @@
   "RT03": "Wasm allocation failed",
   "RT04": "runtime token IDs exhausted; create a new instance",
   "RT05": "invalid private value slot",
-  "RT06": "missing export",
+  "RT06": "runtime not attached",
   "RT07": "ready task missing outcome",
   "RT08": "pending task has an outcome",
   "RT09": "task cancelled",
   "RT10": "duplicate task outcome",
   "RT11": "private runtime ABI",
   "RT12": "runtime already attached/closed",
-  "RT13": "shared memory unsupported",
-  "RT14": "application bindings must be functions",
-  "RT15": "JSPI requires WebAssembly.promising and WebAssembly.Suspending (Safari 27+ or a JSPI-capable V8)"
+  "PN01": "Rust panic"
 }

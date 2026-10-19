@@ -107,12 +107,14 @@ fn conflicting_profiles_and_unknown_new_options_fail_before_creating_files() {
 
 #[test]
 fn missing_command_inputs_report_errors_without_panicking() {
+    let root = tempfile::tempdir().unwrap();
     for (command, expected) in [
         ("new", "missing directory"),
-        ("build", "missing input Wasm"),
+        ("build", "cargo metadata failed"),
     ] {
         let output = Command::new(env!("CARGO_BIN_EXE_taraba"))
             .arg(command)
+            .current_dir(root.path())
             .output()
             .unwrap();
         assert!(!output.status.success());
@@ -173,7 +175,7 @@ fn invalid_package_options_fail_without_writing_artifacts() {
     let out = root.path().join("pkg");
     for flags in [
         vec!["--npm-name", "BadName"],
-        vec!["--npm-version", "1.0.0"],
+        vec!["--npm-version", "v1.0.0"],
         vec!["--component", "--debug"],
         vec!["--jco", "jco"],
     ] {

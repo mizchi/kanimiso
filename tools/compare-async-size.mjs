@@ -208,8 +208,8 @@ try {
               ]
             : []),
         ]);
-        entry = join(pkg, p.backend === "component" ? "app.js" : "index.mjs");
-        types = p.backend === "component" ? "app.d.ts" : "index.d.mts";
+        entry = join(pkg, "index.js");
+        types = "index.d.ts";
       }
       const bundled = await esbuild.build({
         entryPoints: [entry],
@@ -304,7 +304,7 @@ try {
         ? `import {initSync,run,setBinding} from '${packageName}';\nsetBinding((a,b)=>${provider});\nconst value:number=await run(1,2);\n// @ts-expect-error invalid argument\nrun('bad',2);\n`
         : p.backend === "component"
           ? `import {instantiate} from '${packageName}';\nconst api=await instantiate(()=>new WebAssembly.Module(new Uint8Array()),{add:{default:(a,b)=>${provider}}});\nconst value:number=await api.run(1,2);\n// @ts-expect-error invalid argument\napi.run('bad',2);\n`
-          : `import {instantiate} from '${packageName}';\nconst api=await instantiate(new Uint8Array(),{bindings:{add:(a,b)=>${provider}}});\nconst value:${p.backend === "future" && async ? "unknown" : "number"}=await api.exports.run(1,2);\n// @ts-expect-error invalid argument\napi.exports.run('bad',2);\n`;
+          : `import {createHost} from '${packageName}';\nconst api=createHost({bindings:{add:(a,b)=>${provider}}});\napi.attach((await WebAssembly.instantiate(new Uint8Array(),api.imports)).instance.exports);\nconst value:${p.backend === "future" && async ? "unknown" : "number"}=await api.run(1,2);\n// @ts-expect-error invalid argument\napi.run('bad',2);\n`;
       writeFileSync(
         join(consumer, "check.mts"),
         typing +
@@ -342,11 +342,13 @@ try {
               { add: { default: add } },
             )
           ).run;
-        const host = await api.instantiate(
+        const host = api.createHost({ bindings: { add } });
+        const { instance: guest } = await WebAssembly.instantiate(
           readFileSync(join(deployed, "app.wasm")),
-          { bindings: { add } },
+          host.imports,
         );
-        return host.exports.run;
+        host.attach(guest.exports);
+        return host.run;
       };
       const verified = async
         ? await verifyWit(factory, batches)

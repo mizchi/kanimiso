@@ -4,7 +4,9 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { instantiate } from "../dist/index.mjs";
+import { createHost } from "../dist/release.mjs";
+import { createLoader } from "./support/core-host.mjs";
+const instantiate = createLoader(createHost);
 
 test("WIT resource ownership supports matching import/export names and explicit drop", async () => {
   const dir = mkdtempSync(join(tmpdir(), "taraba-consumer-"));
@@ -58,7 +60,8 @@ test("WIT resource ownership supports matching import/export names and explicit 
 });
 
 test("scalar WIT preserves the full u32 range and f64 values in both profiles", async () => {
-  const { instantiate: instantiateJspi } = await import("../dist/jspi.mjs");
+  const { createHost: createJspiHost } = await import("../dist/jspi.mjs");
+  const instantiateJspi = createLoader(createJspiHost);
   const dir = mkdtempSync(join(tmpdir(), "taraba-scalars-"));
   try {
     writeFileSync(

@@ -1,0 +1,163 @@
+{
+  "measured_at": "2026-10-19T10:22:25.736Z",
+  "node": "v24.21.0",
+  "v8": "13.6.233.17-node.53",
+  "inputs": {
+    "tools/check-panic.mjs": "ed82f9852957564639fa0844cd7e9f240cf4f3b3708a80ea8dcd9f84890354d4",
+    "Cargo.lock": "8b27664d9440c2cd6184890acad8d7c5c5d79f62f62da602333775d1c52ee809",
+    "rust-toolchain.toml": "8af15b24d337d34a26b257ce39a67ed05d31f5e504d2a6cd9f2b9621a2afdb84",
+    "crates/taraba/Cargo.toml": "f39c2431934f6b3e7c24ff5d5bbb4f4a60fff3d9d002acca2a6406e9bf878663",
+    "crates/taraba/src/lib.rs": "60e7c1c82803c1acde3f617828f5253c9beba1a7a3e5e069033519e3f9dd7f2d",
+    "crates/taraba/src/panic.rs": "e8af3a21a74e66928695df9615eaf1462b5db8f6db3edcadab0fb38d44af9a9b",
+    "crates/taraba-cli/src/abi.rs": "34b401efb895d0d9380fec01451b65eaea45ca2aed179c8ccae36e0cd82af531",
+    "crates/taraba-cli/src/build.rs": "0bc77f89f325bbea6974f3f8e3d6a6b2035a9e85bc58d313133ad82b81fdbbf6",
+    "crates/taraba-cli/assets/provenance.json": "19a487b6acc50be4b9b0775e95d7dab06e320a701d5d6cb35a95d5e85833c414"
+  },
+  "rows": [
+    {
+      "profile": "jspi",
+      "std": false,
+      "variant": "baseline",
+      "wasm_bytes": 3559,
+      "runtime_js_bytes": 975,
+      "payload_formats": 0,
+      "passed": true
+    },
+    {
+      "profile": "jspi",
+      "std": false,
+      "variant": "release",
+      "wasm_bytes": 3638,
+      "runtime_js_bytes": 975,
+      "payload_formats": 0,
+      "passed": true
+    },
+    {
+      "profile": "jspi",
+      "std": false,
+      "variant": "debug",
+      "wasm_bytes": 25906,
+      "runtime_js_bytes": 1520,
+      "payload_formats": 1,
+      "passed": true
+    },
+    {
+      "profile": "jspi",
+      "std": false,
+      "variant": "details",
+      "wasm_bytes": 6457,
+      "runtime_js_bytes": 1520,
+      "payload_formats": 1,
+      "passed": true
+    },
+    {
+      "profile": "jspi",
+      "std": true,
+      "variant": "baseline",
+      "wasm_bytes": 6928,
+      "runtime_js_bytes": 975,
+      "payload_formats": 0,
+      "passed": true
+    },
+    {
+      "profile": "jspi",
+      "std": true,
+      "variant": "release",
+      "wasm_bytes": 7475,
+      "runtime_js_bytes": 975,
+      "payload_formats": 1,
+      "passed": true
+    },
+    {
+      "profile": "jspi",
+      "std": true,
+      "variant": "debug",
+      "wasm_bytes": 29228,
+      "runtime_js_bytes": 1520,
+      "payload_formats": 1,
+      "passed": true
+    },
+    {
+      "profile": "jspi",
+      "std": true,
+      "variant": "details",
+      "wasm_bytes": 8348,
+      "runtime_js_bytes": 1520,
+      "payload_formats": 1,
+      "passed": true
+    },
+    {
+      "profile": "future",
+      "std": false,
+      "variant": "baseline",
+      "wasm_bytes": 4065,
+      "runtime_js_bytes": 3470,
+      "payload_formats": 0,
+      "passed": true
+    },
+    {
+      "profile": "future",
+      "std": false,
+      "variant": "release",
+      "wasm_bytes": 4144,
+      "runtime_js_bytes": 3470,
+      "payload_formats": 0,
+      "passed": true
+    },
+    {
+      "profile": "future",
+      "std": false,
+      "variant": "debug",
+      "wasm_bytes": 28652,
+      "runtime_js_bytes": 3997,
+      "payload_formats": 1,
+      "passed": true
+    },
+    {
+      "profile": "future",
+      "std": false,
+      "variant": "details",
+      "wasm_bytes": 7209,
+      "runtime_js_bytes": 3997,
+      "payload_formats": 1,
+      "passed": true
+    },
+    {
+      "profile": "future",
+      "std": true,
+      "variant": "baseline",
+      "wasm_bytes": 7674,
+      "runtime_js_bytes": 3470,
+      "payload_formats": 0,
+      "passed": true
+    },
+    {
+      "profile": "future",
+      "std": true,
+      "variant": "release",
+      "wasm_bytes": 8189,
+      "runtime_js_bytes": 3470,
+      "payload_formats": 1,
+      "passed": true
+    },
+    {
+      "profile": "future",
+      "std": true,
+      "variant": "debug",
+      "wasm_bytes": 32996,
+      "runtime_js_bytes": 3997,
+      "payload_formats": 1,
+      "passed": true
+    },
+    {
+      "profile": "future",
+      "std": true,
+      "variant": "details",
+      "wasm_bytes": 9061,
+      "runtime_js_bytes": 3997,
+      "payload_formats": 1,
+      "passed": true
+    }
+  ],
+  "safari_browser_verified": false
+}

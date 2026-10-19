@@ -2,6 +2,7 @@
 name = "taraba-cli"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 license = "MIT"
 description = "Build Rust/Wasm applications and matching JS glue for taraba"
 repository = "https://github.com/mizchi/taraba"
@@ -20,6 +21,10 @@ tempfile = "=3.27.0"
 wit-parser = "=0.251.0"
 notify = "=8.2.0"
 ctrlc = { version = "=3.5.2", features = ["termination"] }
+wasmparser = "=0.252.0"
+twiggy-ir = "=0.8.0"
+syn = { version = "=2.0.119", features = ["full", "visit"] }
+proc-macro2 = { version = "=1.0.107", features = ["span-locations"] }
 
 [dev-dependencies]
 wat = "=1.252.0"

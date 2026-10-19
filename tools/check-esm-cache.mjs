@@ -12,11 +12,21 @@ const flush = async () => {
   for (let i = 0; i < 200; i++) await Promise.resolve();
 };
 
+async function connect(library, options) {
+  const host = library.createHost(options);
+  const { instance } = await WebAssembly.instantiate(
+    library.wasm,
+    host.imports,
+  );
+  host.attach(instance.exports);
+  return host;
+}
+
 async function verifyIsolation(libraries) {
   let release,
     fail = false;
   const reason = { instance: "A" };
-  const a = await libraries[0].instantiate(libraries[0].wasm, {
+  const a = await connect(libraries[0], {
     bindings: {
       add: (a, b) => {
         if (fail) throw reason;
@@ -28,15 +38,15 @@ async function verifyIsolation(libraries) {
       },
     },
   });
-  const b = await libraries[1].instantiate(libraries[1].wasm, {
+  const b = await connect(libraries[1], {
     bindings: { add: async (a, b) => (a + b + 10) | 0 },
   });
-  const pending = a.exports.run(10, 1);
+  const pending = a.run(10, 1);
   await flush();
   assert.equal(typeof release, "function");
   const blocked = a.stats();
   let completed = false;
-  const other = b.exports.run(20, 2).then((value) => {
+  const other = b.run(20, 2).then((value) => {
     completed = true;
     return value;
   });
@@ -49,23 +59,23 @@ async function verifyIsolation(libraries) {
   assert.equal(await pending, 12);
   assert.deepEqual(b.stats(), bStats, "resuming A must not change B's state");
   fail = true;
-  await assert.rejects(a.exports.run(1, 2), (e) => e === reason);
+  await assert.rejects(a.run(1, 2), (e) => e === reason);
   assert.equal(a.stats().dead, true);
   assert.equal(b.stats().dead, false);
-  assert.equal(await b.exports.run(1, 2), 24);
+  assert.equal(await b.run(1, 2), 24);
   // The Future externref tables are also instance-local, even when slot IDs coincide.
-  if (libraries[0].runtime.createHost) {
-    const first = libraries[0].runtime.createHost(),
-      second = libraries[1].runtime.createHost();
+  const first = libraries[0].runtime.createHost().imports.jsrt?.__values;
+  const second = libraries[1].runtime.createHost().imports.jsrt?.__values;
+  if (first) {
+    assert.notEqual(first, second);
     const x = { owner: "A" },
       y = { owner: "B" };
-    const aSlot = first.root(x),
-      bSlot = second.root(y);
-    assert.equal(aSlot, bSlot);
-    assert.equal(first.take(aSlot), x);
-    assert.equal(second.get(bSlot), y);
-    assert.equal(second.take(bSlot), y);
-    assert.equal(first.stats().live_values + second.stats().live_values, 0);
+    first.set(1, x);
+    second.set(1, y);
+    assert.equal(first.get(1), x);
+    assert.equal(second.get(1), y);
+    first.set(1, undefined);
+    second.set(1, undefined);
   }
 }
 
@@ -76,7 +86,7 @@ export async function verifyEsmCache(packages, dir) {
   for (const profile of ["jspi", "future"]) {
     const pair = packages.filter((p) => p.profile === profile);
     assert.equal(pair.length, 2);
-    const runtimes = pair.map((p) => join(p.installed, "taraba.mjs"));
+    const runtimes = pair.map((p) => join(p.installed, "runtime.mjs"));
     const sources = runtimes.map((p) => readFileSync(p));
     assert.deepEqual(sources[0], sources[1]);
     const entryPoints = {};
@@ -84,7 +94,7 @@ export async function verifyEsmCache(packages, dir) {
       const entry = join(dir, `${profile}-${i}.mjs`);
       writeFileSync(
         entry,
-        `export {instantiate} from ${JSON.stringify(pkg.name)};\nexport * as runtime from ${JSON.stringify(runtimes[i])};\n`,
+        `export {createHost} from ${JSON.stringify(pkg.name)};\nexport * as runtime from ${JSON.stringify(runtimes[i])};\n`,
       );
       entryPoints[`lib-${i}`] = entry;
     }
@@ -92,8 +102,8 @@ export async function verifyEsmCache(packages, dir) {
       Object.values(entryPoints).map((p) => import(pathToFileURL(p))),
     );
     assert.notEqual(
-      original[0].runtime.instantiate,
-      original[1].runtime.instantiate,
+      original[0].runtime.createHost,
+      original[1].runtime.createHost,
     );
     assert.equal(original[0].runtime, await import(pathToFileURL(runtimes[0])));
     const bundles = [];
@@ -115,13 +125,13 @@ export async function verifyEsmCache(packages, dir) {
       const emitted = result.output.filter((o) => o.type === "chunk");
       const inputs = [
         ...new Set(emitted.flatMap((o) => Object.keys(o.modules))),
-      ].filter((p) => p.endsWith("/taraba.mjs"));
+      ].filter((p) => p.endsWith("/runtime.mjs"));
       assert.equal(inputs.length, shared ? 1 : 2);
       if (shared) {
         const chunks = emitted.filter(
           (o) =>
             !o.isEntry &&
-            Object.keys(o.modules).some((p) => p.endsWith("/taraba.mjs")),
+            Object.keys(o.modules).some((p) => p.endsWith("/runtime.mjs")),
         );
         assert.equal(chunks.length, 1);
         const chunk = chunks[0].fileName;
@@ -136,16 +146,16 @@ export async function verifyEsmCache(packages, dir) {
         })),
       );
       assert.equal(
-        libraries[0].runtime.instantiate === libraries[1].runtime.instantiate,
+        libraries[0].runtime.createHost === libraries[1].runtime.createHost,
         shared,
       );
       await verifyIsolation(libraries);
       for (const library of libraries) {
         const verified = await verifyWit(async (add) => {
-          const host = await library.instantiate(library.wasm, {
+          const host = await connect(library, {
             bindings: { add },
           });
-          return host.exports.run;
+          return host.run;
         }, [1, 16, 128, 1024].flatMap(asyncCases));
         assert.equal(verified.tasks, 3507);
       }

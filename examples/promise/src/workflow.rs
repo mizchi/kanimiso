@@ -1,6 +1,7 @@
 use jsrt::{JsPromise, JsValue};
-#[link(wasm_import_module = "jsrt")]
+#[link(wasm_import_module = "$root")]
 unsafe extern "C" {
+    #[link_name = "add"]
     fn deferred_add(a: i32, b: i32) -> u32;
 }
 // Both executors compile this exact async algorithm and Promise bridge.

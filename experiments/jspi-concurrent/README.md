@@ -55,6 +55,6 @@ Future 版は32個の1 KiB Future、子 Waker、self wake、join/select、loser 
 
 Node V8 と local workerd を対象に検証する。Safari 27 実ブラウザーは未検証。Miri / Kani は既存 Rust 部品の限定された native 検証であり、この JS snapshot 実装・Wasm 変換・エンジン全体の形式証明ではない。
 
-エラーコード: JC1 は stack 契約・handoff の不一致、JC2 は範囲不正、JC3 は root の状態不正、JC4 は binding / export 不正、JC6 は JSPI 未対応。ホスト由来の reject / trap は元の理由を保持する。
+エラーコード: JC1 は stack 契約・handoff の不一致、JC2 は範囲不正、JC3 は root の状態不正。ホスト由来の reject / trap は元の理由を保持する。
 
 参考: [Pyodide: Integrating JSPI with the WebAssembly C Runtime](https://blog.pyodide.org/posts/jspi-with-c-runtime/)、[guybedford/jspi](https://github.com/guybedford/jspi)。後者は Emscripten 向けの別実装。この実験へコードや依存は取り込んでいない。

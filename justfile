@@ -10,6 +10,12 @@ setup:
 build-host:
     pnpm build
 
+# Install Rust 1.85.0 and its Wasm target before running this task.
+msrv-check:
+    cargo +1.85.0 check --locked -p taraba-cli
+    cargo +1.85.0 check --locked --target wasm32-unknown-unknown -p taraba -p taraba-allocator -p taraba-helpers
+    cargo +1.85.0 check --locked --target wasm32-unknown-unknown -p taraba -p taraba-allocator -p taraba-helpers --all-features
+
 build: build-host
     node tools/build-examples.mjs
 
@@ -17,6 +23,7 @@ test: build-host
     pnpm test
     cargo test --locked -p taraba --lib
     cargo test --locked -p taraba --lib --features std
+    cargo test --locked -p taraba-helpers --all-features --lib
     cargo test --locked -p taraba-cli
     cargo test --locked -p taraba-allocator --lib --features instrumentation,extra_assertions
     cargo test --locked -p taraba-allocator --lib --no-default-features --features instrumentation,extra_assertions
@@ -27,15 +34,44 @@ check: build test
     pnpm format:check
     cargo fmt --all -- --check
     cargo fmt --manifest-path verification/kani/models/Cargo.toml -- --check
-    rustfmt --edition 2021 --check verification/kani/harnesses/*.rs
+    rustfmt --edition 2021 --config skip_children=true --check verification/kani/harnesses/*.rs
     node tools/check.mjs
     node tools/check-jspi.mjs
+    node tools/check-panic.mjs
+    node tools/check-insight.mjs
+    node tools/check-helpers.mjs
+    node tools/check-strings.mjs
     node tools/check-library.mjs
     node tools/check-watch.mjs
 
 library-check: build-host
     cargo build --locked --release -p taraba-cli
     node tools/check-library.mjs
+
+panic-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-panic.mjs
+
+insight-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-insight.mjs
+
+helpers-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-helpers.mjs
+    node tools/check-strings.mjs
+
+strings-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-strings.mjs
+
+compare-strings: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-strings.mjs --snapshot
+
+compare-helpers: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-helpers.mjs --snapshot
 
 watch-check: build-host
     cargo build --locked --release -p taraba-cli
@@ -54,6 +90,13 @@ compare-async-size: prepare-async-size
 check-async-size: prepare-async-size
     node tools/compare-async-size.mjs --check
 
+compare-frontend-size:
+    node tools/measure-frontend-size.mjs
+
+analyze-wasm-size: compare-async-size
+    node tools/install-wasm-size-tools.mjs
+    node tools/analyze-wasm-size.mjs
+
 prepare-allocator:
     node tools/prepare-allocator.mjs
     cargo fetch --locked --manifest-path experiments/allocator/Cargo.toml
@@ -70,7 +113,7 @@ fmt:
     pnpm format
     cargo fmt --all
     cargo fmt --manifest-path verification/kani/models/Cargo.toml
-    rustfmt --edition 2021 verification/kani/harnesses/*.rs
+    rustfmt --edition 2021 --config skip_children=true verification/kani/harnesses/*.rs
     cargo fmt --manifest-path experiments/async-size/Cargo.toml --all
     pnpm exec prettier --write experiments/async-size/*.mjs experiments/async-size/bindgen/io.mjs
     node tools/prepare-allocator.mjs
@@ -81,6 +124,7 @@ stress seconds="60":
     node tools/stress.mjs {{seconds}}
 
 miri:
+    cargo +nightly miri test --locked -p taraba-helpers --all-features --lib -- --test-threads=1
     cargo +nightly miri test --locked -p taraba --lib -- --test-threads=1
     cargo +nightly miri test --locked -p taraba --lib --features std -- --test-threads=1
     cargo +nightly miri test --locked -p taraba-allocator --lib --no-default-features --features instrumentation -- --test-threads=1
@@ -97,6 +141,9 @@ kani:
     node tools/prepare-kani.mjs
     cargo kani --manifest-path verification/kani/models/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
     cargo kani --manifest-path .cache/kani/waker/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
+    cargo kani --manifest-path .cache/kani/promise/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
+    cargo kani --manifest-path .cache/kani/regexp/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
+    cargo kani --manifest-path .cache/kani/iterator/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
     cargo kani --manifest-path .cache/kani/allocator/Cargo.toml --lib --tests --exact --harness kani_proofs::checked_rounding_all_usize_values --harness kani_boundary_proofs::neighbor_tag_bits_preserve_every_aligned_u32_address --harness kani_boundary_proofs::valid_layouts_return_null_on_refill_oom_without_overflow --output-format terse -Z unstable-options --harness-timeout 60s
     cargo kani --manifest-path .cache/kani/allocator/Cargo.toml --lib --tests --features realloc_in_place --exact --harness kani_proofs::realloc_fast_path_preserves_word_class --output-format terse -Z unstable-options --harness-timeout 60s
 
@@ -116,8 +163,8 @@ kani-realloc-explore:
 report:
     node tools/report-verification.mjs
 
-package-check: build-host
-    node tools/package-check.mjs
+package-check *args: build-host
+    node tools/package-check.mjs {{args}}
 
 compare-wit: build-host
     cargo fetch --locked --manifest-path experiments/wit/component-sync/Cargo.toml

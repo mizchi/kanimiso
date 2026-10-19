@@ -2,11 +2,6 @@ import { createStacks, failure } from "./stack.mjs";
 const debug = typeof __JSC_DEBUG__ === "undefined" ? true : __JSC_DEBUG__;
 
 export async function instantiate(source, { bindings = {} } = {}) {
-  if (
-    typeof WebAssembly.promising !== "function" ||
-    typeof WebAssembly.Suspending !== "function"
-  )
-    throw failure("JC6");
   let dead = false,
     fatal,
     calls = 0,
@@ -30,7 +25,6 @@ export async function instantiate(source, { bindings = {} } = {}) {
   };
   const app = Object.create(null);
   for (const [name, fn] of Object.entries(bindings)) {
-    if (typeof fn !== "function") throw failure("JC4");
     app[name] = new WebAssembly.Suspending(
       (...args) =>
         new Promise((resolve, reject) => {
@@ -56,29 +50,27 @@ export async function instantiate(source, { bindings = {} } = {}) {
         }),
     );
   }
-  const loaded = await WebAssembly.instantiate(source, {
+  const module =
+    source instanceof WebAssembly.Module
+      ? source
+      : await WebAssembly.compile(source);
+  const loaded = await WebAssembly.instantiate(module, {
     app,
     "taraba:jspi-stack": stacks.imports,
   });
   const instance =
     loaded instanceof WebAssembly.Instance ? loaded : loaded.instance;
   stacks.attach(instance.exports);
-  for (const [name, value] of Object.entries(instance.exports))
+  for (const { name, kind } of WebAssembly.Module.exports(module))
     if (
-      typeof value === "function" &&
+      kind === "function" &&
       !name.startsWith("rt_") &&
       !name.startsWith("cabi_")
     )
-      functions[name] = WebAssembly.promising(value);
+      functions[name] = WebAssembly.promising(instance.exports[name]);
   const call = (name, ...args) =>
     Promise.resolve().then(async () => {
       alive();
-      if (
-        name.startsWith("rt_") ||
-        name.startsWith("cabi_") ||
-        typeof functions[name] !== "function"
-      )
-        throw failure("JC4");
       if (debug) calls++;
       try {
         const result = await functions[name](...args);

@@ -1,0 +1,48 @@
+package taraba:helpers@0.1.0;
+
+// Private synchronous Core ABI, not Component canonical strings/resources.
+// Nonzero u32 IDs own one registry root. Parameters borrow unless documented
+// as consumed. All pointers borrow exported wasm32 memory only during the call.
+interface values {
+    clone: func(id: u32) -> u32; // borrow -> new owned ID, same JS value
+    drop: func(id: u32); // consumes
+}
+interface strings {
+    from-utf8: func(ptr: u32, len: u32) -> u32; // valid UTF-8 -> owned string
+    utf8-len: func(id: u32) -> u32;
+    utf16-len: func(id: u32) -> u32;
+    // Writes a complete UTF-8 prefix within capacity; returns bytes written.
+    copy-utf8: func(id: u32, ptr: u32, capacity: u32) -> u32;
+    normalize: func(id: u32, form: u32) -> u32; // 0=NFC 1=NFD 2=NFKC 3=NFKD
+    to-uppercase: func(id: u32) -> u32;
+    to-lowercase: func(id: u32) -> u32;
+    trim: func(id: u32) -> u32;
+    equals: func(a: u32, b: u32) -> u32; // 0=false 1=true
+    code-points: func(id: u32) -> u32; // owned iterator yielding owned strings
+}
+interface iterator {
+    // Borrows cursor. Returns new owned item root, or 0=done. A throwing next
+    // retires the cursor and propagates the original error; host entry is fatal.
+    next: func(id: u32) -> u32;
+    // Consumes cursor before invoking optional return(). Normal exhaustion
+    // instead uses values.drop and does not call return().
+    close: func(id: u32);
+}
+interface segmenter {
+    new: func(locale: u32, granularity: u32) -> u32; // 0=invalid locale; modes 0/1/2=grapheme/word/sentence
+    segment: func(id: u32, text: u32) -> u32; // owns iterator with independent source lifetime
+    text: func(id: u32) -> u32; // borrow segment -> owned string
+    index: func(id: u32) -> u32; // UTF-16 index
+    word-like: func(id: u32) -> u32; // 0=false 1=true 2=undefined
+}
+interface encoding {
+    new: func(label: u32) -> u32; // owned fatal TextDecoder; 0=unsupported label
+    decode: func(id: u32, ptr: u32, len: u32) -> u32; // owned string; 0=malformed bytes. Non-streaming, BOM preserved.
+}
+world text {
+    import values;
+    import strings;
+    import iterator;
+    import segmenter;
+    import encoding;
+}

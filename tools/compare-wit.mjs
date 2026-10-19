@@ -176,7 +176,7 @@ for (const mode of ["no_std", "std"])
     }
     const files =
       backend === "core" || backend === "jspi"
-        ? [`${dir}/app.wasm`, `${dir}/taraba.mjs`]
+        ? [`${dir}/app.wasm`, `${dir}/index.js`, `${dir}/runtime.mjs`]
         : readdirSync(`${dir}/js`)
             .filter((f) => f.endsWith(".wasm") || f === "app.mjs")
             .map((f) => `${dir}/js/${f}`);
@@ -192,7 +192,7 @@ for (const mode of ["no_std", "std"])
       };
     });
     const jsBytes = sizes
-        .filter((s) => s.file.endsWith(".mjs"))
+        .filter((s) => /\.m?js$/.test(s.file))
         .reduce((n, s) => n + s.bytes, 0),
       wasmBytes = sizes
         .filter((s) => s.file.endsWith(".wasm"))
@@ -225,11 +225,14 @@ for (const profile of report.profiles) {
   const dir = `${out}/${profile.id}`;
   let factory;
   if (profile.backend === "core" || profile.backend === "jspi") {
-    const { instantiate } = await import(pathToFileURL(`${dir}/taraba.mjs`));
+    const { createHost } = await import(pathToFileURL(`${dir}/index.js`));
     const module = new WebAssembly.Module(readFileSync(`${dir}/app.wasm`));
     factory = async (add) => {
-      const host = await instantiate(module, { bindings: { add } });
-      return (...args) => host.promise("run", ...args);
+      const host = createHost({ bindings: { add } });
+      host.attach(
+        (await WebAssembly.instantiate(module, host.imports)).exports,
+      );
+      return host.run;
     };
   } else {
     const { instantiate } = await import(pathToFileURL(`${dir}/js/app.mjs`));
@@ -265,12 +268,12 @@ for (const profile of report.profiles) {
         ]),
     );
     const importPath = !profile.backend.startsWith("component")
-      ? `${dir}/taraba.mjs`
+      ? `${dir}/index.js`
       : `${dir}/js/app.mjs`;
     const factorySource = !profile.backend.startsWith("component")
-      ? `async add=>{const h=await instantiate(modules['app.wasm'],{bindings:{add}});return (...a)=>h.promise('run',...a)}`
+      ? `async add=>{const h=createHost({bindings:{add}});h.attach((await WebAssembly.instantiate(modules['app.wasm'],h.imports)).exports);return h.run}`
       : `async add=>{const a=await instantiate(name=>modules[name],${profile.backend === "component-sync" ? '{"taraba:experiment/host":{add}}' : "{add:{default:add}}"});return a.run}`;
-    const source = `import {instantiate} from ${JSON.stringify(importPath)};import {verifyWit} from ${JSON.stringify(resolve("tests/support/wit-contract.mjs"))};const bytes=${JSON.stringify(mods)};const modules=Object.fromEntries(Object.entries(bytes).map(([n,b])=>[n,new WebAssembly.Module(new Uint8Array(b))]));verifyWit(${factorySource},${JSON.stringify(cases)}).then(result=>print(JSON.stringify({supported:true,result})),e=>print(JSON.stringify({supported:false,error:String(e),promising:typeof WebAssembly.promising,suspending:typeof WebAssembly.Suspending})));`;
+    const source = `import {${profile.backend.startsWith("component") ? "instantiate" : "createHost"}} from ${JSON.stringify(importPath)};import {verifyWit} from ${JSON.stringify(resolve("tests/support/wit-contract.mjs"))};const bytes=${JSON.stringify(mods)};const modules=Object.fromEntries(Object.entries(bytes).map(([n,b])=>[n,new WebAssembly.Module(new Uint8Array(b))]));verifyWit(${factorySource},${JSON.stringify(cases)}).then(result=>print(JSON.stringify({supported:true,result})),e=>print(JSON.stringify({supported:false,error:String(e),promising:typeof WebAssembly.promising,suspending:typeof WebAssembly.Suspending})));`;
     const bundle = await esbuild.build({
       stdin: { contents: source, resolveDir: root },
       bundle: true,

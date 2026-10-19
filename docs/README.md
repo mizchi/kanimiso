@@ -8,7 +8,14 @@ English | [日本語](README.ja.md)
 |---|---|
 | Which backend or distribution format should I choose? | [Project overview](../README.md) |
 | How do I write WIT, Rust async and a typed npm library? | [Usage guide](guide.md) |
+| How do I publish pkg/ and choose the package name/version? | [Generated npm package](guide.md#generated-npm-package) |
 | What do JSPI / Future ownership, cancellation and errors guarantee? | [Core API reference](core-runtime.md) |
+| How do I resolve a runtime error code? | [Error codes](error-codes.md) |
+| Which functions are large, and what keeps formatting code? | [Size warnings and taraba insight](insight.md) |
+| How do I report panics without release message formatting? | [Panic hook / handler](panic-reporting.md) |
+| Can JS builtins replace large Wasm dependencies? | [taraba-helpers and feature size probes](helpers.md) |
+| How do host strings, segmentation, codecs and Rust iterators work? | [Strings and iterators](strings.md) |
+| What enters the bundle when I enable helper features? | [Operation selection](strings.md#what-the-build-includes) and [generated/bundled sizes](strings.md#sizes-and-verification) |
 | How much does the same async workflow add versus Embassy or wasm-bindgen? | [Current async size comparison](async-size.md) |
 | Can multiple libraries share one JS runtime? | [ESM caching and shared chunks](esm-cache.md) |
 | How do I build, test or reproduce measurements? | [Development guide](development.md) |
@@ -21,6 +28,7 @@ Each report is dated and records source hashes. The new async-size report is the
 
 | Report | Scope |
 |---|---|
+| What remains in Wasm, and do twiggy/wasm-snip help? | [Section breakdown and snip experiment](wasm-size-analysis.md) (Japanese) |
 | [Async size](async-size.md) / [JSON](async-size.json) | Common sync/async algorithm; taraba, Embassy, Tokio, async-executor, async-std, wasm-bindgen and FuturesUnordered; all runtime files |
 | [Allocator optimization](allocator.md) / [JSON](allocator.json) | Before/after size, V8 kernels, memory reuse/OOM and wee_alloc control (Japanese) |
 | [WIT comparison](wit-comparison.md) | Earlier Core, standard Component sync/native async, compile/runtime timing |

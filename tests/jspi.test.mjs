@@ -14,13 +14,21 @@ const built = await esbuild.build({
   write: false,
   define: { __JSRT_DEBUG_ERRORS__: "true" },
 });
-const { instantiate } = await import(
+import { createLoader, withTestApi } from "./support/core-host.mjs";
+const { createHost: runtimeCreateHost } = await import(
   "data:text/javascript;base64," +
     Buffer.from(built.outputFiles[0].text).toString("base64")
 );
-test("release JSPI host stays below the previous 1324-byte bundle", async () => {
+const createHost = (options, names = ["run", "held", "trap"]) =>
+  withTestApi(runtimeCreateHost(options, names));
+const instantiate = createLoader(runtimeCreateHost);
+test("explicit JSPI host stays below the previous 1324-byte budget", async () => {
   const release = await esbuild.build({
-    entryPoints: ["src/jspi.mjs"],
+    // The primary API does not need to ship the optional convenience loader.
+    stdin: {
+      contents: 'export {createHost} from "./src/jspi.mjs";',
+      resolveDir: process.cwd(),
+    },
     bundle: true,
     minify: true,
     format: "esm",
@@ -53,6 +61,103 @@ const tick = async (condition) => {
   assert.ok(condition());
 };
 
+test("explicit JSPI hosts work with native bytes, Module and streaming instantiation", async () => {
+  for (const load of [
+    async (imports) => (await WebAssembly.instantiate(bytes, imports)).instance,
+    async (imports) =>
+      WebAssembly.instantiate(new WebAssembly.Module(bytes), imports),
+    async (imports) =>
+      (
+        await WebAssembly.instantiateStreaming(
+          new Response(bytes, {
+            headers: { "content-type": "application/wasm" },
+          }),
+          imports,
+        )
+      ).instance,
+  ]) {
+    const host = createHost({ bindings: { add: async (a, b) => (a + b) | 0 } });
+    await assert.rejects(host.promise("run", 20, 21));
+    const instance = await load(host.imports);
+    host.attach(instance.exports);
+    assert.equal(await host.promise("run", 20, 21), 42);
+    assert.throws(() => host.attach(instance.exports));
+    assert.equal(await host.promise("run", 1, 2), 4);
+  }
+});
+
+test("attachment uses build-time export names without enumerating runtime values", async () => {
+  const host = createHost({ bindings: { add: async (a, b) => a + b } }, [
+    "run",
+  ]);
+  const raw = new WebAssembly.Instance(
+    new WebAssembly.Module(bytes),
+    host.imports,
+  ).exports;
+  host.attach(
+    new Proxy(raw, {
+      ownKeys() {
+        throw Error("unexpected export enumeration");
+      },
+    }),
+  );
+  assert.equal(await host.promise("run", 20, 21), 42);
+});
+
+test("manual attachment preserves serialized suspension and first-fatal state", async () => {
+  let release;
+  const reason = { failure: "manual" };
+  const host = createHost({
+    bindings: {
+      add: () =>
+        new Promise((_, reject) => {
+          release = () => reject(reason);
+        }),
+    },
+  });
+  const { instance } = await WebAssembly.instantiate(bytes, host.imports);
+  host.attach(instance.exports);
+  const first = host.promise("run", 1, 2);
+  const queued = host.promise("run", 3, 4);
+  await tick(() => release);
+  assert.throws(() => host.attach(instance.exports));
+  release();
+  for (const result of await Promise.allSettled([first, queued])) {
+    assert.equal(result.status, "rejected");
+    assert.equal(result.reason, reason);
+  }
+  assert.throws(() => host.attach(instance.exports));
+  await assert.rejects(host.promise("run", 5, 6), (error) => error === reason);
+});
+
+test("a native attach failure cannot publish a partial dispatch table", async () => {
+  const host = createHost({ bindings: { add: async (a, b) => a + b } }, [
+    "run",
+    "held",
+  ]);
+  const raw = new WebAssembly.Instance(
+    new WebAssembly.Module(bytes),
+    host.imports,
+  ).exports;
+  assert.throws(() => host.attach({ run: raw.run, held: () => 1 }), TypeError);
+  assert.equal(host.stats().dead, false);
+  host.attach(raw);
+  assert.equal(await host.promise("run", 20, 21), 42);
+  assert.throws(() => host.attach(raw));
+});
+
+test("explicit JSPI hosts pass the same 3507 arithmetic and controlled-I/O cases", async () => {
+  const result = await verifyWit(async (add) => {
+    const host = createHost({ bindings: { add } });
+    host.attach(
+      new WebAssembly.Instance(new WebAssembly.Module(bytes), host.imports)
+        .exports,
+    );
+    return (...args) => host.promise("run", ...args);
+  }, [1, 16, 128, 1024].flatMap(asyncCases));
+  assert.equal(result.tasks, 3507);
+});
+
 test("JSPI executes the frozen two-await computation and controlled suspensions", async () => {
   const result = await verifyWit(async (add) => {
     const h = await instantiate(bytes, { bindings: { add } });
@@ -78,7 +183,7 @@ test("serialized JSPI entry protects memory spills across suspension", async () 
     },
   });
   const result = Promise.all(
-    Array.from({ length: 16 }, (_, i) => h.call("held", i, 10)),
+    Array.from({ length: 16 }, (_, i) => h.promise("held", i, 10)),
   );
   for (let i = 0; i < 16; i++) {
     await tick(() => pending.length > 0);
@@ -126,9 +231,9 @@ test("fatal reason wins over queued private or missing exports after dispatch is
       bindings: { add: () => Promise.reject(reason) },
     });
     const results = await Promise.allSettled([
-      h.call("run", 1, 2),
-      h.call("rt_poll"),
-      h.call("missing"),
+      h.promise("run", 1, 2),
+      h.promise("rt_poll"),
+      h.promise("missing"),
     ]);
     for (const result of results) {
       assert.equal(result.status, "rejected");
@@ -157,25 +262,43 @@ test("a Wasm trap closes the instance after JSPI resumption", async () => {
   });
   await assert.rejects(h.promise("run", 1, 2), (e) => e === reason);
 });
-test("invalid calls and invalid binding configuration are rejected", async () => {
-  await assert.rejects(instantiate(bytes, { bindings: { add: 1 } }), TypeError);
-  const h = await instantiate(bytes, {
-    bindings: { add: async (a, b) => (a + b) | 0 },
-  });
-  await assert.rejects(h.call("missing"), /export/);
-  await assert.rejects(h.call("rt_poll"), /runtime|private/);
-  assert.equal(h.stats().dead, false);
-  assert.equal(await h.promise("run", 20, 21), 42);
-});
-test("unsupported JSPI engines are rejected without a compatibility fallback", async () => {
-  const original = WebAssembly.promising;
-  try {
-    WebAssembly.promising = undefined;
+test("unexpected native call errors preserve first-fatal identity", async () => {
+  for (const bindings of [{ add: async (a, b) => a + b }, { add: 1 }]) {
+    const host = await instantiate(bytes, { bindings });
+    let fatal;
     await assert.rejects(
-      instantiate(bytes),
-      (e) => e instanceof TypeError && e.message.includes("JSPI"),
+      host.promise(bindings.add === 1 ? "run" : "missing", 20, 21),
+      (error) => {
+        fatal = error;
+        return error instanceof TypeError && error.code === undefined;
+      },
     );
+    assert.equal(host.stats().dead, true);
+    await assert.rejects(host.promise("run", 1, 2), (error) => error === fatal);
+  }
+});
+test("creating an empty host does not probe JSPI builtins", () => {
+  const descriptors = Object.fromEntries(
+    ["promising", "Suspending"].map((name) => [
+      name,
+      Object.getOwnPropertyDescriptor(WebAssembly, name),
+    ]),
+  );
+  try {
+    for (const name of Object.keys(descriptors)) {
+      Object.defineProperty(WebAssembly, name, {
+        configurable: true,
+        get() {
+          throw Error(`unexpected feature probe: ${name}`);
+        },
+      });
+    }
+    const host = createHost({}, []);
+    host.attach({});
+    assert.deepEqual(Object.keys(host.imports.app), []);
+    assert.equal(host.stats().dead, false);
   } finally {
-    WebAssembly.promising = original;
+    for (const [name, descriptor] of Object.entries(descriptors))
+      Object.defineProperty(WebAssembly, name, descriptor);
   }
 });

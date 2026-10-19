@@ -865,8 +865,7 @@ impl<'a> WeeAlloc<'a> {
                 // Unlink the right neighbor before removing its physical header.
                 // The logical predecessor may be any free cell, including `prev`.
                 let next = neighbors.next_unchecked() as *const FreeCell<'a>;
-                let slot = find_free_list_slot(head, next)
-                    .expect("adjacent free cell must be in free list");
+                let slot = find_free_list_slot(head, next).expect("AL01");
                 (*slot).set((*next).next_free());
                 if CellHeader::next_cell_is_invalid(&(*next).header.neighbors) {
                     CellHeader::set_next_cell_is_invalid(neighbors);

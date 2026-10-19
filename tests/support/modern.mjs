@@ -1,3 +1,5 @@
+import { withTestApi } from "./core-host.mjs";
+import { add } from "./io.mjs";
 // Portable tests shared by V8 and JavaScriptCore. No Node or browser APIs.
 export async function verifyModern(fixtures, createHost, modules, cases) {
   const equal = (actual, expected, message) => {
@@ -132,7 +134,7 @@ export async function verifyModern(fixtures, createHost, modules, cases) {
   }
   results.runtime = [];
   for (const { mode, bytes } of modules) {
-    const host = createHost(),
+    const host = withTestApi(createHost({ bindings: { add } })),
       { instance } = await WebAssembly.instantiate(
         new Uint8Array(bytes),
         host.imports,
@@ -164,7 +166,7 @@ export async function verifyModern(fixtures, createHost, modules, cases) {
     equal(host.stats().dead, false, "private API rejection does not poison");
     const pending = host.promise("start", 1, 2);
     let reason;
-    pending.catch((error) => {
+    const observed = pending.catch((error) => {
       reason = error;
     });
     let fatal;
@@ -173,8 +175,8 @@ export async function verifyModern(fixtures, createHost, modules, cases) {
     } catch (error) {
       fatal = error;
     }
-    await Promise.resolve();
-    equal(fatal.code, "RT06", "missing export code");
+    await observed;
+    equal(fatal instanceof TypeError, true, "native missing export error");
     equal(reason, fatal, "first fatal rejects pending task by identity");
     equal(host.stats().dead, true, "first fatal closes runtime");
     expectThrow(() => host.call("start", 1, 2), fatal);

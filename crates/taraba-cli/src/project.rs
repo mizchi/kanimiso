@@ -106,25 +106,17 @@ codegen-units = 1
         "[target.wasm32-unknown-unknown]\nrustflags = [\"-C\", \"link-arg=-zstack-size=65536\", \"-C\", \"link-arg=--max-memory=1048576\"]\n",
     )?;
     fs::write(path.join(".gitignore"), "/target/\n/pkg/\n")?;
-    let profile = if component {
-        " --component"
-    } else if jspi {
-        ""
-    } else {
-        " --future"
-    };
-    let artifact = name.replace('-', "_");
+    let profile = if component { " --component" } else { "" };
     fs::write(
         path.join("justfile"),
         format!(
-            "# Build the library for its selected execution contract.\nbuild:\n    cargo build --release --target wasm32-unknown-unknown\n    taraba build target/wasm32-unknown-unknown/release/{artifact}.wasm --wit wit{profile}\n\n# Watch Rust/WIT changes and rebuild the selected library.\nwatch *args:\n    taraba build --watch{profile} {{{{args}}}}\n\n# Prepare a publishable package; inspect it with pnpm pack before publishing.\nnpm name version=\"0.1.0\" license=\"UNLICENSED\":\n    cargo build --release --target wasm32-unknown-unknown\n    pnpm exec taraba build target/wasm32-unknown-unknown/release/{artifact}.wasm --wit wit{profile} --npm-name {{{{name}}}} --npm-version {{{{version}}}} --license \"{{{{license}}}}\"\n"
+            "# Build the library for its selected execution contract.\nbuild:\n    taraba build{profile}\n\n# Watch Rust/WIT changes and rebuild the selected library.\nwatch *args:\n    taraba build --watch{profile} {{{{args}}}}\n\n# Build and pack the generated npm directory. Component builds need --npm-name.\npack *args:\n    taraba build{profile} {{{{args}}}}\n    pnpm --dir pkg pack\n\n# Prepare a publishable package; inspect it with pnpm pack before publishing.\nnpm name version=\"0.1.0\" license=\"UNLICENSED\":\n    taraba build{profile} --npm-name {{{{name}}}} --npm-version {{{{version}}}} --license \"{{{{license}}}}\"\n"
         ),
     )?;
     println!(
-        "Created {} ({}). Build with cargo build --release --target wasm32-unknown-unknown, then taraba build target/wasm32-unknown-unknown/release/{}.wasm --wit wit{}",
+        "Created {} ({}). Build with taraba build{}",
         path.display(),
         if no_std { "no_std" } else { "std" },
-        name.replace('-', "_"),
         profile
     );
     Ok(())

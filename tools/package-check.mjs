@@ -27,17 +27,32 @@ const run = (bin, args, cwd = root, env = rustEnv) =>
     maxBuffer: 32 * 1024 * 1024,
   });
 const cases = [1, 16, 128, 1024].flatMap((c) => asyncCases(c));
+const requireClean = process.argv.includes("--require-clean");
+const commit = run("git", ["rev-parse", "HEAD"]).toString().trim();
 const result = {
   published: false,
   registry_install_verified: false,
+  commit,
+  require_clean: requireClean,
   method:
     "Cargo package verification + CLI installation from unpacked .crate + external consumer with registry dependencies patched to unpacked .crate archives",
   packages: [],
   consumers: [],
 };
 try {
+  if (requireClean)
+    assert.equal(
+      run("git", ["status", "--porcelain"]).toString(),
+      "",
+      "release verification requires a clean checkout",
+    );
   run("cargo", ["fetch", "--locked"]);
-  for (const name of ["taraba", "taraba-allocator", "taraba-cli"]) {
+  for (const name of [
+    "taraba",
+    "taraba-allocator",
+    "taraba-helpers",
+    "taraba-cli",
+  ]) {
     const args = [
       "package",
       "--locked",
@@ -45,6 +60,7 @@ try {
       "--allow-dirty",
       "-p",
       name,
+      ...(name === "taraba-helpers" ? ["--all-features"] : []),
       ...(name === "taraba-cli" ? [] : ["--target", "wasm32-unknown-unknown"]),
     ];
     run("cargo", args);
@@ -57,11 +73,17 @@ try {
       `${name} must not require repository paths`,
     );
     assert.ok(readFileSync(`${pkg}/LICENSE`).length > 0);
+    const vcs = JSON.parse(readFileSync(`${pkg}/.cargo_vcs_info.json`));
+    if (requireClean) {
+      assert.equal(vcs.git.sha1, commit);
+      assert.notEqual(vcs.git.dirty, true);
+    }
     result.packages.push({
       name,
       bytes: readFileSync(archive).length,
       sha256: createHash("sha256").update(readFileSync(archive)).digest("hex"),
       verified: true,
+      vcs,
     });
   }
   const install = join(temp, "installed");
@@ -133,6 +155,7 @@ try {
               [
                 "build",
                 raw,
+                "--jspi",
                 "--wit",
                 "wit",
                 "--out-dir",
@@ -154,24 +177,41 @@ try {
             "wit",
             "--out-dir",
             out,
-            ...(jspi ? [] : ["--future"]),
             ...(debug ? ["--debug"] : []),
           ],
           project,
           env,
         );
-        const { instantiate } = await import(
-          pathToFileURL(`${out}/taraba.mjs`)
-        );
-        if (jspi && !debug && mode === "no_std") {
-          const explicit = `${temp}/explicit-jspi`;
+        const { createHost } = await import(pathToFileURL(`${out}/index.js`));
+        const instantiate = async (source, options) => {
+          const host = createHost(options);
+          const instance = await WebAssembly.instantiate(source, host.imports);
+          host.attach(instance.exports);
+          return host;
+        };
+        if (!debug && mode === "no_std") {
+          const explicit = `${temp}/explicit-${profile}`;
           run(
             cli,
-            ["build", raw, "--wit", "wit", "--out-dir", explicit, "--jspi"],
+            [
+              "build",
+              raw,
+              "--wit",
+              "wit",
+              "--out-dir",
+              explicit,
+              jspi ? "--jspi" : "--future",
+            ],
             project,
             env,
           );
-          for (const file of ["app.wasm", "taraba.mjs", "taraba.d.mts"])
+          for (const file of [
+            "app.wasm",
+            "index.js",
+            "index.d.ts",
+            "runtime.mjs",
+            "runtime.d.mts",
+          ])
             assert.deepEqual(
               readFileSync(`${explicit}/${file}`),
               readFileSync(`${out}/${file}`),
@@ -191,7 +231,7 @@ try {
         let host;
         const verified = await verifyWit(async (add) => {
           host = await instantiate(module, { bindings: { add } });
-          return (...a) => host.promise("run", ...a);
+          return host.run;
         }, cases);
         assert.equal(
           JSON.parse(readFileSync(`${out}/build.json`)).profile,
@@ -216,11 +256,11 @@ try {
                   : Promise.resolve((a + b) | 0),
             },
           });
-          await assert.rejects(h.promise("run", 7, 9), (e) => e === reason);
+          await assert.rejects(h.run(7, 9), (e) => e === reason);
           assert.equal(count, stage);
           if (jspi) {
             assert.equal(h.stats().dead, true);
-            await assert.rejects(h.promise("run", 1, 2), (e) => e === reason);
+            await assert.rejects(h.run(1, 2), (e) => e === reason);
           } else assert.equal(h.stats().live_values, 0);
         }
         result.consumers.push({
@@ -231,12 +271,14 @@ try {
           scheduling: await verifyScheduling(
             async (add) => {
               const h = await instantiate(module, { bindings: { add } });
-              return (...args) => h.promise("run", ...args);
+              return h.run;
             },
             { serialized: jspi },
           ),
           wasm_bytes: readFileSync(`${out}/app.wasm`).length,
-          js_bytes: readFileSync(`${out}/taraba.mjs`).length,
+          js_bytes:
+            readFileSync(`${out}/index.js`).length +
+            readFileSync(`${out}/runtime.mjs`).length,
           rejection_identity_steps: 2,
         });
       }
@@ -250,6 +292,30 @@ try {
     TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-0.1.0`,
   });
   result.npm_libraries_verified_from_archived_cli = true;
+  run(process.execPath, ["tools/check-insight.mjs"], root, {
+    ...env,
+    TARABA_LIBRARY_CLI: cli,
+    TARABA_LIBRARY_RUNTIME: `${temp}/taraba-0.1.0`,
+    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-0.1.0`,
+  });
+  result.insight_verified_from_archived_cli = true;
+  run(process.execPath, ["tools/check-helpers.mjs"], root, {
+    ...env,
+    TARABA_LIBRARY_CLI: cli,
+    TARABA_LIBRARY_RUNTIME: `${temp}/taraba-0.1.0`,
+    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-0.1.0`,
+    TARABA_LIBRARY_HELPERS: `${temp}/taraba-helpers-0.1.0`,
+    TARABA_HELPERS_SMOKE: "1",
+  });
+  result.helpers_verified_from_archived_cli = true;
+  run(process.execPath, ["tools/check-strings.mjs"], root, {
+    ...env,
+    TARABA_LIBRARY_CLI: cli,
+    TARABA_LIBRARY_HELPERS: `${temp}/taraba-helpers-0.1.0`,
+    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-0.1.0`,
+    TARABA_HELPERS_SMOKE: "1",
+  });
+  result.strings_verified_from_archived_cli = true;
   result.watch = await verifyWatch(cli, env);
   mkdirSync(".cache", { recursive: true });
   writeFileSync(
@@ -257,7 +323,7 @@ try {
     JSON.stringify(result, null, 2) + "\n",
   );
   console.log(
-    "Packaged and verified three crates; installed archived CLI; external core/jspi × std/no_std × release/debug consumers passed. Nothing published.",
+    "Packaged and verified four crates; installed archived CLI; external core/jspi × std/no_std × release/debug and helpers consumers passed. Nothing published.",
   );
 } catch (e) {
   mkdirSync(".cache", { recursive: true });

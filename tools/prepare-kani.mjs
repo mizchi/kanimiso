@@ -20,10 +20,44 @@ export function prepareKani(root = ".cache/kani") {
     `${allocator}/src/size_classes.rs`,
     `${allocator}/src/regression.rs`,
     "crates/taraba/src/waker.rs",
-    ...["allocator", "backend", "waker"].map((n) => `${harnesses}/${n}.rs`),
+    "crates/taraba/src/promise.rs",
+    "crates/taraba/src/value.rs",
+    "crates/taraba-helpers/src/regexp.rs",
+    `${harnesses}/regexp.rs`,
+    "crates/taraba-helpers/src/handle.rs",
+    "crates/taraba-helpers/src/iter.rs",
+    `${harnesses}/iterator.rs`,
+    ...["allocator", "backend", "waker", "promise", "promise_state"].map(
+      (n) => `${harnesses}/${n}.rs`,
+    ),
   ];
   mkdirSync(`${root}/allocator/src`, { recursive: true });
   mkdirSync(`${root}/waker/src`, { recursive: true });
+  mkdirSync(`${root}/promise/src`, { recursive: true });
+  mkdirSync(`${root}/regexp/src`, { recursive: true });
+  mkdirSync(`${root}/iterator/src`, { recursive: true });
+  for (const name of ["handle", "iter"])
+    copyFileSync(
+      `crates/taraba-helpers/src/${name}.rs`,
+      `${root}/iterator/src/${name}.rs`,
+    );
+  copyFileSync(`${harnesses}/iterator.rs`, `${root}/iterator/src/lib.rs`);
+  writeFileSync(
+    `${root}/iterator/Cargo.toml`,
+    `[package]\nname="taraba-iterator-kani"\nversion="0.0.0"\nedition="2024"\n[workspace]\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
+  );
+  const regexp = readFileSync("crates/taraba-helpers/src/regexp.rs", "utf8");
+  const regexpPrefix = regexp.indexOf("#[cfg(not(test))]");
+  assert.ok(regexpPrefix > 0);
+  writeFileSync(
+    `${root}/regexp/src/lib.rs`,
+    regexp.slice(0, regexpPrefix) +
+      readFileSync(`${harnesses}/regexp.rs`, "utf8"),
+  );
+  writeFileSync(
+    `${root}/regexp/Cargo.toml`,
+    `[package]\nname="taraba-regexp-kani"\nversion="0.0.0"\nedition="2024"\n[workspace]\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
+  );
   const source = readFileSync(`${allocator}/src/lib.rs`, "utf8");
   // Byte-for-byte production allocator logic, with proof harnesses appended.
   writeFileSync(
@@ -59,6 +93,18 @@ export function prepareKani(root = ".cache/kani") {
     `${root}/waker/Cargo.toml`,
     `[package]\nname="jsrt-waker-kani"\nversion="0.0.0"\nedition="2021"\n[workspace]\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
   );
+  writeFileSync(
+    `${root}/promise/src/promise.rs`,
+    readFileSync("crates/taraba/src/promise.rs", "utf8") +
+      "\n" +
+      readFileSync(`${harnesses}/promise_state.rs`, "utf8"),
+  );
+  copyFileSync("crates/taraba/src/value.rs", `${root}/promise/src/value.rs`);
+  copyFileSync(`${harnesses}/promise.rs`, `${root}/promise/src/lib.rs`);
+  writeFileSync(
+    `${root}/promise/Cargo.toml`,
+    `[package]\nname="taraba-promise-kani"\nversion="0.0.0"\nedition="2021"\n[workspace]\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
+  );
   const files = [
     "allocator/Cargo.toml",
     "allocator/LICENSE",
@@ -74,6 +120,16 @@ export function prepareKani(root = ".cache/kani") {
     "waker/Cargo.toml",
     "waker/src/lib.rs",
     "waker/src/waker.rs",
+    "promise/Cargo.toml",
+    "promise/src/lib.rs",
+    "promise/src/promise.rs",
+    "promise/src/value.rs",
+    "regexp/Cargo.toml",
+    "regexp/src/lib.rs",
+    "iterator/Cargo.toml",
+    "iterator/src/lib.rs",
+    "iterator/src/handle.rs",
+    "iterator/src/iter.rs",
   ].map((p) => join(root, p));
   const provenance = {
     root: resolve(root),
@@ -83,7 +139,10 @@ export function prepareKani(root = ".cache/kani") {
       "Allocator lib.rs is unchanged prefix; harness appended; helper modules and MPL license copied unchanged",
       "Wasm/native test page backend is replaced by a single-agent always-OOM refill backend; harness seeds 512 bytes of real free-cell storage; no memory.grow, OS, mutex or JS proof",
       "Waker source only expands wasm32 wake import gate to cfg(kani); mock records ID/call count; clone/drop/wake/constructor bodies unchanged",
+      "Promise/value production sources are copied unchanged; private completion proof appended; modeled host checks root ownership and subscription retirement for any nonzero u32 ID. Native64 only: no JS, Wasm pointer dereference, arbitrary Waker behavior or exhaustion proof",
       "Kani uses its pinned native 64-bit Rust toolchain; wasm32 layout/codegen and JS execution are outside these proofs",
+      "RegExp production API/Drop prefix is unchanged; its FFI modules are replaced by a single-handle host model. Any u32 handle, boolean result and one-byte ASCII UTF-8 borrow; JS regex semantics/Map/memory.grow are outside the proof",
+      "Root/JsIterator copied unchanged; model host provides an empty or single-item synchronous cursor for any nonzero u32 cursor ID. Checks early Drop, exhaustion, fused next and independent item lifetime. Clone, Unicode, JS return() and string-copy bytes are outside this proof",
     ],
   };
   writeFileSync(

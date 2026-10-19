@@ -50,7 +50,7 @@ for (const variant of ["release", "debug"])
         async (add) => {
           const { api } = await instantiate(
             minimal,
-            { deferredAdd: add },
+            { bindings: { add } },
             createHost,
           );
           return (...args) => api.start(...args);
@@ -60,9 +60,6 @@ for (const variant of ["release", "debug"])
       sizes: {
         wasm: minimal.length,
         host: readFileSync(`dist/${variant}.mjs`).length,
-        package_loader: readFileSync(
-          `dist/${variant === "debug" ? "index-debug" : "index"}.mjs`,
-        ).length,
       },
       wasm_sha256: hash(minimal),
       host_sha256: hash(readFileSync(`dist/${variant}.mjs`)),

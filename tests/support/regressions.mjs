@@ -1,4 +1,6 @@
+import { withTestApi } from "./core-host.mjs";
 import assert from "node:assert/strict";
+import { add } from "./io.mjs";
 
 const flush = async (condition) => {
   for (let i = 0; i < 100 && !condition(); i++) await Promise.resolve();
@@ -20,7 +22,9 @@ export async function verifyLocal(bytes, glue) {
     let events = [],
       onEvent = () => {},
       pointers = [];
-    const host = glue.createHost(options),
+    const host = withTestApi(
+        glue.createHost({ bindings: { add }, ...options }),
+      ),
       f = host.imports.jsrt;
     f.probe_event = (event) => {
       events.push(event);
@@ -188,9 +192,11 @@ export async function verifyLocal(bytes, glue) {
     let request = 0;
     const { host, e } = await make({
       tokens: { first: 1, last: 2 },
-      deferredAdd: (a, b) => {
-        request++;
-        return Promise.resolve((a + b) | 0);
+      bindings: {
+        add: (a, b) => {
+          request++;
+          return Promise.resolve((a + b) | 0);
+        },
       },
     });
     await assert.rejects(e.start(1, 2), RangeError);
@@ -205,7 +211,7 @@ export async function verifyLocal(bytes, glue) {
   {
     let value;
     const { host, e } = await make({
-      deferredAdd: () => Promise.resolve(value),
+      bindings: { add: () => Promise.resolve(value) },
     });
     for (value of [
       NaN,
@@ -228,8 +234,10 @@ export async function verifyLocal(bytes, glue) {
   }
   {
     const { host, e } = await make({
-      deferredAdd: () => {
-        throw Error("host trap");
+      bindings: {
+        add: () => {
+          throw Error("host trap");
+        },
       },
     });
     await assert.rejects(e.start(1, 2), /host trap/);

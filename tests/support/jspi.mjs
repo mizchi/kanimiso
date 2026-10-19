@@ -1,3 +1,4 @@
+import { createLoader } from "./core-host.mjs";
 import { verifyWit } from "./wit-contract.mjs";
 import { verifyScheduling } from "./scheduling.mjs";
 const check = (ok, message) => {
@@ -7,7 +8,8 @@ const tick = async (condition) => {
   for (let i = 0; i < 200 && !condition(); i++) await Promise.resolve();
   check(condition(), "JSPI task did not progress");
 };
-export async function verifyJspi(instantiate, modules, cases) {
+export async function verifyJspi(createHost, modules, cases) {
+  const instantiate = createLoader(createHost);
   const entries = [];
   for (const { mode, bytes, probes } of modules) {
     const common = await verifyWit(async (add) => {

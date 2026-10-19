@@ -8,7 +8,14 @@
 |---|---|
 | どの実行方式・配布形式を選ぶか | [概要と選択表](../README.ja.md) |
 | WIT と Rust async を書き、型付き npm ライブラリを作る | [利用ガイド](guide.ja.md) |
+| pkg/ をそのまま npm に公開する・名前と版を設定する | [生成する npm パッケージ](guide.ja.md#生成する-npm-パッケージ) |
 | JSPI / Future の所有権・キャンセル・エラーの保証 | [Core API リファレンス](core-runtime.ja.md) |
+| ランタイムのエラーコードを調べる | [エラーコード一覧](error-codes.md) |
+| 大きな関数・fmt の保持経路を調べる | [サイズ警告と taraba insight](insight.ja.md) |
+| release の panic を簡易レポートにする | [panic hook / handler](panic-reporting.md) |
+| RegExp を JS に委ねる・std や依存のサイズを確認する | [taraba-helpers と機能別のサイズ](helpers.ja.md) |
+| JS 文字列の正規化・分割・Iterator・文字コード | [文字列と Iterator](strings.ja.md) |
+| feature を有効にすると何がバンドルに入るか | [使う関数の選択](strings.ja.md#ビルドに含まれる処理)・[生成 JS と Rolldown のサイズ](strings.ja.md#サイズと検証) |
 | 複数ライブラリで JS ランタイムを共有できるか | [ESM キャッシュと共通チャンク](esm-cache.ja.md) |
 | Embassy などと同等の処理で、async が何 B 増えるか | [現在の非同期サイズ比較](async-size.ja.md) |
 | ビルド・テスト・測定を再実行する | [開発ガイド](development.ja.md) |
@@ -21,6 +28,7 @@
 
 | 結果 | 対象 |
 |---|---|
+| Wasm の内訳と twiggy / wasm-snip の効果 | [セクション内訳と snip の実験](wasm-size-analysis.md) |
 | [非同期サイズ](async-size.ja.md) / [JSON](async-size.json) | 同期・非同期の共通処理、taraba / Embassy / Tokio / async-executor / async-std / wasm-bindgen / FuturesUnordered、全配信ファイル |
 | [Allocator 最適化](allocator.md) / [JSON](allocator.json) | 変更前後のサイズ・V8 速度・再利用と OOM、wee_alloc 対照 |
 | [WIT 比較](wit-comparison.md) | 過去の Core / Component sync・native async、コンパイル・実行時間 |

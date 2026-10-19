@@ -13,6 +13,7 @@ import { createHash } from "node:crypto";
 import { performance } from "node:perf_hooks";
 import os from "node:os";
 import esbuild from "esbuild";
+import { build, VERSION as rolldownVersion } from "rolldown";
 import { asyncCases } from "../tests/support/async-contract.mjs";
 import {
   verifyWit,
@@ -116,7 +117,22 @@ for (const mode of ["no_std", "std"])
       writeFileSync(`${dir}/host-unmangled.mjs`, unmangled);
       debugLoader = (await bundleHost({ debug: true })).bytes;
       writeFileSync(`${dir}/host-debug.mjs`, debugLoader);
-    } else loader = readFileSync(`${dir}/core/taraba.mjs`);
+    } else {
+      const entry = `${dir}/baseline-entry.mjs`;
+      writeFileSync(
+        entry,
+        `import {createHost} from './core/runtime.mjs'; import {createLoader} from ${JSON.stringify(resolve("tests/support/core-host.mjs"))}; export const instantiate = createLoader(createHost);`,
+      );
+      const bundled = await build({
+        input: entry,
+        platform: "neutral",
+        transform: { target: "es2022" },
+        output: { format: "esm", minify: true },
+        write: false,
+      });
+      assert.equal(bundled.output.length, 1);
+      loader = Buffer.from(bundled.output[0].code);
+    }
     writeFileSync(`${dir}/host.mjs`, loader);
     const transform = performance.now() - start;
     const files = ["core/app.wasm", "host.mjs"].map((file) => {
@@ -341,7 +357,7 @@ const inputPaths = [
   ...["core", "jspi"].flatMap((b) => paths(`experiments/wit/${b}`)),
   "src/jspi.mjs",
   "src/host.mjs",
-  "src/index.mjs",
+  "tests/support/core-host.mjs",
   "src/errors.mjs",
   "src/error-codes.json",
   "crates/taraba-cli/assets/provenance.json",
@@ -368,6 +384,7 @@ const report = {
     wit_bindgen: "0.58.0",
     futures_util: "0.3.31",
     esbuild: esbuild.version,
+    rolldown: rolldownVersion,
   },
   method: {
     naming:

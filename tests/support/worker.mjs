@@ -9,7 +9,9 @@ export function workerService(modules, createHost) {
       if (!modules[mode]) return new Response("not found", { status: 404 });
       try {
         const io = createIO();
-        const host = createHost({ deferredAdd: (a, b) => io.defer(a, b) });
+        const host = createHost({
+          bindings: { add: (a, b) => io.defer(a, b) },
+        });
         const e = new WebAssembly.Instance(modules[mode], host.imports).exports;
         host.attach(e);
         const checked = await verifyPromises({

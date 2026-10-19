@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 default = []
 std = ["jsrt/std"]
 test-api = []
-probes = ["test-api"]
+probes = ["test-api", "jsrt/test-api"]
 
 [dependencies]
 jsrt = { package = "taraba", path = "../../crates/taraba", default-features = false }

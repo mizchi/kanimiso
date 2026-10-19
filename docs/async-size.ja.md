@@ -2,7 +2,7 @@
 
 [English](async-size.md) | 日本語
 
-2026-10-19T04:50:08.841Z
+2026-10-19T15:58:19.683Z
 
 taraba・Embassy・wasm-bindgen-futures・Tokio・async-executor・async-std・FuturesUnordered をビルドし直した。同じ二段 await の Rust ソース、3,507 入力、全 I/O 引数、外から解決する二回の待機を検査した。以下は測定時点のスナップショットであり、固定されたライブラリ overhead や全用途での順位ではない。
 
@@ -12,28 +12,28 @@ taraba・Embassy・wasm-bindgen-futures・Tokio・async-executor・async-std・F
 
 | 構成 | 同期合計 B | async Wasm B | async JS B | async 合計 B | 同期からの増分 B | Brotli 合計 B |
 |---|---:|---:|---:|---:|---:|---:|
-| taraba JSPI | 2,120 | 5,263 | 1,402 | 6,665 | +4,545 | 3,165 |
-| taraba Future | 4,725 | 6,871 | 4,007 | 10,878 | +6,153 | 5,219 |
-| Embassy WASM + JsFuture | 1,861 | 13,360 | 5,211 | 18,571 | +16,710 | 7,950 |
-| wasm-bindgen-futures | 1,861 | 15,221 | 4,442 | 19,663 | +17,802 | 8,334 |
-| Tokio current-thread + LocalSet | 1,861 | 52,721 | 4,442 | 57,163 | +55,302 | 22,384 |
-| async-executor LocalExecutor | 1,861 | 32,324 | 4,442 | 36,766 | +34,905 | 15,196 |
-| async-std spawn_local | 1,861 | 17,930 | 4,442 | 22,372 | +20,511 | 9,245 |
-| FuturesUnordered task set | 1,861 | 18,495 | 4,440 | 22,935 | +21,074 | 9,589 |
-| Component + jco | 53,140 | 25,350 | 66,776 | 92,126 | +38,986 | 27,091 |
+| taraba JSPI | 1,777 | 5,227 | 1,095 | 6,322 | +4,545 | 3,140 |
+| taraba Future | 4,311 | 6,803 | 3,629 | 10,432 | +6,121 | 5,078 |
+| Embassy WASM + JsFuture | 1,825 | 13,324 | 5,211 | 18,535 | +16,710 | 7,948 |
+| wasm-bindgen-futures | 1,825 | 15,185 | 4,442 | 19,627 | +17,802 | 8,301 |
+| Tokio current-thread + LocalSet | 1,825 | 52,689 | 4,442 | 57,131 | +55,306 | 22,389 |
+| async-executor LocalExecutor | 1,825 | 32,288 | 4,442 | 36,730 | +34,905 | 15,181 |
+| async-std spawn_local | 1,825 | 17,894 | 4,442 | 22,336 | +20,511 | 9,259 |
+| FuturesUnordered task set | 1,825 | 18,459 | 4,440 | 22,899 | +21,074 | 9,591 |
+| Component + jco | 53,104 | 25,314 | 66,776 | 92,090 | +38,986 | 27,100 |
 
 同じ std / allocator で、Embassy との差は次のとおり。負は taraba 側が小さいことを表す。
 
 | 構成 | async 合計 − Embassy B | 比率 |
 |---|---:|---:|
-| taraba JSPI | -11,906 | 0.359× |
-| taraba Future | -7,693 | 0.586× |
+| taraba JSPI | -12,213 | 0.341× |
+| taraba Future | -8,103 | 0.563× |
 | wasm-bindgen-futures | +1,092 | 1.059× |
-| Tokio current-thread + LocalSet | +38,592 | 3.078× |
-| async-executor LocalExecutor | +18,195 | 1.980× |
+| Tokio current-thread + LocalSet | +38,596 | 3.082× |
+| async-executor LocalExecutor | +18,195 | 1.982× |
 | async-std spawn_local | +3,801 | 1.205× |
 | FuturesUnordered task set | +4,364 | 1.235× |
-| Component + jco | +73,555 | 4.961× |
+| Component + jco | +73,555 | 4.968× |
 
 ## 追加ランタイムと共有基盤からの増分
 
@@ -41,7 +41,7 @@ taraba・Embassy・wasm-bindgen-futures・Tokio・async-executor・async-std・F
 
 | 構成 | mode | 追加 Wasm B | 追加 JS B | 追加合計 B |
 |---|---|---:|---:|---:|
-| Tokio current-thread + LocalSet | std | +37,500 | 0 | +37,500 |
+| Tokio current-thread + LocalSet | std | +37,504 | 0 | +37,504 |
 | async-executor LocalExecutor | std | +17,103 | 0 | +17,103 |
 | async-std spawn_local | std | +2,709 | 0 | +2,709 |
 | FuturesUnordered task set | no_std | +2,300 | 0 | +2,300 |
@@ -58,8 +58,8 @@ Embassy の公式 platform-wasm、Tokio、async-executor、async-std の今回�
 
 | 構成 | 同期合計 B | async Wasm B | async JS B | async 合計 B | 同期からの増分 B | Brotli 合計 B |
 |---|---:|---:|---:|---:|---:|---:|
-| taraba JSPI | 1,510 | 248 | 1,402 | 1,650 | +140 | 773 |
-| taraba Future | 4,115 | 1,744 | 4,007 | 5,751 | +1,636 | 2,840 |
+| taraba JSPI | 1,203 | 248 | 1,095 | 1,343 | +140 | 748 |
+| taraba Future | 3,737 | 1,712 | 3,629 | 5,341 | +1,604 | 2,726 |
 | wasm-bindgen-futures | 1,244 | 9,783 | 4,442 | 14,225 | +12,981 | 6,057 |
 | FuturesUnordered task set | 1,244 | 12,083 | 4,442 | 16,525 | +15,281 | 7,082 |
 | Component + jco | 49,182 | 13,691 | 66,776 | 80,467 | +31,285 | 22,625 |
@@ -70,11 +70,11 @@ Embassy の公式 platform-wasm、Tokio、async-executor、async-std の今回�
 
 | 構成 | no_std async Wasm B | std async Wasm B | std − no_std B |
 |---|---:|---:|---:|
-| taraba JSPI | 248 | 5,263 | +5,015 |
-| taraba Future | 1,744 | 6,871 | +5,127 |
-| wasm-bindgen-futures | 9,783 | 15,221 | +5,438 |
-| FuturesUnordered task set | 12,083 | 18,495 | +6,412 |
-| Component + jco | 13,691 | 25,350 | +11,659 |
+| taraba JSPI | 248 | 5,227 | +4,979 |
+| taraba Future | 1,712 | 6,803 | +5,091 |
+| wasm-bindgen-futures | 9,783 | 15,185 | +5,402 |
+| FuturesUnordered task set | 12,083 | 18,459 | +6,376 |
+| Component + jco | 13,691 | 25,314 | +11,623 |
 
 ## 増分の読み方
 
@@ -92,8 +92,8 @@ Embassy の公式 platform-wasm、Tokio、async-executor、async-std の今回�
 | 構成 | モード | taraba-allocator 合計 B | wee_alloc 合計 B | wee − taraba B |
 |---|---|---:|---:|---:|
 | wasm-bindgen-futures | no_std | 14,225 | 14,250 | +25 |
-| wasm-bindgen-futures | std | 19,663 | 19,417 | -246 |
-| Embassy WASM + JsFuture | std | 18,571 | 18,411 | -160 |
+| wasm-bindgen-futures | std | 19,627 | 19,417 | -210 |
+| Embassy WASM + JsFuture | std | 18,535 | 18,411 | -124 |
 
 ## npm と Component の配布物
 
@@ -101,20 +101,20 @@ Embassy の公式 platform-wasm、Tokio、async-executor、async-std の今回�
 
 | 構成・モード | 型定義 B | Component B | npm tgz B |
 |---|---:|---:|---:|
-| taraba JSPI / no_std | 1,340 | 0 | 2,462 |
-| taraba JSPI / std | 1,340 | 0 | 5,271 |
-| taraba Future / no_std | 2,082 | 0 | 5,033 |
-| taraba Future / std | 2,082 | 0 | 7,813 |
-| Embassy WASM + JsFuture / std | 4,457 | 0 | 9,946 |
+| taraba JSPI / no_std | 1,376 | 0 | 7,827 |
+| taraba JSPI / std | 1,376 | 0 | 10,757 |
+| taraba Future / no_std | 1,475 | 0 | 10,154 |
+| taraba Future / std | 1,475 | 0 | 12,981 |
+| Embassy WASM + JsFuture / std | 4,457 | 0 | 9,921 |
 | wasm-bindgen-futures / no_std | 3,419 | 0 | 7,506 |
-| wasm-bindgen-futures / std | 3,419 | 0 | 10,156 |
-| Tokio current-thread + LocalSet / std | 3,419 | 0 | 26,616 |
-| async-executor LocalExecutor / std | 3,419 | 0 | 18,215 |
-| async-std spawn_local / std | 3,419 | 0 | 11,205 |
+| wasm-bindgen-futures / std | 3,419 | 0 | 10,118 |
+| Tokio current-thread + LocalSet / std | 3,419 | 0 | 26,611 |
+| async-executor LocalExecutor / std | 3,419 | 0 | 18,187 |
+| async-std spawn_local / std | 3,419 | 0 | 11,183 |
 | FuturesUnordered task set / no_std | 3,419 | 0 | 8,632 |
-| FuturesUnordered task set / std | 3,415 | 0 | 11,585 |
-| Component + jco / no_std | 2,154 | 14,844 | 28,744 |
-| Component + jco / std | 2,154 | 26,504 | 34,298 |
+| FuturesUnordered task set / std | 3,415 | 0 | 11,556 |
+| Component + jco / no_std | 2,154 | 14,844 | 33,504 |
+| Component + jco / std | 2,154 | 26,468 | 38,952 |
 
 taraba の実用ガイドは [使い方](guide.ja.md)。Component は WIT から型付き async 戻り値を得られ、Core Future の opaque Promise は unknown のまま。wasm-bindgen の公式生成型も保存しており、この比較の Rust→JS Promise 戻り値には any が含まれる。型情報と API 契約も含めて選ぶ。
 

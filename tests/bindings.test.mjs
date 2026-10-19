@@ -28,15 +28,14 @@ test("application imports are guarded and preserve first-fatal identity", async 
   );
   assert.equal(host.stats().dead, true);
   assert.throws(
-    () => host.root({}),
+    () => host.imports.jsrt.__root({}),
     (e) => e === failure,
   );
 });
-test("invalid bindings fail before attachment and never override runtime imports", () => {
-  assert.throws(
-    () => createHost({ bindings: { bad: 1 } }),
-    (e) => e instanceof TypeError && e.code === "RT14",
-  );
+test("binding types come from the generated contract; application imports stay isolated", () => {
+  const unchecked = createHost({ bindings: { bad: 1 } });
+  assert.throws(() => unchecked.imports.app.bad(), TypeError);
+  assert.equal(unchecked.stats().dead, true);
   const host = createHost({ bindings: { task_wake: () => 42 } });
   assert.equal(host.imports.app.task_wake(), 42);
   assert.notEqual(host.imports.app.task_wake, host.imports.jsrt.task_wake);

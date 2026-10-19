@@ -1,8 +1,13 @@
 use std::path::{Path, PathBuf};
 use taraba_cli::{
-    BuildOptions, ComponentOptions, ExecutionProfile, NpmOptions, build, build_component,
-    new_component_project, new_future_project, new_project, package_component, package_core,
+    BuildOptions, ComponentOptions, ExecutionProfile, NpmOptions, build_component,
+    detect_core_profile, new_component_project, new_future_project, new_project, package_component,
+    package_core,
 };
+mod diagnostics;
+mod insight_command;
+mod npm;
+mod project_build;
 mod watch;
 
 fn profile(args: &[String]) -> Result<ExecutionProfile, Box<dyn std::error::Error>> {
@@ -39,8 +44,9 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
     };
     match args.first().map(String::as_str) {
         Some("--version") => println!("taraba {}", env!("CARGO_PKG_VERSION")),
+        Some("insight") => insight_command::run(&args[1..])?,
         None | Some("--help") => println!(
-            "taraba new <directory> [--no-std] [--component | --future | --jspi]\ntaraba build <raw.wasm> --wit <path> [--watch] [--world <name>] [--out-dir pkg] [--binaryen <bin-directory>] [--component | --future | --jspi]\ntaraba build --watch [--manifest-path Cargo.toml] [--package <name>] [--wit wit] [--features <list>] [--no-default-features]\n  --watch: rebuild on Rust/WIT/local dependency changes; Cargo release wasm32 builds without a Wasm input, otherwise watch the supplied Wasm/WIT; failed builds retain previous output\n  --component: standard Component Model / Canonical ABI, native WIT async and rich types; requires wasm-tools\n  --jspi (default): smallest scalar WIT/Core JSPI, serialized per instance; rejection/traps are fatal, no cancellation\n  --future: concurrent Rust Future / spawn_local / cancel runtime; opaque resource payloads\n  --npm-name <name> [--npm-version 0.1.0] [--license UNLICENSED]: generate an npm library with JS, Wasm, WIT-derived TypeScript and package.json; never publishes\n  --component --npm-name additionally requires jco (use --jco <executable>); generates standard jco bindings\n  --wasm-tools <executable>: component tool path\n  --debug / --probes: Core profiles only\nBinaryen 133. JavaScript async baseline: Safari 27+ / JSPI-capable V8. No automatic fallback between execution contracts."
+            "taraba insight [pkg | file.wasm] [--top 20] [--filter <substring>] [--retained] [--paths <substring>] [--json]\ntaraba new <directory> [--no-std] [--component | --future | --jspi]\ntaraba build <raw.wasm> --wit <path> [--watch] [--world <name>] [--out-dir pkg] [--binaryen <bin-directory>] [--component | --future | --jspi]\ntaraba build [--watch] [--manifest-path Cargo.toml] [--package <name>] [--wit wit] [--features <list>] [--no-default-features]\n  Without a Wasm input: compile the Cargo cdylib in release mode for wasm32-unknown-unknown; defaults: Cargo.toml, package wit/, pkg/ output\n  Core runtime: auto-detect JSPI/Future from compiled runtime imports/exports and WIT resources; explicit flags override\n  --watch: rebuild on Rust/WIT/local dependency changes; Cargo release wasm32 builds without a Wasm input, otherwise watch the supplied Wasm/WIT; failed builds retain previous output\n  --component: standard Component Model / Canonical ABI, native WIT async and rich types; requires wasm-tools\n  --jspi: force the scalar WIT/Core JSPI, serialized per instance; rejection/traps are fatal, no cancellation\n  --future: force the Rust Future / spawn_local / cancel runtime; opaque resource payloads\n  Core builds always generate pkg/index.js, index.d.ts and package.json; publish the pkg directory with npm/pnpm\n  --npm-name <name> / --npm-version <version> / --license <SPDX>: override Cargo package identity; raw Wasm defaults to its filename, 0.1.0, UNLICENSED; never publishes\n  --component --npm-name additionally requires jco (use --jco <executable>); generates standard jco bindings\n  --wasm-tools <executable>: component tool path\n  --debug / --probes: Core profiles only\n  --insight: retain optimized Core analysis under pkg/.taraba; excluded from npm packages\n  --no-size-warnings: suppress advisory formatting and dependency-size warnings (enabled by default)\nBinaryen 133. JavaScript async baseline: Safari 27+ / JSPI-capable V8. No automatic fallback between execution contracts."
         ),
         Some("new") => {
             let profile = profile(args.get(2..).unwrap_or_default())?;
@@ -82,6 +88,7 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
                     | "--component"
                     | "--watch"
                     | "--no-default-features" => i += 1,
+                    "--insight" | "--no-size-warnings" => i += 1,
                     other => return Err(format!("unknown argument: {other}").into()),
                 }
             }
@@ -93,42 +100,36 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
                 || package.is_some()
                 || features.is_some()
                 || no_default_features)
-                && (!watching || input.is_some())
+                && input.is_some()
             {
-                return Err("--manifest-path / --package / --features / --no-default-features require project --watch without a Wasm input".into());
-            }
-            if input.is_none() && !watching {
-                return Err("missing input Wasm".into());
+                return Err("--manifest-path / --package / --features / --no-default-features require a Cargo project without a Wasm input".into());
             }
             let profile = profile(args.get(1..).unwrap_or_default())?;
             let component = args.iter().any(|a| a == "--component");
-            let npm = value("--npm-name")?
-                .map(|name| -> Result<_, Box<dyn std::error::Error>> {
-                    Ok(NpmOptions {
-                        name,
-                        version: value("--npm-version")?.unwrap_or_else(|| "0.1.0".into()),
-                        license: value("--license")?.unwrap_or_else(|| "UNLICENSED".into()),
-                    })
-                })
-                .transpose()?;
-            if let Some(npm) = &npm {
-                npm.validate()?;
-            }
-            if npm.is_none() && (value("--npm-version")?.is_some() || value("--license")?.is_some())
-            {
-                return Err("--npm-version / --license require --npm-name".into());
+            let automatic = !component
+                && !args
+                    .iter()
+                    .any(|a| matches!(a.as_str(), "--jspi" | "--future"));
+            let npm = npm::Overrides {
+                name: value("--npm-name")?,
+                version: value("--npm-version")?,
+                license: value("--license")?,
+            };
+            npm.validate()?;
+            if component && npm.name.is_none() && (npm.version.is_some() || npm.license.is_some()) {
+                return Err("Component npm output requires --npm-name".into());
             }
             if component
                 && args
                     .iter()
-                    .any(|a| matches!(a.as_str(), "--debug" | "--probes"))
+                    .any(|a| matches!(a.as_str(), "--debug" | "--probes" | "--insight"))
             {
-                return Err("--debug / --probes are Core-only options".into());
+                return Err("--debug / --probes / --insight are Core-only options".into());
             }
             if !component && (value("--wasm-tools")?.is_some() || value("--jco")?.is_some()) {
                 return Err("--wasm-tools / --jco require --component".into());
             }
-            if npm.is_none() && value("--jco")?.is_some() {
+            if npm.name.is_none() && value("--jco")?.is_some() {
                 return Err("--jco requires --npm-name".into());
             }
             let wit = value("--wit")?.map(PathBuf::from);
@@ -143,13 +144,14 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
                 binaryen: value("--binaryen")?.map(PathBuf::from),
                 debug: args.contains(&"--debug".into()),
                 probes: args.contains(&"--probes".into()),
+                insight: args.iter().any(|a| a == "--insight"),
                 profile,
             };
             let wasm_tools =
                 PathBuf::from(value("--wasm-tools")?.unwrap_or_else(|| "wasm-tools".into()));
             let jco = PathBuf::from(value("--jco")?.unwrap_or_else(|| "jco".into()));
-            if watching {
-                let watch = watch::Options {
+            if watching || input.is_none() {
+                let project = project_build::Options {
                     input,
                     wit,
                     output: o.output.clone(),
@@ -157,16 +159,50 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
                     package,
                     features,
                     no_default_features,
+                    size_warnings: !args.iter().any(|a| a == "--no-size-warnings"),
                 };
-                watch::run(watch, |input, output| {
+                let generate = |input: project_build::Input, output: &Path| {
+                    let package = if !component || npm.name.is_some() {
+                        Some(npm.resolve(
+                            input.npm.unwrap_or_else(|| npm::wasm_defaults(&input.wasm)),
+                        )?)
+                    } else {
+                        None
+                    };
                     let mut build = o.clone();
                     build.input = input.wasm;
                     build.wit = input.wit;
                     build.output = output.to_owned();
-                    execute(build, npm.as_ref(), component, &wasm_tools, &jco)
-                })?;
+                    execute(
+                        build,
+                        package.as_ref(),
+                        component,
+                        automatic,
+                        &wasm_tools,
+                        &jco,
+                        !args.iter().any(|a| a == "--no-size-warnings"),
+                    )
+                };
+                if watching {
+                    watch::run(project, generate)?;
+                } else {
+                    project_build::run(project, generate)?;
+                }
             } else {
-                execute(o, npm.as_ref(), component, &wasm_tools, &jco)?;
+                let package = if !component || npm.name.is_some() {
+                    Some(npm.resolve(npm::wasm_defaults(&o.input))?)
+                } else {
+                    None
+                };
+                execute(
+                    o,
+                    package.as_ref(),
+                    component,
+                    automatic,
+                    &wasm_tools,
+                    &jco,
+                    !args.iter().any(|a| a == "--no-size-warnings"),
+                )?;
             }
         }
         Some(other) => return Err(format!("unknown command {other}; use --help").into()),
@@ -175,12 +211,28 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn execute(
-    o: BuildOptions,
+    mut o: BuildOptions,
     npm: Option<&NpmOptions>,
     component: bool,
+    automatic: bool,
     wasm_tools: &Path,
     jco: &Path,
+    size_warnings: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    if size_warnings {
+        diagnostics::warn_wasm(&o.input);
+    }
+    if automatic {
+        o.profile = if o.probes {
+            ExecutionProfile::Future
+        } else {
+            detect_core_profile(&o)?
+        };
+        eprintln!(
+            "taraba: selected {:?} from the guest runtime requirements",
+            o.profile
+        );
+    }
     if component {
         let co = ComponentOptions {
             input: o.input,
@@ -195,9 +247,8 @@ fn execute(
         } else {
             build_component(&co)
         }
-    } else if let Some(npm) = npm {
-        package_core(&o, npm)
     } else {
-        build(&o)
+        let npm = npm.cloned().unwrap_or_else(|| npm::wasm_defaults(&o.input));
+        package_core(&o, &npm)
     }
 }

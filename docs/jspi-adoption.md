@@ -4,7 +4,7 @@ JSPI を標準とし、Rust Future 対応は必要時に追加する。既存 Fu
 
 ## 今回の変更
 
-`taraba new` と `taraba build` は直接 JSPI を既定とする。`--jspi` は明示指定として維持し、従来の Future 構成には両コマンドで `--future` を指定する。二つのフラグの併用はエラー。WIT の内容からバックエンドを自動選択しない。Rust の build API も `ExecutionProfile::{Jspi, Future}` で区別する。
+`taraba new` は直接 JSPI を既定とし、Future の雛形には `--future` を指定する。`taraba build` は生成 Wasm のランタイム import/export と WIT resource から方式を判定する。`--jspi` / `--future` は明示指定として維持し、併用はエラーにする。Rust の build API は `ExecutionProfile::{Jspi, Future}` で区別する。
 
 ```sh
 # JSPI: 既定
@@ -16,7 +16,7 @@ taraba new hello-future --no-std --future
 taraba build future-raw.wasm --wit wit --out-dir pkg-future --future
 ```
 
-従来の Future アプリをビルドするコマンドにも `--future` が必要になる。resource / runtime imports を含むアプリを既定 JSPI でビルドしても、黙って別の ABI に切り替えない。`std` と `no_std` の選択はバックエンド選択とは独立。
+resource / runtime imports を必要とするアプリはビルド時に Future を選択する。明示した方式がアプリと不適合ならエラーにし、実行時には別の ABI に切り替えない。`std` と `no_std` の選択はバックエンド選択とは独立。
 
 JSPI 上の Future アダプターは引き続き [experiments/jspi-future](../experiments/jspi-future/README.md) で検証する。製品 CLI に新しい Future アダプター用オプションはまだ追加しない。`--future` は既存 executor を選ぶもので、実験アダプターを選ぶフラグではない。
 
@@ -64,7 +64,7 @@ JSPI の reject / trap で Rust の Drop が走るとは仮定しない。Promis
 `tests/support/scheduling.mjs` は、同じ二段の加算で A / B を投入し、A を停止したまま B の I/O だけを解決する。直列構成では A→B、既存 Future では B→A になることを確認する。タイマーや速度の閾値で並行性を判定しない。
 
 - `just check`: 製品の release/debug × std/no_std で、共通成功ケース・Rust spill・各構成の scheduling 契約を確認する。
-- `just package-check`: archive からインストールした CLI で、フラグなしの JSPI と明示 `--future` をビルドし、型・metadata・I/O・scheduling・reject を検証する。公開処理は行わない。
+- `just package-check`: archive からインストールした CLI で、自動選択と明示指定の両方をビルドし、型・metadata・I/O・scheduling・reject を検証する。公開処理は行わない。
 - `just check-jspi-future`: 同じ Rust の `shared/compute.rs` を使う全8構成と、アダプターの release/debug / mangling 条件で scheduling も確認する。実験アダプターを自動採用しない。
 
 結果は `.cache/check.json`、`.cache/jspi-check.json`、`.cache/package-check.json`、`.cache/jspi-future-experiment/check.json` に保存する。既存の計測 JSON は記録日時時点のスナップショットとして扱う。

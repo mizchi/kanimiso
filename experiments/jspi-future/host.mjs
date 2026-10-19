@@ -8,13 +8,6 @@ export async function instantiate(
   source,
   { bindings: { add, dropped = () => {} } } = { bindings: {} },
 ) {
-  if (
-    typeof WebAssembly.promising !== "function" ||
-    typeof WebAssembly.Suspending !== "function"
-  )
-    throw runtimeError(3);
-  if (typeof add !== "function") throw runtimeError(4, TypeError);
-  if (typeof dropped !== "function") throw runtimeError(14, TypeError);
   const gates = new Gates(),
     completed = new Map(),
     jobs = new Map(),
@@ -118,34 +111,32 @@ export async function instantiate(
         })
       : sync(dropped),
   };
+  const module =
+    source instanceof WebAssembly.Module
+      ? source
+      : await WebAssembly.compile(source);
   const loaded = await WebAssembly.instantiate(
-    source,
+    module,
     __JF_CONCURRENT__
       ? { app: imports, "taraba:jspi-stack": gates.stacks_.imports }
       : { app: imports },
   );
   const instance =
     loaded instanceof WebAssembly.Instance ? loaded : loaded.instance;
-  if (
-    typeof SharedArrayBuffer !== "undefined" &&
-    instance.exports.memory?.buffer instanceof SharedArrayBuffer
-  )
-    throw runtimeError(9);
   if (__JF_CONCURRENT__) gates.stacks_.attach(instance.exports);
-  for (const [name, value] of Object.entries(instance.exports))
+  for (const { name, kind } of WebAssembly.Module.exports(module))
     if (
-      typeof value === "function" &&
+      kind === "function" &&
       !name.startsWith("rt_") &&
       !name.startsWith("cabi_")
     )
-      functions[name] = WebAssembly.promising(value);
+      functions[name] = WebAssembly.promising(instance.exports[name]);
   let tail = Promise.resolve();
   const call = (name, ...args) => {
     if (__JF_DEBUG__) queued++;
     let result = (__JF_CONCURRENT__ ? Promise.resolve() : tail).then(
       async () => {
         alive();
-        if (typeof functions[name] !== "function") throw runtimeError(10);
         try {
           const value = await functions[name](...args);
           alive();
