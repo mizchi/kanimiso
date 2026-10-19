@@ -2,7 +2,11 @@
 
 English | [日本語](README.ja.md)
 
-Build Rust/Wasm libraries from **WIT**, including async functions, and distribute them as **Components or typed npm packages**. A small Core/JSPI backend and the existing Rust Future runtime provide different size/concurrency tradeoffs. Formerly `kanimiso`.
+Writing frontend middleware in Rust meant reducing Wasm runtime overhead, including bundle size and async execution.
+
+**taraba is a Rust/Wasm runtime that aims to make that overhead as small as possible, using a dedicated allocator, modern Wasm features, and JavaScript's event loop.**
+
+Build libraries from WIT, including async functions, and distribute them as Components or typed npm packages. A small Core/JSPI backend and the existing Rust Future runtime provide different size/concurrency tradeoffs. Formerly `kanimiso`.
 
 | Need | Execution | Distribution |
 |---|---|---|
