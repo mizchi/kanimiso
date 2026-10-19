@@ -24,3 +24,10 @@ It supports non-shared wasm32 memory only. The native page backend is test-only.
 
 See [LICENSE](LICENSE) and [UPSTREAM.json](UPSTREAM.json) for license and provenance.
 The implementation type `WeeAlloc` is retained; `Allocator` is its public convenience alias.
+
+Adjacent free cells coalesce during deallocation; allocation traverses an untagged
+free list without the former delayed-merge machinery. A right-neighbor merge still
+requires an O(n) search. Pointer-provenance and checked-size fixes are retained.
+See the [measured size/performance comparison](../../docs/allocator.md) for the pinned
+pre-change reference and wee_alloc control. This is not a claim that every workload
+is faster or smaller; wee_alloc fails the comparison's adjacent-block reuse oracle.

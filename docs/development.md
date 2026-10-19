@@ -20,6 +20,7 @@ setup installs dependencies, the Wasm Rust target, Binaryen 133 and wasm-tools 1
 | `just package-check` | Packages all three crates, installs an unpacked CLI, repeats external consumers and npm library generation |
 | `just compare-async-size` | Fresh common sync/async implementations with Embassy/wasm-bindgen; writes docs/async-size.{json,md} and Japanese report |
 | `just check-async-size` | Same comparison and correctness checks; writes only .cache/async-size |
+| `just compare-allocator` / `just check-allocator` | Common allocator oracle and V8 kernels for the fixed reference, current implementation and wee_alloc; check writes .cache only |
 | `just workers --jspi-concurrent` | Existing fixtures on local workerd, including unadopted concurrent experiment |
 | `just modern` | Optional js-string, GC, exnref and funcref capability probes |
 | `just stress 60` | Runtime churn/ownership stress |

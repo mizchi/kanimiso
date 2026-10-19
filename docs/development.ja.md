@@ -20,6 +20,7 @@ setup は依存・Rust Wasm target・Binaryen 133・wasm-tools 1.245.1 を用意
 | `just package-check` | 3 crate を package し、展開した CLI で外部アプリと npm 生成を再検証 |
 | `just compare-async-size` | Embassy / wasm-bindgen と同じ同期・非同期処理をビルドし、docs/async-size.{json,md} と日本語結果を更新 |
 | `just check-async-size` | 同じサイズ・正当性検証。出力は .cache/async-size のみ |
+| `just compare-allocator` / `just check-allocator` | 変更前・現在・wee_alloc の共通 allocator 検査と V8 kernel 測定。check は .cache のみ |
 | `just workers --jspi-concurrent` | 未採用の並行実験を含む既存 fixture を local workerd で実行 |
 | `just modern` | js-string / GC / exnref / funcref の機能確認 |
 | `just stress 60` | ランタイムの churn/所有権の stress |

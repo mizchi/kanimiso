@@ -20,6 +20,7 @@ jobs:
       - run: just check
       - run: just check-jspi-concurrent
       - run: just check-async-size
+      - run: just check-allocator
       - run: just package-check
       - run: just modern
       - run: just stress 60
@@ -41,6 +42,8 @@ jobs:
             .cache/library-check-error.log
             .cache/async-size/check.json
             .cache/async-size/failure.log
+            .cache/allocator/check.json
+            .cache/allocator/failure.log
             .cache/workers.json
             .cache/workers/log.txt
           include-hidden-files: true

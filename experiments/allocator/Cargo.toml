@@ -1,0 +1,27 @@
+[package]
+name = "allocator-probe"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[workspace]
+[lib]
+crate-type = ["cdylib"]
+test = false
+doctest = false
+[features]
+default = []
+std = []
+current = ["dep:taraba-allocator"]
+before = ["dep:before"]
+wee = ["dep:wee_alloc"]
+classes = ["taraba-allocator?/size_classes", "before?/size_classes", "wee_alloc?/size_classes"]
+[dependencies]
+taraba-allocator = {path = "../../crates/taraba-allocator", default-features = false, optional = true}
+before = {package = "taraba-allocator-before", path = "../../.cache/allocator/baseline/crates/taraba-allocator", default-features = false, optional = true}
+wee_alloc = {version = "=0.4.5", default-features = false, optional = true}
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = false

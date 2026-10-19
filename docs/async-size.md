@@ -2,7 +2,7 @@
 
 English | [日本語](async-size.ja.md)
 
-2026-10-18T19:35:12.500Z
+2026-10-19T01:22:48.625Z
 
 Fresh builds of current taraba, the official Embassy WASM executor and wasm-bindgen-futures. Every async build compiles the same two-await Rust source and passes 3,507 inputs, all I/O arguments and two externally controlled waits. These are dated application snapshots, not fixed library overhead or rankings for every workload.
 
@@ -12,20 +12,20 @@ All primary rows use taraba-allocator with size classes disabled, the same Rust/
 
 | Backend | Sync total B | Async Wasm B | Async JS B | Async total B | Growth B | Brotli total B |
 |---|---:|---:|---:|---:|---:|---:|
-| taraba JSPI | 2,277 | 5,635 | 1,431 | 7,066 | +4,789 | 3,329 |
-| taraba Future | 4,853 | 7,238 | 4,007 | 11,245 | +6,392 | 5,324 |
-| Component + jco | 53,514 | 25,800 | 66,776 | 92,576 | +39,062 | 27,244 |
-| wasm-bindgen-futures | 1,986 | 15,620 | 4,442 | 20,062 | +18,076 | 8,461 |
-| Embassy WASM + JsFuture | 1,986 | 13,844 | 5,211 | 19,055 | +17,069 | 8,084 |
+| taraba JSPI | 2,149 | 5,307 | 1,431 | 6,738 | +4,589 | 3,195 |
+| taraba Future | 4,725 | 6,915 | 4,007 | 10,922 | +6,197 | 5,224 |
+| Component + jco | 53,184 | 25,460 | 66,776 | 92,236 | +39,052 | 27,200 |
+| wasm-bindgen-futures | 1,861 | 15,303 | 4,442 | 19,745 | +17,884 | 8,355 |
+| Embassy WASM + JsFuture | 1,861 | 13,438 | 5,211 | 18,649 | +16,788 | 7,965 |
 
 With the same std/allocator, these differences are relative to Embassy. Negative values mean the taraba configuration is smaller.
 
 | Backend | Async total − Embassy B | Ratio |
 |---|---:|---:|
-| taraba JSPI | -11,989 | 0.371× |
-| taraba Future | -7,810 | 0.590× |
-| Component + jco | +73,521 | 4.858× |
-| wasm-bindgen-futures | +1,007 | 1.053× |
+| taraba JSPI | -11,911 | 0.361× |
+| taraba Future | -7,727 | 0.586× |
+| Component + jco | +73,587 | 4.946× |
+| wasm-bindgen-futures | +1,096 | 1.059× |
 
 ## no_std comparison
 
@@ -35,8 +35,8 @@ Embassy 0.10.0 platform-wasm links std, so no no_std value is invented for it. A
 |---|---:|---:|---:|---:|---:|---:|
 | taraba JSPI | 1,539 | 248 | 1,431 | 1,679 | +140 | 785 |
 | taraba Future | 4,115 | 1,744 | 4,007 | 5,751 | +1,636 | 2,840 |
-| Component + jco | 49,544 | 14,102 | 66,776 | 80,878 | +31,334 | 22,788 |
-| wasm-bindgen-futures | 1,244 | 10,171 | 4,442 | 14,613 | +13,369 | 6,217 |
+| Component + jco | 49,226 | 13,789 | 66,776 | 80,565 | +31,339 | 22,680 |
+| wasm-bindgen-futures | 1,244 | 9,852 | 4,442 | 14,294 | +13,050 | 6,086 |
 
 ### Wasm added by std
 
@@ -44,10 +44,10 @@ JS bytes stay equal, while linking std increases Wasm. no_std traps on panic whe
 
 | Backend | no_std async Wasm B | std async Wasm B | std − no_std B |
 |---|---:|---:|---:|
-| taraba JSPI | 248 | 5,635 | +5,387 |
-| taraba Future | 1,744 | 7,238 | +5,494 |
-| Component + jco | 14,102 | 25,800 | +11,698 |
-| wasm-bindgen-futures | 10,171 | 15,620 | +5,449 |
+| taraba JSPI | 248 | 5,307 | +5,059 |
+| taraba Future | 1,744 | 6,915 | +5,171 |
+| Component + jco | 13,789 | 25,460 | +11,671 |
+| wasm-bindgen-futures | 9,852 | 15,303 | +5,451 |
 
 ## Interpret the growth correctly
 
@@ -64,9 +64,9 @@ Only the following control switches the allocator to wee_alloc 0.4.5; size class
 
 | Backend | Mode | taraba-allocator total B | wee_alloc total B | wee − taraba B |
 |---|---|---:|---:|---:|
-| wasm-bindgen-futures | no_std | 14,613 | 14,250 | -363 |
-| wasm-bindgen-futures | std | 20,062 | 19,417 | -645 |
-| Embassy WASM + JsFuture | std | 19,055 | 18,411 | -644 |
+| wasm-bindgen-futures | no_std | 14,294 | 14,250 | -44 |
+| wasm-bindgen-futures | std | 19,745 | 19,417 | -328 |
+| Embassy WASM + JsFuture | std | 18,649 | 18,411 | -238 |
 
 ## npm and Component payloads
 
@@ -75,14 +75,14 @@ Declarations and the Component container are excluded from runtime download size
 | Backend / mode | Declarations B | Component B | npm tgz B |
 |---|---:|---:|---:|
 | taraba JSPI / no_std | 1,340 | 0 | 2,473 |
-| taraba JSPI / std | 1,340 | 0 | 5,442 |
+| taraba JSPI / std | 1,340 | 0 | 5,292 |
 | taraba Future / no_std | 2,082 | 0 | 5,033 |
-| taraba Future / std | 2,082 | 0 | 8,008 |
-| Component + jco / no_std | 2,154 | 15,255 | 28,940 |
-| Component + jco / std | 2,154 | 26,954 | 34,455 |
-| wasm-bindgen-futures / no_std | 3,419 | 0 | 7,667 |
-| wasm-bindgen-futures / std | 3,419 | 0 | 10,300 |
-| Embassy WASM + JsFuture / std | 4,457 | 0 | 10,126 |
+| taraba Future / std | 2,082 | 0 | 7,820 |
+| Component + jco / no_std | 2,154 | 14,942 | 28,802 |
+| Component + jco / std | 2,154 | 26,614 | 34,342 |
+| wasm-bindgen-futures / no_std | 3,419 | 0 | 7,540 |
+| wasm-bindgen-futures / std | 3,419 | 0 | 10,192 |
+| Embassy WASM + JsFuture / std | 4,457 | 0 | 9,972 |
 
 See the [usage guide](guide.md). Component provides WIT-typed async results; Core Future opaque Promise payloads remain unknown. The official wasm-bindgen declarations are retained and include any for this Rust-to-JS Promise result. Account for type information and API contracts when choosing.
 

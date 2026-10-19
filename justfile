@@ -47,6 +47,18 @@ compare-async-size: prepare-async-size
 check-async-size: prepare-async-size
     node tools/compare-async-size.mjs --check
 
+prepare-allocator:
+    node tools/prepare-allocator.mjs
+    cargo fetch --locked --manifest-path experiments/allocator/Cargo.toml
+    cargo fmt --manifest-path experiments/allocator/Cargo.toml -- --check
+    pnpm exec prettier --check experiments/allocator/*.mjs
+
+compare-allocator: prepare-allocator
+    node tools/compare-allocator.mjs --require-improvement
+
+check-allocator: prepare-allocator
+    node tools/compare-allocator.mjs --check --require-improvement
+
 fmt:
     pnpm format
     cargo fmt --all
@@ -54,6 +66,9 @@ fmt:
     rustfmt --edition 2021 verification/kani/harnesses/*.rs
     cargo fmt --manifest-path experiments/async-size/Cargo.toml --all
     pnpm exec prettier --write experiments/async-size/*.mjs experiments/async-size/bindgen/io.mjs
+    node tools/prepare-allocator.mjs
+    cargo fmt --manifest-path experiments/allocator/Cargo.toml
+    pnpm exec prettier --write experiments/allocator/*.mjs
 
 stress seconds="60":
     node tools/stress.mjs {{seconds}}

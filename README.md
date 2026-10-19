@@ -36,11 +36,11 @@ The same two-await Rust implementation, std and taraba-allocator (size classes d
 
 | Backend | Async Wasm B | Async JS B | Total B | Growth from sync B |
 |---|---:|---:|---:|---:|
-| taraba JSPI | 5,635 | 1,431 | 7,066 | +4,789 |
-| taraba Future | 7,238 | 4,007 | 11,245 | +6,392 |
-| Embassy WASM + JsFuture | 13,844 | 5,211 | 19,055 | +17,069 |
-| wasm-bindgen-futures | 15,620 | 4,442 | 20,062 | +18,076 |
-| Component + jco | 25,800 | 66,776 | 92,576 | +39,062 |
+| taraba JSPI | 5,307 | 1,431 | 6,738 | +4,589 |
+| taraba Future | 6,915 | 4,007 | 10,922 | +6,197 |
+| Embassy WASM + JsFuture | 13,438 | 5,211 | 18,649 | +16,788 |
+| wasm-bindgen-futures | 15,303 | 4,442 | 19,745 | +17,884 |
+| Component + jco | 25,460 | 66,776 | 92,236 | +39,052 |
 
 Contracts differ: JSPI serializes an instance; Component includes typed WIT async and Canonical ABI. The Component container is not counted again alongside its runtime cores. See [no_std, compression, wee_alloc controls and methodology](docs/async-size.md).
 <!-- async-size:end -->

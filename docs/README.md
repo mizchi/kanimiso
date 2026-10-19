@@ -21,6 +21,7 @@ Each report is dated and records source hashes. The new async-size report is the
 | Report | Scope |
 |---|---|
 | [Async size](async-size.md) / [JSON](async-size.json) | Fresh builds, common synchronous/async algorithm, same allocator, Embassy and wasm-bindgen, all runtime files |
+| [Allocator optimization](allocator.md) / [JSON](allocator.json) | Before/after size, V8 kernels, memory reuse/OOM and wee_alloc control (Japanese) |
 | [WIT comparison](wit-comparison.md) | Earlier Core, standard Component sync/native async, compile/runtime timing |
 | [JSPI Future measurements](jspi-future-measurements.md) | Experimental Future adapter and adoption gates |
 | [Concurrent JSPI](jspi-concurrent.md) | Unadopted stack snapshots: concurrency, memory and timing |

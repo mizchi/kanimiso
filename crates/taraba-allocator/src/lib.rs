@@ -253,50 +253,10 @@ impl<'a> CellHeader<'a> {
 }
 
 impl<'a> FreeCell<'a> {
-    // Low bits in `FreeCell::next_free_raw`.
-    //
-    // If `NEXT_FREE_CELL_CAN_MERGE` is set, then the following invariants hold
-    // true:
-    //
-    // * `FreeCell::next_free_raw` (and'd with the mask) is not null.
-    // * `FreeCell::next_free_raw` is the adjacent `CellHeader::prev_cell_raw`.
-    //
-    // Therefore, this free cell can be merged into a single, larger, contiguous
-    // free cell with its previous neighbor, which is also the next cell in the
-    // free list.
-    const NEXT_FREE_CELL_CAN_MERGE: usize = 0b01;
-    const _RESERVED: usize = 0b10;
-    const MASK: usize = !0b11;
-
-    #[inline]
-    fn next_free_bits(raw: *const FreeCell<'a>) -> usize {
-        raw.addr() & !Self::MASK
-    }
-
-    #[inline]
-    fn next_free_without_bits(raw: *const FreeCell<'a>) -> *const FreeCell<'a> {
-        raw.map_addr(|addr| addr & Self::MASK)
-    }
-
-    #[inline]
-    fn next_free_with_bits(raw: *const FreeCell<'a>, bits: usize) -> *const FreeCell<'a> {
-        extra_assert_eq!(bits & Self::MASK, 0);
-        raw.map_addr(|addr| (addr & Self::MASK) | bits)
-    }
-
-    fn next_free_can_merge(&self) -> bool {
-        Self::next_free_bits(self.next_free_raw.get()) & Self::NEXT_FREE_CELL_CAN_MERGE != 0
-    }
-
-    fn clear_next_free_can_merge(&self) {
-        let next_free = self.next_free_raw.get();
-        let bits = Self::next_free_bits(next_free) & !Self::NEXT_FREE_CELL_CAN_MERGE;
-        self.next_free_raw
-            .set(Self::next_free_with_bits(next_free, bits));
-    }
-
+    // All adjacent free cells are merged during deallocation. Logical free-list
+    // links are untagged; no delayed-merge state remains to interpret on allocation.
     fn next_free(&self) -> *const FreeCell<'a> {
-        Self::next_free_without_bits(self.next_free_raw.get())
+        self.next_free_raw.get()
     }
 
     unsafe fn from_uninitialized(
@@ -384,7 +344,6 @@ impl<'a> FreeCell<'a> {
                     split_cell as *const CellHeader<'a>,
                 );
             }
-            free.clear_next_free_can_merge();
             if CellHeader::next_cell_is_invalid(&free.header.neighbors) {
                 CellHeader::clear_next_cell_is_invalid(&free.header.neighbors);
                 unsafe {
@@ -415,7 +374,6 @@ impl<'a> FreeCell<'a> {
         policy: &dyn AllocPolicy<'a>,
     ) -> &'b Cell<*const FreeCell<'a>> {
         let cell_ref = unsafe { &*cell };
-        extra_assert!(!cell_ref.next_free_can_merge());
         extra_assert!(cell_ref.next_free().is_null());
         cell_ref.next_free_raw.set(head.get());
         head.set(cell);
@@ -510,27 +468,6 @@ extra_only! {
 extra_only! {
     fn assert_local_free_cell_invariants(free: *const FreeCell) {
         assert_local_cell_invariants(free as *const CellHeader);
-        unsafe {
-            if free.is_null() {
-                return;
-            }
-
-            if (*free).next_free_can_merge() {
-                let prev_cell = (*free).header.neighbors.prev().expect(
-                    "if the next free cell (aka prev_cell) can merge, \
-                     prev_cell had better exist"
-                );
-                assert!(
-                    prev_cell.is_free(),
-                    "prev_cell is free, when NEXT_FREE_CELL_CAN_MERGE bit is set"
-                );
-                assert_eq!(
-                    (*free).next_free() as *const CellHeader,
-                    prev_cell as *const _,
-                    "next_free == prev_cell, when NEXT_FREE_CAN_MERGE bit is set"
-                );
-            }
-        }
     }
 }
 
@@ -682,96 +619,36 @@ unsafe fn unchecked_unwrap<T>(o: Option<T>) -> T {
     }
 }
 
+/// Walk logical links without modifying the list. Adjacent cells have already
+/// been coalesced by deallocation, so allocation never needs a merge pass.
 unsafe fn walk_free_list<'a, F, T>(
     head: &Cell<*const FreeCell<'a>>,
-    policy: &dyn AllocPolicy<'a>,
     mut f: F,
 ) -> Result<T, AllocErr>
 where
     F: FnMut(&Cell<*const FreeCell<'a>>, *const FreeCell<'a>) -> Option<T>,
 {
-    // The previous cell in the free list (not to be confused with the current
-    // cell's previously _adjacent_ cell).
-    let mut previous_free = head;
-
+    let mut previous = head;
     loop {
-        let current_free = previous_free.get();
-        if current_free.is_null() {
+        let current = previous.get();
+        if current.is_null() {
             return Err(AllocErr::new());
         }
-
-        assert_local_cell_invariants(&(*current_free).header);
-
-        let current_free = Cell::new(current_free);
-
-        // Now check if this cell can merge with the next cell in the free
-        // list.
-        //
-        // We don't re-check `policy.should_merge_adjacent_free_cells()` because
-        // the `NEXT_FREE_CELL_CAN_MERGE` bit only gets set after checking with
-        // the policy.
-        while (*current_free.get()).next_free_can_merge() {
-            extra_assert!(policy.should_merge_adjacent_free_cells());
-
-            let current = &*current_free.get();
-            current.clear_next_free_can_merge();
-
-            let prev_neighbor = unchecked_unwrap(current.header.neighbors.prev().and_then(|p| {
-                let prev = current.header.neighbors.prev_unchecked();
-                if p.is_free() {
-                    Some(prev as *const FreeCell<'a>)
-                } else {
-                    None
-                }
-            }));
-
-            current.header.neighbors.remove();
-            if CellHeader::next_cell_is_invalid(&current.header.neighbors) {
-                CellHeader::set_next_cell_is_invalid(&(*prev_neighbor).header.neighbors);
-            }
-
-            previous_free.set(prev_neighbor);
-            current_free.set(prev_neighbor);
-
-            write_free_pattern(
-                current_free.get(),
-                (*current_free.get()).header.size(),
-                policy,
-            );
-            assert_local_cell_invariants(&(*current_free.get()).header);
-        }
-
-        if let Some(result) = f(previous_free, current_free.get()) {
+        assert_local_cell_invariants(&(*current).header);
+        if let Some(result) = f(previous, current) {
             return Ok(result);
         }
-
-        previous_free = &(*current_free.get()).next_free_raw;
+        previous = &(*current).next_free_raw;
     }
 }
 
-/// Find the logical free-list link that currently points at `target`.
-///
-/// Parameters:
-/// - `head`: head pointer cell for the logical free list.
-/// - `target`: the free-cell header that must already be reachable from `head`.
-/// - `policy`: allocation policy for this list; `walk_free_list` needs it because
-///   it may resolve pending delayed merges while searching.
-///
-/// Returns:
-/// - `Ok(slot)` where `(*slot).get() == target` after any pending delayed merges
-///   on the walk path are resolved.
-/// - `Err(AllocErr)` if `target` is not reachable from `head`.
+/// Return the logical link to an existing free cell, without changing any links.
 unsafe fn find_free_list_slot<'a>(
     head: &Cell<*const FreeCell<'a>>,
     target: *const FreeCell<'a>,
-    policy: &dyn AllocPolicy<'a>,
 ) -> Result<*const Cell<*const FreeCell<'a>>, AllocErr> {
-    walk_free_list(head, policy, |previous, current| {
-        if ptr::eq(current, target) {
-            Some(previous as *const Cell<*const FreeCell<'a>>)
-        } else {
-            None
-        }
+    walk_free_list(head, |previous, current| {
+        ptr::eq(current, target).then_some(previous as *const Cell<*const FreeCell<'a>>)
     })
 }
 
@@ -784,7 +661,7 @@ unsafe fn alloc_first_fit<'a>(
 ) -> Result<NonNull<u8>, AllocErr> {
     extra_assert!(size.0 > 0);
 
-    walk_free_list(head, policy, |previous, current| {
+    walk_free_list(head, |previous, current| {
         extra_assert_eq!(previous.get(), current);
 
         if let Some(allocated) = FreeCell::try_alloc(current, previous, size, align, policy) {
@@ -981,125 +858,34 @@ impl<'a> WeeAlloc<'a> {
 
             let free = allocated_cell_into_free_cell(cell, policy);
 
+            let mut survivor = free;
             if policy.should_merge_adjacent_free_cells() {
-                let next_slot =
-                    match (*free)
-                        .header
-                        .neighbors
-                        .next()
-                        .and_then(|n: &CellHeader<'a>| {
-                            let next = (*free).header.neighbors.next_unchecked();
-                            if n.is_free() {
-                                Some(next as *const FreeCell<'a>)
-                            } else {
-                                None
-                            }
-                        }) {
-                        Some(next) => {
-                            let slot = match find_free_list_slot(head, next as *const _, policy) {
-                                Ok(slot) => slot,
-                                Err(_) => unreachable!(
-                                    "adjacent free cell must already be in the free list"
-                                ),
-                            };
-                            Some(&*slot)
-                        }
-                        None => None,
-                    };
-
-                // The search above may have resolved older delayed merges.
-                let prev = (*free)
-                    .header
-                    .neighbors
-                    .prev()
-                    .and_then(|p: &CellHeader<'a>| {
-                        let prev = (*free).header.neighbors.prev_unchecked();
-                        if p.is_free() {
-                            Some(prev as *const FreeCell<'a>)
-                        } else {
-                            None
-                        }
-                    });
-
-                let next = (*free)
-                    .header
-                    .neighbors
-                    .next()
-                    .and_then(|n: &CellHeader<'a>| {
-                        let next = (*free).header.neighbors.next_unchecked();
-                        if n.is_free() {
-                            Some(next as *const FreeCell<'a>)
-                        } else {
-                            None
-                        }
-                    });
-
-                match (prev, next, next_slot) {
-                    // Full eager three-way merge: prev + free + next
-                    (Some(prev), Some(next), Some(next_slot)) => {
-                        extra_assert!(!(*next).next_free_can_merge());
-
-                        // Remove `next` from the logical free list first.
-                        next_slot.set((*next).next_free());
-
-                        // Remove `free` from the physical neighbors list, making prev adjacent to next.
-                        (*free).header.neighbors.remove();
-
-                        // If `next` was the terminal cell, the merged `prev` becomes terminal.
-                        if CellHeader::next_cell_is_invalid(&(*next).header.neighbors) {
-                            CellHeader::set_next_cell_is_invalid(&(*prev).header.neighbors);
-                        }
-
-                        // Remove `next` from the physical neighbors list too.
-                        (*next).header.neighbors.remove();
-
-                        write_free_pattern(prev, (*prev).header.size(), policy);
-                        assert_is_valid_free_list(head.get(), policy);
-                        return;
+                let neighbors = &(*free).header.neighbors;
+                if neighbors.next().is_some_and(|next| next.is_free()) {
+                    // Unlink the right neighbor before removing its physical header.
+                    // The logical predecessor may be any free cell, including `prev`.
+                    let next = neighbors.next_unchecked() as *const FreeCell<'a>;
+                    let slot = find_free_list_slot(head, next)
+                        .expect("adjacent free cell must be in free list");
+                    (*slot).set((*next).next_free());
+                    if CellHeader::next_cell_is_invalid(&(*next).header.neighbors) {
+                        CellHeader::set_next_cell_is_invalid(neighbors);
                     }
-
-                    // Existing fast path: merge only with prev.
-                    (Some(prev), None, None) => {
-                        (*free).header.neighbors.remove();
-                        if CellHeader::next_cell_is_invalid(&(*free).header.neighbors) {
-                            CellHeader::set_next_cell_is_invalid(&(*prev).header.neighbors);
-                        }
-
-                        write_free_pattern(prev, (*prev).header.size(), policy);
-                        assert_is_valid_free_list(head.get(), policy);
-                        return;
+                    (*next).header.neighbors.remove();
+                }
+                if neighbors.prev().is_some_and(|prev| prev.is_free()) {
+                    survivor = neighbors.prev_unchecked() as *const FreeCell<'a>;
+                    if CellHeader::next_cell_is_invalid(neighbors) {
+                        CellHeader::set_next_cell_is_invalid(&(*survivor).header.neighbors);
                     }
-
-                    // New eager two-way merge: free + next
-                    (None, Some(next), Some(next_slot)) => {
-                        extra_assert!(!(*next).next_free_can_merge());
-
-                        // Replace `next` with `free` in the logical free list.
-                        (*free).next_free_raw.set((*next).next_free());
-                        next_slot.set(free);
-
-                        if CellHeader::next_cell_is_invalid(&(*next).header.neighbors) {
-                            CellHeader::set_next_cell_is_invalid(&(*free).header.neighbors);
-                        }
-
-                        // Remove `next` physically; `free` remains the surviving header.
-                        (*next).header.neighbors.remove();
-
-                        write_free_pattern(free, (*free).header.size(), policy);
-                        assert_is_valid_free_list(head.get(), policy);
-                        return;
-                    }
-
-                    (None, None, None) => {}
-                    _ => unreachable!("neighbor snapshot changed unexpectedly"),
+                    neighbors.remove();
                 }
             }
-
-            // Either we don't want to merge cells for the current policy, or we
-            // didn't have the opportunity to do any merging with our adjacent
-            // neighbors. In either case, push this cell onto the front of the
-            // free list.
-            let _head = FreeCell::insert_into_free_list(free, head, policy);
+            write_free_pattern(survivor, (*survivor).header.size(), policy);
+            if ptr::eq(survivor, free) {
+                FreeCell::insert_into_free_list(free, head, policy);
+            }
+            assert_is_valid_free_list(head.get(), policy);
         });
     }
 }
