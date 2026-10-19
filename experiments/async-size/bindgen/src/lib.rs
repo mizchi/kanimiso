@@ -1,6 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #[cfg(all(feature = "embassy", not(feature = "std")))]
 compile_error!("Embassy platform-wasm links std; do not label this profile no_std");
+#[cfg(all(
+    any(feature = "tokio", feature = "async-executor", feature = "async-std"),
+    not(feature = "std")
+))]
+compile_error!("These executor profiles link std; do not label them no_std");
 #[cfg(not(feature = "wee"))]
 #[global_allocator]
 static ALLOCATOR: taraba_allocator::Allocator = taraba_allocator::Allocator::INIT;
@@ -51,10 +56,44 @@ pub fn run(a: i32, b: i32) -> i32 {
     })
     .unwrap()
 }
-#[cfg(all(feature = "async-workload", not(feature = "embassy")))]
+#[cfg(all(
+    feature = "async-workload",
+    not(any(
+        feature = "embassy",
+        feature = "tokio",
+        feature = "async-executor",
+        feature = "async-std",
+        feature = "futures-unordered"
+    ))
+))]
 #[wasm_bindgen]
 pub fn run(a: i32, b: i32) -> js_sys::Promise {
     wasm_bindgen_futures::future_to_promise(async move { compute(a, b).await.map(JsValue::from) })
+}
+#[cfg(all(
+    feature = "async-workload",
+    any(
+        feature = "tokio",
+        feature = "async-executor",
+        feature = "async-std",
+        feature = "futures-unordered"
+    )
+))]
+mod executors;
+#[cfg(all(
+    feature = "async-workload",
+    any(
+        feature = "tokio",
+        feature = "async-executor",
+        feature = "async-std",
+        feature = "futures-unordered"
+    )
+))]
+#[wasm_bindgen]
+pub fn run(a: i32, b: i32) -> js_sys::Promise {
+    wasm_bindgen_futures::future_to_promise(async move {
+        executors::execute(a, b).await.map(JsValue::from)
+    })
 }
 #[cfg(all(feature = "async-workload", feature = "embassy"))]
 mod embassy {

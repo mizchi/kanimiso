@@ -20,7 +20,7 @@
 
 | 結果 | 対象 |
 |---|---|
-| [非同期サイズ](async-size.ja.md) / [JSON](async-size.json) | 同期・非同期の共通処理、同じ allocator、Embassy / wasm-bindgen、必要な全配信ファイル |
+| [非同期サイズ](async-size.ja.md) / [JSON](async-size.json) | 同期・非同期の共通処理、taraba / Embassy / Tokio / async-executor / async-std / wasm-bindgen / FuturesUnordered、全配信ファイル |
 | [Allocator 最適化](allocator.md) / [JSON](allocator.json) | 変更前後のサイズ・V8 速度・再利用と OOM、wee_alloc 対照 |
 | [WIT 比較](wit-comparison.md) | 過去の Core / Component sync・native async、コンパイル・実行時間 |
 | [JSPI Future 測定](jspi-future-measurements.md) | 未採用の Future adapter と採用条件 |

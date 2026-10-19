@@ -32,7 +32,7 @@ Write `async func` in `wit/app.wit`, implement the generated Rust `Guest` trait 
 <!-- async-size:begin -->
 ## Build size comparison
 
-The same two-await Rust implementation, std and taraba-allocator (size classes disabled). Uncompressed bytes after JS minification and wasm-opt -Oz on every Wasm. All 24 artifacts pass the same 3,507 cases.
+The same two-await Rust implementation, std and taraba-allocator (size classes disabled). Uncompressed bytes after JS minification and wasm-opt -Oz on every Wasm. All 34 artifacts pass the same 3,507 cases.
 
 | Backend | Async Wasm B | Async JS B | Total B | Growth from sync B |
 |---|---:|---:|---:|---:|
@@ -40,16 +40,20 @@ The same two-await Rust implementation, std and taraba-allocator (size classes d
 | taraba Future | 6,871 | 4,007 | 10,878 | +6,153 |
 | Embassy WASM + JsFuture | 13,360 | 5,211 | 18,571 | +16,710 |
 | wasm-bindgen-futures | 15,221 | 4,442 | 19,663 | +17,802 |
+| Tokio current-thread + LocalSet | 52,721 | 4,442 | 57,163 | +55,302 |
+| async-executor LocalExecutor | 32,324 | 4,442 | 36,766 | +34,905 |
+| async-std spawn_local | 17,930 | 4,442 | 22,372 | +20,511 |
+| FuturesUnordered task set | 18,495 | 4,440 | 22,935 | +21,074 |
 | Component + jco | 25,350 | 66,776 | 92,126 | +38,986 |
 
-Contracts differ: JSPI serializes an instance; Component includes typed WIT async and Canonical ABI. The Component container is not counted again alongside its runtime cores. See [no_std, compression, wee_alloc controls and methodology](docs/async-size.md).
+Contracts differ: JSPI serializes an instance; Component includes typed WIT async and Canonical ABI. FuturesUnordered is a task-collection reference. The Component container is not counted again alongside its runtime cores. See [added scheduler configurations, no_std, compression, wee_alloc controls and methodology](docs/async-size.md).
 <!-- async-size:end -->
 
 ## Documentation
 
 - [Usage guide](docs/guide.md): installation, WIT/Rust async, domain model example, Node/browser loading, TS, npm and daily workflow.
 - [Core API reference](docs/core-runtime.md): JSPI/Future contracts, ownership, task limits and errors.
-- [Current async size comparison](docs/async-size.md): same workload with taraba, Embassy, wasm-bindgen-futures and an allocator control; sync-to-async growth and all runtime JS/Wasm counted.
+- [Current async size comparison](docs/async-size.md): taraba, Embassy, Tokio, async-executor, async-std, wasm-bindgen-futures and a FuturesUnordered reference; sync-to-async growth and all runtime JS/Wasm counted.
 - [Documentation index](docs/README.md): earlier measurements and experiments.
 - [Development and verification](docs/development.md): tests, package checks and reproduction commands.
 

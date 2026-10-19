@@ -32,7 +32,7 @@ taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --compon
 <!-- async-size:begin -->
 ## ビルドサイズ比較
 
-同じ二段 await の Rust 実装、std、taraba-allocator（size classes 無効）。JS は minify、全 Wasm は wasm-opt -Oz 適用後の非圧縮 bytes。全24成果物が同じ3,507ケースを通過。
+同じ二段 await の Rust 実装、std、taraba-allocator（size classes 無効）。JS は minify、全 Wasm は wasm-opt -Oz 適用後の非圧縮 bytes。全34成果物が同じ3,507ケースを通過。
 
 | 構成 | async Wasm B | async JS B | 合計 B | 同期版からの増分 B |
 |---|---:|---:|---:|---:|
@@ -40,16 +40,20 @@ taraba build target/wasm32-unknown-unknown/release/hello.wasm --wit wit --compon
 | taraba Future | 6,871 | 4,007 | 10,878 | +6,153 |
 | Embassy WASM + JsFuture | 13,360 | 5,211 | 18,571 | +16,710 |
 | wasm-bindgen-futures | 15,221 | 4,442 | 19,663 | +17,802 |
+| Tokio current-thread + LocalSet | 52,721 | 4,442 | 57,163 | +55,302 |
+| async-executor LocalExecutor | 32,324 | 4,442 | 36,766 | +34,905 |
+| async-std spawn_local | 17,930 | 4,442 | 22,372 | +20,511 |
+| FuturesUnordered task set | 18,495 | 4,440 | 22,935 | +21,074 |
 | Component + jco | 25,350 | 66,776 | 92,126 | +38,986 |
 
-JSPI は instance を直列実行し、Component は型付き WIT async / Canonical ABI を含むため、API 契約は異なります。Component container は実行用 core Wasm と二重計上していません。[no_std・圧縮・wee_alloc 対照・測定条件](docs/async-size.ja.md)。
+JSPI は instance を直列実行し、Component は型付き WIT async / Canonical ABI を含むため、API 契約は異なります。FuturesUnordered はタスク集合の参考値です。Component container は実行用 core Wasm と二重計上していません。[追加ランタイムの構成・no_std・圧縮・wee_alloc 対照・測定条件](docs/async-size.ja.md)。
 <!-- async-size:end -->
 
 ## ドキュメント
 
 - [利用ガイド](docs/guide.ja.md): インストール、WIT/Rust async、ドメインモデル例、Node/browser のロード、TS、npm、編集から配布までの手順。
 - [Core API リファレンス](docs/core-runtime.ja.md): JSPI/Future の契約、所有権、task 上限とエラー。
-- [現在の非同期サイズ比較](docs/async-size.ja.md): taraba・Embassy・wasm-bindgen-futures の同等処理、allocator 対照、同期→async 増分。実行に必要な全 JS/Wasm を計上。
+- [現在の非同期サイズ比較](docs/async-size.ja.md): taraba・Embassy・Tokio・async-executor・async-std・wasm-bindgen-futures、FuturesUnordered 参考値の同等処理。同期→async 増分と必要な全 JS/Wasm を計上。
 - [ドキュメント一覧](docs/README.ja.md): 過去の測定と未採用の実験。
 - [開発・検証手順](docs/development.ja.md): テスト、パッケージ検証、測定の再実行。
 

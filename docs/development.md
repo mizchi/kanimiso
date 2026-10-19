@@ -18,7 +18,7 @@ setup installs dependencies, the Wasm Rust target, Binaryen 133 and wasm-tools 1
 | `just check` | Rust/JS tests, formatting, Core fatal/ownership behavior, JSPI spills, npm consumer checks and active documentation links |
 | `just library-check` | Current CLI: pack/install outside the repo, strict TS, three profiles × std/no_std, rich Component domain/error round trips |
 | `just package-check` | Packages all three crates, installs an unpacked CLI, repeats external consumers and npm library generation |
-| `just compare-async-size` | Fresh common sync/async implementations with Embassy/wasm-bindgen; writes docs/async-size.{json,md} and Japanese report |
+| `just compare-async-size` | Common sync/async implementations with Embassy, Tokio, async-executor, async-std, wasm-bindgen and FuturesUnordered; writes docs/async-size.{json,md} and Japanese report |
 | `just check-async-size` | Same comparison and correctness checks; writes only .cache/async-size |
 | `just compare-allocator` / `just check-allocator` | Common allocator oracle and nine V8 kernels for the fixed reference, current default/optional realloc feature and wee_alloc; check writes .cache only |
 | `just workers --jspi-concurrent` | Existing fixtures on local workerd, including unadopted concurrent experiment |
@@ -28,7 +28,7 @@ setup installs dependencies, the Wasm Rust target, Binaryen 133 and wasm-tools 1
 
 Before registry publication, package-check patches dependencies to unpacked .crate archives. That proves archive contents and external consumer builds, not a successful crates.io install. No task publishes to npm or crates.io. The usage guide's registry commands describe the intended post-publication workflow.
 
-When changing unsafe ownership/lifetimes, run check, miri, kani and stress. Native component proofs do not cover JS, V8/WebKit, generated Wasm, the full intrusive WAT pool, or the benchmark's upstream Embassy executor. Browser JSPI and Component Canonical ABI behavior require runtime tests as well.
+When changing unsafe ownership/lifetimes, run check, miri, kani and stress. Native component proofs do not cover JS, V8/WebKit, generated Wasm, the full intrusive WAT pool, or the benchmark's upstream executors. Browser JSPI and Component Canonical ABI behavior require runtime tests as well.
 
 The active realloc Kani harness verifies the native64 word-class/capacity predicate
 for every valid positive size. Pointer/payload/free-list proofs in `just kani-explore`

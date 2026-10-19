@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "created_at": "2026-10-19T03:10:04.666Z",
+  "created_at": "2026-10-19T03:43:24.195Z",
   "engine": "Node v24.21.0 / V8 13.6.233.17-node.53",
   "machine": {
     "os": "25.6.0",
@@ -14,6 +14,10 @@
     "wasm_bindgen_futures": "0.4.79",
     "js_sys": "0.3.106",
     "embassy_executor": "0.10.0",
+    "tokio": "1.53.3",
+    "async_executor": "1.14.0",
+    "async_std": "1.13.2",
+    "futures_util": "0.3.34",
     "wee_alloc": "0.4.5",
     "jco": "1.39.0",
     "esbuild": "0.28.2"
@@ -26,7 +30,11 @@
     "runtime_size": "all deployed JS + all required core Wasm, independently gzip9/brotli11; no declarations or Component container double-counting",
     "allocation": "primary rows all taraba-allocator without size classes; wee_alloc without size classes is a separate allocator control",
     "scope": "common successful arithmetic/I/O only; JSPI serialization, canonical typed errors, and Future cancellation/Drop contracts are not equivalent",
-    "official_embassy": "platform-wasm + executor-thread; upstream links std (critical-section/std); no no_std result is claimed; JsFuture bridges host I/O and Embassy drives its static 1024-worker pool"
+    "official_embassy": "platform-wasm + executor-thread; upstream links std (critical-section/std); no no_std result is claimed; JsFuture bridges host I/O and Embassy drives its static 1024-worker pool",
+    "tokio": "rt only, one current-thread Runtime and LocalSet per instance; a persistent wasm-bindgen driver polls LocalSet inside a Tokio block_on whose root immediately returns Poll; JS wakers resume later, so no blocking/idle park or timer/net/multithread features are used; safe custom bridge is included",
+    "async_executor": "one LocalExecutor per instance; persistent wasm-bindgen spawn_local drives run(pending), LocalExecutor.spawn schedules compute and its Task is joined; no smol I/O reactor is claimed",
+    "async_std": "default features plus unstable for task::spawn_local; upstream WASM branch uses wasm-bindgen-futures and a channel JoinHandle; async-std 1.13.2 is deprecated and is included as a historical compatibility control",
+    "futures_unordered": "alloc/async-await, std only in std rows; per-invocation FuturesUnordered containing one compute Future, driven by StreamExt::next and wasm-bindgen; a task collection reference, not an independent runtime/reactor"
   },
   "entries": [
     {
@@ -35,6 +43,9 @@
       "allocator": "taraba",
       "id": "jspi-no_std-taraba-sync",
       "workload": "sync",
+      "cargo_features": [
+        "jspi"
+      ],
       "raw_rust_wasm_bytes": 3279,
       "raw_rust_sha256": "99f01dcac65e5b50f31b9406060f083afddcaa65f4b236dec1b8a64924c84a28",
       "runtime": {
@@ -100,7 +111,8 @@
         "actual_suspensions": 0
       },
       "scheduling": null,
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "jspi",
@@ -108,6 +120,10 @@
       "allocator": "taraba",
       "id": "jspi-no_std-taraba-async",
       "workload": "async",
+      "cargo_features": [
+        "async-workload",
+        "jspi"
+      ],
       "raw_rust_wasm_bytes": 3500,
       "raw_rust_sha256": "adeb8824dd7ed5cc6fba921db063897e12f03061cfb62bbfbc9df933f257779f",
       "runtime": {
@@ -197,7 +213,8 @@
           "B"
         ]
       },
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "jspi",
@@ -205,6 +222,10 @@
       "allocator": "taraba",
       "id": "jspi-std-taraba-sync",
       "workload": "sync",
+      "cargo_features": [
+        "std",
+        "jspi"
+      ],
       "raw_rust_wasm_bytes": 56434,
       "raw_rust_sha256": "516c1f6a17931aa7f77074bf70840f61c0a6102ca04caa39aa8e1d0ae37787db",
       "runtime": {
@@ -270,7 +291,8 @@
         "actual_suspensions": 0
       },
       "scheduling": null,
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "jspi",
@@ -278,6 +300,11 @@
       "allocator": "taraba",
       "id": "jspi-std-taraba-async",
       "workload": "async",
+      "cargo_features": [
+        "std",
+        "async-workload",
+        "jspi"
+      ],
       "raw_rust_wasm_bytes": 57017,
       "raw_rust_sha256": "ade05332b70350bb876745e29487ee6576692830326c73f1e348641cae1c4174",
       "runtime": {
@@ -367,7 +394,8 @@
           "B"
         ]
       },
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "future",
@@ -375,6 +403,9 @@
       "allocator": "taraba",
       "id": "future-no_std-taraba-sync",
       "workload": "sync",
+      "cargo_features": [
+        "future"
+      ],
       "raw_rust_wasm_bytes": 3279,
       "raw_rust_sha256": "70591ac1e3cf223a6cdfe3ac61166ac2c3b670c328f41bc481963aedb88575d2",
       "runtime": {
@@ -440,7 +471,8 @@
         "actual_suspensions": 0
       },
       "scheduling": null,
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "future",
@@ -448,6 +480,10 @@
       "allocator": "taraba",
       "id": "future-no_std-taraba-async",
       "workload": "async",
+      "cargo_features": [
+        "async-workload",
+        "future"
+      ],
       "raw_rust_wasm_bytes": 7039,
       "raw_rust_sha256": "ffd668195eacf69467bcb5d257b2d147022d6cefb3f48e1fea5183d2436fcd5c",
       "runtime": {
@@ -543,7 +579,8 @@
           "A"
         ]
       },
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "future",
@@ -551,6 +588,10 @@
       "allocator": "taraba",
       "id": "future-std-taraba-sync",
       "workload": "sync",
+      "cargo_features": [
+        "std",
+        "future"
+      ],
       "raw_rust_wasm_bytes": 56434,
       "raw_rust_sha256": "3b4c7294da21ff4e3c91867de65b33d886a45c99dfdf20729aa463a5c0abe4db",
       "runtime": {
@@ -616,7 +657,8 @@
         "actual_suspensions": 0
       },
       "scheduling": null,
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "future",
@@ -624,6 +666,11 @@
       "allocator": "taraba",
       "id": "future-std-taraba-async",
       "workload": "async",
+      "cargo_features": [
+        "std",
+        "async-workload",
+        "future"
+      ],
       "raw_rust_wasm_bytes": 60614,
       "raw_rust_sha256": "9bb2cf57b1f5c4d16a4068621b2dc5f8d65539472783c1ef1861922f88dfaf38",
       "runtime": {
@@ -719,70 +766,85 @@
           "A"
         ]
       },
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
-      "backend": "component",
-      "mode": "no_std",
+      "backend": "embassy",
+      "mode": "std",
       "allocator": "taraba",
-      "id": "component-no_std-taraba-sync",
+      "id": "embassy-std-taraba-sync",
       "workload": "sync",
-      "raw_rust_wasm_bytes": 3279,
-      "raw_rust_sha256": "9ede7ec27eb5dc73c642aac5e755b2f481b23135681ee4ac1d67c8511cdc8034",
+      "cargo_features": [
+        "std",
+        "embassy"
+      ],
+      "raw_rust_wasm_bytes": 73483,
+      "raw_rust_sha256": "cb990f85a473e9d4eba6643eba987503d49ca04735c5d7dcab8610b76a2608a7",
       "runtime": {
-        "raw": 49182,
-        "gzip": 14400,
-        "brotli": 13068
+        "raw": 1861,
+        "gzip": 1156,
+        "brotli": 1019
       },
-      "wasm_bytes": 1210,
-      "js_bytes": 47972,
-      "declaration_bytes": 2136,
-      "component_bytes": 1560,
-      "payload_bytes": 52878,
-      "npm_tarball_bytes": 16909,
+      "wasm_bytes": 911,
+      "js_bytes": 950,
+      "declaration_bytes": 1610,
+      "component_bytes": 0,
+      "payload_bytes": 3471,
+      "npm_tarball_bytes": 1971,
       "packed_artifacts_verified": true,
       "typescript_strict": true,
       "files": {
         "runtime": [
           {
             "path": "bundle.mjs",
-            "sha256": "299632f916b6ed11ec9e854cae8970469b0e5cc95e7051e077fd67261f4f1727",
+            "sha256": "3a74d47b4f149ee5e8bdf6ec2e6dbeaeb223672f37ce3e4bfe6693a864c157b7",
             "sizes": {
-              "raw": 47972,
-              "gzip": 13673,
-              "brotli": 12371
+              "raw": 950,
+              "gzip": 535,
+              "brotli": 475
             }
           },
           {
-            "path": "app.core.wasm",
-            "sha256": "a84c5d88b00bb30be57e1aaf64e39f41c9d91ad93d92690780b42ae586918658",
+            "path": "app_bg.wasm",
+            "sha256": "0eab4bf55cf0b52e9d157eba11f06ad25a7fee3d355b82410619e42fe0957fc1",
             "sizes": {
-              "raw": 1210,
-              "gzip": 727,
-              "brotli": 697
+              "raw": 911,
+              "gzip": 621,
+              "brotli": 544
             }
           }
         ],
         "declarations": [
           {
             "path": "app.d.ts",
-            "sha256": "5ca39eb2890f3477948f10876418c80f6284f14de984ac2957c4659eabe2f4cd",
+            "sha256": "170c372be2f97d7f881b24ffb1fe5ee0d27a3b7cd723b0892eacf6c5a9647863",
             "sizes": {
-              "raw": 2136,
-              "gzip": 823,
-              "brotli": 657
+              "raw": 1270,
+              "gzip": 514,
+              "brotli": 426
+            }
+          },
+          {
+            "path": "app_bg.wasm.d.ts",
+            "sha256": "fc9eb7d2aaa60ac234acc0548b2a6b51d8a8109185090708764d4047475ccf6c",
+            "sizes": {
+              "raw": 233,
+              "gzip": 154,
+              "brotli": 144
+            }
+          },
+          {
+            "path": "driver.d.mts",
+            "sha256": "723559e2d454dbd1bfdc754c8a56b827825275b0522e4f162955877f2002bb12",
+            "sizes": {
+              "raw": 107,
+              "gzip": 112,
+              "brotli": 88
             }
           }
         ],
-        "container": {
-          "path": "app.component.wasm",
-          "sha256": "3d2b0ce9788fadd2455679e886d791f5abd74af0be453de859dd64282ee7fbab",
-          "sizes": {
-            "raw": 1560,
-            "gzip": 923,
-            "brotli": 867
-          }
-        }
+        "container": null
       },
       "verified": {
         "all_passed": true,
@@ -791,97 +853,86 @@
         "actual_suspensions": 0
       },
       "scheduling": null,
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
-      "backend": "component",
-      "mode": "no_std",
+      "backend": "embassy",
+      "mode": "std",
       "allocator": "taraba",
-      "id": "component-no_std-taraba-async",
+      "id": "embassy-std-taraba-async",
       "workload": "async",
-      "raw_rust_wasm_bytes": 33675,
-      "raw_rust_sha256": "d4b298655d9320cfa242704f0d82203babe0a9953df469c69746470e4a873f8a",
+      "cargo_features": [
+        "std",
+        "async-workload",
+        "embassy"
+      ],
+      "raw_rust_wasm_bytes": 488471,
+      "raw_rust_sha256": "2a03933cd0116bf8ed0766fe9ea60090c40439208afcd47ea4ef4f56bff72827",
       "runtime": {
-        "raw": 80467,
-        "gzip": 25332,
-        "brotli": 22625
+        "raw": 18571,
+        "gzip": 8987,
+        "brotli": 7950
       },
-      "wasm_bytes": 13691,
-      "js_bytes": 66776,
-      "declaration_bytes": 2154,
-      "component_bytes": 14844,
-      "payload_bytes": 97465,
-      "npm_tarball_bytes": 28744,
+      "wasm_bytes": 13360,
+      "js_bytes": 5211,
+      "declaration_bytes": 4457,
+      "component_bytes": 0,
+      "payload_bytes": 23028,
+      "npm_tarball_bytes": 9946,
       "packed_artifacts_verified": true,
       "typescript_strict": true,
       "files": {
         "runtime": [
           {
             "path": "bundle.mjs",
-            "sha256": "85903c25bad9fe26f3868cb2696f2d37928a377f15516711c9ea5df5a88690b5",
+            "sha256": "f879a95100795cacff38f78927cb7cfa92b0dd9079f5a39452039303ea51007b",
             "sizes": {
-              "raw": 66776,
-              "gzip": 18592,
-              "brotli": 16604
+              "raw": 5211,
+              "gzip": 2195,
+              "brotli": 1989
             }
           },
           {
-            "path": "app.conditional-suspending-1-i32-to-i32.wasm",
-            "sha256": "5649c11b15524e0b3e2eade9dc70464d44596ad16d8b72cd0bec9101fefe3f04",
+            "path": "app_bg.wasm",
+            "sha256": "3bca45a94969ac40df6cfa3098db287e6878212c524cc44ef050eb8b0b11c181",
             "sizes": {
-              "raw": 76,
-              "gzip": 91,
-              "brotli": 70
-            }
-          },
-          {
-            "path": "app.core.wasm",
-            "sha256": "95d414b980e785ad2a7b1ab80d287b41291b9c96ce9d270cb8099ce737555cd6",
-            "sizes": {
-              "raw": 13466,
-              "gzip": 6475,
-              "brotli": 5821
-            }
-          },
-          {
-            "path": "app.core2.wasm",
-            "sha256": "3a3100478a75210849131b2164c75c226543bcac2927f0d26c437ed95fc962fa",
-            "sizes": {
-              "raw": 87,
-              "gzip": 97,
-              "brotli": 74
-            }
-          },
-          {
-            "path": "app.core3.wasm",
-            "sha256": "656e9b978626b86f1c94e314b25701e0c2c1bbe454c1f954f6bd715acfc3203d",
-            "sizes": {
-              "raw": 62,
-              "gzip": 77,
-              "brotli": 56
+              "raw": 13360,
+              "gzip": 6792,
+              "brotli": 5961
             }
           }
         ],
         "declarations": [
           {
             "path": "app.d.ts",
-            "sha256": "8e76a72fbbed37344cba3e9d4ad5b434c42f5ee0bf0f9f56e76922b73a5fdce2",
+            "sha256": "cbaf01cab9cb426a7c4bda29220b3e7bbc99909f59c5c0e1437805153e25e2e2",
             "sizes": {
-              "raw": 2154,
-              "gzip": 828,
-              "brotli": 662
+              "raw": 2692,
+              "gzip": 809,
+              "brotli": 706
+            }
+          },
+          {
+            "path": "app_bg.wasm.d.ts",
+            "sha256": "f5b1359a3b817fc8e12c9bf74381b547863f4f7ba735db35e1f549687cf782c6",
+            "sizes": {
+              "raw": 1649,
+              "gzip": 429,
+              "brotli": 382
+            }
+          },
+          {
+            "path": "driver.d.mts",
+            "sha256": "41293a2dcab1fd6190552c5278166b1bc7f7e1840a5c63bdd2dd37bcd9b157a2",
+            "sizes": {
+              "raw": 116,
+              "gzip": 122,
+              "brotli": 90
             }
           }
         ],
-        "container": {
-          "path": "app.component.wasm",
-          "sha256": "778cb5bf422eaee6ad7e680569a9df7dc1867f61e4361abd06b132be41a56d07",
-          "sizes": {
-            "raw": 14844,
-            "gzip": 7061,
-            "brotli": 6302
-          }
-        }
+        "container": null
       },
       "verified": {
         "all_passed": true,
@@ -899,189 +950,38 @@
         ],
         "actual_suspensions": 2
       },
-      "scheduling": null,
-      "capacity": null
-    },
-    {
-      "backend": "component",
-      "mode": "std",
-      "allocator": "taraba",
-      "id": "component-std-taraba-sync",
-      "workload": "sync",
-      "raw_rust_wasm_bytes": 56434,
-      "raw_rust_sha256": "28bc051d4bec5f71967465aa1edc0549948940d97f7dc80318106beb12df5346",
-      "runtime": {
-        "raw": 53140,
-        "gzip": 16480,
-        "brotli": 14923
-      },
-      "wasm_bytes": 5168,
-      "js_bytes": 47972,
-      "declaration_bytes": 2136,
-      "component_bytes": 5518,
-      "payload_bytes": 60794,
-      "npm_tarball_bytes": 19356,
-      "packed_artifacts_verified": true,
-      "typescript_strict": true,
-      "files": {
-        "runtime": [
-          {
-            "path": "bundle.mjs",
-            "sha256": "299632f916b6ed11ec9e854cae8970469b0e5cc95e7051e077fd67261f4f1727",
-            "sizes": {
-              "raw": 47972,
-              "gzip": 13673,
-              "brotli": 12371
-            }
-          },
-          {
-            "path": "app.core.wasm",
-            "sha256": "a8c4a950ae88817834b78ecbf439216053a6731cc0ff1020da6351bea58f4907",
-            "sizes": {
-              "raw": 5168,
-              "gzip": 2807,
-              "brotli": 2552
-            }
-          }
-        ],
-        "declarations": [
-          {
-            "path": "app.d.ts",
-            "sha256": "5ca39eb2890f3477948f10876418c80f6284f14de984ac2957c4659eabe2f4cd",
-            "sizes": {
-              "raw": 2136,
-              "gzip": 823,
-              "brotli": 657
-            }
-          }
-        ],
-        "container": {
-          "path": "app.component.wasm",
-          "sha256": "39b68d9c42c25bb178f5407f3506f1a176fd205e63d0731013dbef1fe47f84ee",
-          "sizes": {
-            "raw": 5518,
-            "gzip": 3003,
-            "brotli": 2737
-          }
-        }
-      },
-      "verified": {
-        "all_passed": true,
-        "tasks": 3507,
-        "host_requests": 7014,
-        "actual_suspensions": 0
-      },
-      "scheduling": null,
-      "capacity": null
-    },
-    {
-      "backend": "component",
-      "mode": "std",
-      "allocator": "taraba",
-      "id": "component-std-taraba-async",
-      "workload": "async",
-      "raw_rust_wasm_bytes": 100449,
-      "raw_rust_sha256": "6a597c72aa88345de57363fa228d9d666ced07b2d97e8ff06366404e10c3daba",
-      "runtime": {
-        "raw": 92126,
-        "gzip": 30692,
-        "brotli": 27091
-      },
-      "wasm_bytes": 25350,
-      "js_bytes": 66776,
-      "declaration_bytes": 2154,
-      "component_bytes": 26504,
-      "payload_bytes": 120784,
-      "npm_tarball_bytes": 34298,
-      "packed_artifacts_verified": true,
-      "typescript_strict": true,
-      "files": {
-        "runtime": [
-          {
-            "path": "bundle.mjs",
-            "sha256": "85903c25bad9fe26f3868cb2696f2d37928a377f15516711c9ea5df5a88690b5",
-            "sizes": {
-              "raw": 66776,
-              "gzip": 18592,
-              "brotli": 16604
-            }
-          },
-          {
-            "path": "app.conditional-suspending-1-i32-to-i32.wasm",
-            "sha256": "5649c11b15524e0b3e2eade9dc70464d44596ad16d8b72cd0bec9101fefe3f04",
-            "sizes": {
-              "raw": 76,
-              "gzip": 91,
-              "brotli": 70
-            }
-          },
-          {
-            "path": "app.core.wasm",
-            "sha256": "e9fbc2894b1320ef1684978d934195e15e32806155978f7c7ece0e6e1b38c26e",
-            "sizes": {
-              "raw": 25125,
-              "gzip": 11835,
-              "brotli": 10287
-            }
-          },
-          {
-            "path": "app.core2.wasm",
-            "sha256": "3a3100478a75210849131b2164c75c226543bcac2927f0d26c437ed95fc962fa",
-            "sizes": {
-              "raw": 87,
-              "gzip": 97,
-              "brotli": 74
-            }
-          },
-          {
-            "path": "app.core3.wasm",
-            "sha256": "656e9b978626b86f1c94e314b25701e0c2c1bbe454c1f954f6bd715acfc3203d",
-            "sizes": {
-              "raw": 62,
-              "gzip": 77,
-              "brotli": 56
-            }
-          }
-        ],
-        "declarations": [
-          {
-            "path": "app.d.ts",
-            "sha256": "8e76a72fbbed37344cba3e9d4ad5b434c42f5ee0bf0f9f56e76922b73a5fdce2",
-            "sizes": {
-              "raw": 2154,
-              "gzip": 828,
-              "brotli": 662
-            }
-          }
-        ],
-        "container": {
-          "path": "app.component.wasm",
-          "sha256": "4d4d9be28d3174ae2747995296b5a8380e46f11e5bdc909e1345009e3873462c",
-          "sizes": {
-            "raw": 26504,
-            "gzip": 12382,
-            "brotli": 10816
-          }
-        }
-      },
-      "verified": {
-        "all_passed": true,
-        "tasks": 3507,
-        "host_requests": 7014,
-        "controlled_io": [
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
           [
-            7,
-            9
+            20,
+            2
           ],
           [
-            16,
+            10,
             1
           ]
         ],
-        "actual_suspensions": 2
+        "completed_while_a_blocked": [
+          "B"
+        ],
+        "completion_order": [
+          "B",
+          "A"
+        ]
       },
-      "scheduling": null,
-      "capacity": null
+      "capacity": {
+        "capacity": 1024,
+        "excess_rejected": 1,
+        "reusable": true
+      },
+      "failure_recovery": {
+        "rejected_awaits": 2,
+        "identity_preserved": true,
+        "concurrent_successes": 2,
+        "reusable": true
+      }
     },
     {
       "backend": "bindgen",
@@ -1089,6 +989,7 @@
       "allocator": "taraba",
       "id": "bindgen-no_std-taraba-sync",
       "workload": "sync",
+      "cargo_features": [],
       "raw_rust_wasm_bytes": 20518,
       "raw_rust_sha256": "e1d8c507202a43b724d84c59519953698a77d9b158cc78328af8063031f6ea72",
       "runtime": {
@@ -1163,7 +1064,8 @@
         "actual_suspensions": 0
       },
       "scheduling": null,
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "bindgen",
@@ -1171,6 +1073,9 @@
       "allocator": "taraba",
       "id": "bindgen-no_std-taraba-async",
       "workload": "async",
+      "cargo_features": [
+        "async-workload"
+      ],
       "raw_rust_wasm_bytes": 438898,
       "raw_rust_sha256": "43fc8f4f0edec234a14313c651a82d650a52a4ff734754c31587bef620f58f80",
       "runtime": {
@@ -1275,7 +1180,13 @@
           "A"
         ]
       },
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": {
+        "rejected_awaits": 2,
+        "identity_preserved": true,
+        "concurrent_successes": 2,
+        "reusable": true
+      }
     },
     {
       "backend": "bindgen",
@@ -1283,6 +1194,9 @@
       "allocator": "taraba",
       "id": "bindgen-std-taraba-sync",
       "workload": "sync",
+      "cargo_features": [
+        "std"
+      ],
       "raw_rust_wasm_bytes": 73483,
       "raw_rust_sha256": "00b21c0141dac91c42321852111bff711b1c8bb9de77bde29696f602a93b74ed",
       "runtime": {
@@ -1357,7 +1271,8 @@
         "actual_suspensions": 0
       },
       "scheduling": null,
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "bindgen",
@@ -1365,19 +1280,23 @@
       "allocator": "taraba",
       "id": "bindgen-std-taraba-async",
       "workload": "async",
+      "cargo_features": [
+        "std",
+        "async-workload"
+      ],
       "raw_rust_wasm_bytes": 493668,
-      "raw_rust_sha256": "791bfdfcdf2e6c816c9781c7ce60e2df916f132e087ca94ea15791c004fbe9c0",
+      "raw_rust_sha256": "27342cb690b12edcaef486e8f7a6bde53643fcd24e7d6d56c1055008b03e8ad4",
       "runtime": {
         "raw": 19663,
-        "gzip": 9437,
-        "brotli": 8318
+        "gzip": 9436,
+        "brotli": 8334
       },
       "wasm_bytes": 15221,
       "js_bytes": 4442,
       "declaration_bytes": 3419,
       "component_bytes": 0,
       "payload_bytes": 23082,
-      "npm_tarball_bytes": 10157,
+      "npm_tarball_bytes": 10156,
       "packed_artifacts_verified": true,
       "typescript_strict": true,
       "files": {
@@ -1393,11 +1312,11 @@
           },
           {
             "path": "app_bg.wasm",
-            "sha256": "b98222795d0ec9fb94a1b5f715834eb4ce0a53621b204caf7a9d57185ccb8aa2",
+            "sha256": "7b1c5a7ed660dd9b621ca9a088250a092363dd9a582cfa023b9c3a86c35ec419",
             "sizes": {
               "raw": 15221,
-              "gzip": 7609,
-              "brotli": 6683
+              "gzip": 7608,
+              "brotli": 6699
             }
           }
         ],
@@ -1469,16 +1388,26 @@
           "A"
         ]
       },
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": {
+        "rejected_awaits": 2,
+        "identity_preserved": true,
+        "concurrent_successes": 2,
+        "reusable": true
+      }
     },
     {
-      "backend": "embassy",
+      "backend": "tokio",
       "mode": "std",
       "allocator": "taraba",
-      "id": "embassy-std-taraba-sync",
+      "id": "tokio-std-taraba-sync",
       "workload": "sync",
+      "cargo_features": [
+        "std",
+        "tokio"
+      ],
       "raw_rust_wasm_bytes": 73483,
-      "raw_rust_sha256": "cb990f85a473e9d4eba6643eba987503d49ca04735c5d7dcab8610b76a2608a7",
+      "raw_rust_sha256": "5a12c7d30ca1e99c9cd3f64d1b6515bdf65bd6c8c4a418c2d626f7eb0926cd7a",
       "runtime": {
         "raw": 1861,
         "gzip": 1156,
@@ -1489,7 +1418,7 @@
       "declaration_bytes": 1610,
       "component_bytes": 0,
       "payload_bytes": 3471,
-      "npm_tarball_bytes": 1971,
+      "npm_tarball_bytes": 1970,
       "packed_artifacts_verified": true,
       "typescript_strict": true,
       "files": {
@@ -1551,67 +1480,73 @@
         "actual_suspensions": 0
       },
       "scheduling": null,
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
-      "backend": "embassy",
+      "backend": "tokio",
       "mode": "std",
       "allocator": "taraba",
-      "id": "embassy-std-taraba-async",
+      "id": "tokio-std-taraba-async",
       "workload": "async",
-      "raw_rust_wasm_bytes": 488471,
-      "raw_rust_sha256": "015783cbe5f7d3f27a8335a3b75468b544c19a5b0b5f3a861911c67305d326c7",
+      "cargo_features": [
+        "std",
+        "async-workload",
+        "tokio"
+      ],
+      "raw_rust_wasm_bytes": 607675,
+      "raw_rust_sha256": "b60b832ce80f71c5b6a5eea96a8a39ab8b6a9e069248d3ff5b177cb75685da2d",
       "runtime": {
-        "raw": 18571,
-        "gzip": 8989,
-        "brotli": 7968
+        "raw": 57163,
+        "gzip": 25728,
+        "brotli": 22384
       },
-      "wasm_bytes": 13360,
-      "js_bytes": 5211,
-      "declaration_bytes": 4457,
+      "wasm_bytes": 52721,
+      "js_bytes": 4442,
+      "declaration_bytes": 3419,
       "component_bytes": 0,
-      "payload_bytes": 23028,
-      "npm_tarball_bytes": 9948,
+      "payload_bytes": 60582,
+      "npm_tarball_bytes": 26616,
       "packed_artifacts_verified": true,
       "typescript_strict": true,
       "files": {
         "runtime": [
           {
             "path": "bundle.mjs",
-            "sha256": "f879a95100795cacff38f78927cb7cfa92b0dd9079f5a39452039303ea51007b",
+            "sha256": "2a5a8ccd6f567c1b726e531a7b3115a2b56e34c3c10b94269e683577ad4b2afe",
             "sizes": {
-              "raw": 5211,
-              "gzip": 2195,
-              "brotli": 1989
+              "raw": 4442,
+              "gzip": 1828,
+              "brotli": 1635
             }
           },
           {
             "path": "app_bg.wasm",
-            "sha256": "09c7a073c16004b850d47e624e34954507bc121084584fe43216107c5a492f74",
+            "sha256": "b28a5cb5d96f8c1578e204a49d8696f223a7f0ed24bb7a44a0a6f8f5fd3ea1a7",
             "sizes": {
-              "raw": 13360,
-              "gzip": 6794,
-              "brotli": 5979
+              "raw": 52721,
+              "gzip": 23900,
+              "brotli": 20749
             }
           }
         ],
         "declarations": [
           {
             "path": "app.d.ts",
-            "sha256": "cbaf01cab9cb426a7c4bda29220b3e7bbc99909f59c5c0e1437805153e25e2e2",
+            "sha256": "0819f3d5cdd6e6883cd2c2ef5f126ce02aec0440076f03a8ee34770a3f351486",
             "sizes": {
-              "raw": 2692,
-              "gzip": 809,
-              "brotli": 706
+              "raw": 2173,
+              "gzip": 741,
+              "brotli": 642
             }
           },
           {
             "path": "app_bg.wasm.d.ts",
-            "sha256": "f5b1359a3b817fc8e12c9bf74381b547863f4f7ba735db35e1f549687cf782c6",
+            "sha256": "8f615952e32e252e923df83c126a96ac1c948d10bbc67245b89659784a14aa6c",
             "sizes": {
-              "raw": 1649,
-              "gzip": 429,
-              "brotli": 382
+              "raw": 1130,
+              "gzip": 367,
+              "brotli": 325
             }
           },
           {
@@ -1647,12 +1582,12 @@
         "host_requests": 4,
         "started_before_release": [
           [
-            20,
-            2
-          ],
-          [
             10,
             1
+          ],
+          [
+            20,
+            2
           ]
         ],
         "completed_while_a_blocked": [
@@ -1663,11 +1598,1233 @@
           "A"
         ]
       },
-      "capacity": {
-        "capacity": 1024,
-        "excess_rejected": 1,
+      "capacity": null,
+      "failure_recovery": {
+        "rejected_awaits": 2,
+        "identity_preserved": true,
+        "concurrent_successes": 2,
         "reusable": true
       }
+    },
+    {
+      "backend": "async-executor",
+      "mode": "std",
+      "allocator": "taraba",
+      "id": "async-executor-std-taraba-sync",
+      "workload": "sync",
+      "cargo_features": [
+        "std",
+        "async-executor"
+      ],
+      "raw_rust_wasm_bytes": 73483,
+      "raw_rust_sha256": "c22efc0ee0a0298078c382b033217aebde00c180ee329a5066a203446fb3aa88",
+      "runtime": {
+        "raw": 1861,
+        "gzip": 1156,
+        "brotli": 1019
+      },
+      "wasm_bytes": 911,
+      "js_bytes": 950,
+      "declaration_bytes": 1610,
+      "component_bytes": 0,
+      "payload_bytes": 3471,
+      "npm_tarball_bytes": 1974,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "3a74d47b4f149ee5e8bdf6ec2e6dbeaeb223672f37ce3e4bfe6693a864c157b7",
+            "sizes": {
+              "raw": 950,
+              "gzip": 535,
+              "brotli": 475
+            }
+          },
+          {
+            "path": "app_bg.wasm",
+            "sha256": "0eab4bf55cf0b52e9d157eba11f06ad25a7fee3d355b82410619e42fe0957fc1",
+            "sizes": {
+              "raw": 911,
+              "gzip": 621,
+              "brotli": 544
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "170c372be2f97d7f881b24ffb1fe5ee0d27a3b7cd723b0892eacf6c5a9647863",
+            "sizes": {
+              "raw": 1270,
+              "gzip": 514,
+              "brotli": 426
+            }
+          },
+          {
+            "path": "app_bg.wasm.d.ts",
+            "sha256": "fc9eb7d2aaa60ac234acc0548b2a6b51d8a8109185090708764d4047475ccf6c",
+            "sizes": {
+              "raw": 233,
+              "gzip": 154,
+              "brotli": 144
+            }
+          },
+          {
+            "path": "driver.d.mts",
+            "sha256": "723559e2d454dbd1bfdc754c8a56b827825275b0522e4f162955877f2002bb12",
+            "sizes": {
+              "raw": 107,
+              "gzip": 112,
+              "brotli": 88
+            }
+          }
+        ],
+        "container": null
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "actual_suspensions": 0
+      },
+      "scheduling": null,
+      "capacity": null,
+      "failure_recovery": null
+    },
+    {
+      "backend": "async-executor",
+      "mode": "std",
+      "allocator": "taraba",
+      "id": "async-executor-std-taraba-async",
+      "workload": "async",
+      "cargo_features": [
+        "std",
+        "async-workload",
+        "async-executor"
+      ],
+      "raw_rust_wasm_bytes": 544285,
+      "raw_rust_sha256": "a358b4146b34d253bb78da5ddfa171a3916fe7c5541f9ba26a63ef017fd8185b",
+      "runtime": {
+        "raw": 36766,
+        "gzip": 17303,
+        "brotli": 15196
+      },
+      "wasm_bytes": 32324,
+      "js_bytes": 4442,
+      "declaration_bytes": 3419,
+      "component_bytes": 0,
+      "payload_bytes": 40185,
+      "npm_tarball_bytes": 18215,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "4ec07f07cfa6820914e650a1550268250074d5a73e7b35e27d97557befadadc5",
+            "sizes": {
+              "raw": 4442,
+              "gzip": 1826,
+              "brotli": 1634
+            }
+          },
+          {
+            "path": "app_bg.wasm",
+            "sha256": "15cba841a808291d0c051db100995e991e7026dad56dffb5b3a9439f163c7459",
+            "sizes": {
+              "raw": 32324,
+              "gzip": 15477,
+              "brotli": 13562
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "713ecb020b9f9fe3fde4c539b320fa60bce7edf33b158d2b86464be609cbd43e",
+            "sizes": {
+              "raw": 2173,
+              "gzip": 741,
+              "brotli": 642
+            }
+          },
+          {
+            "path": "app_bg.wasm.d.ts",
+            "sha256": "a2caa454a7a7d757ac5690ae1533840a2a791325f7d261fd5c8e2e953b6aaf8d",
+            "sizes": {
+              "raw": 1130,
+              "gzip": 367,
+              "brotli": 326
+            }
+          },
+          {
+            "path": "driver.d.mts",
+            "sha256": "41293a2dcab1fd6190552c5278166b1bc7f7e1840a5c63bdd2dd37bcd9b157a2",
+            "sizes": {
+              "raw": 116,
+              "gzip": 122,
+              "brotli": 90
+            }
+          }
+        ],
+        "container": null
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ],
+          [
+            20,
+            2
+          ]
+        ],
+        "completed_while_a_blocked": [
+          "B"
+        ],
+        "completion_order": [
+          "B",
+          "A"
+        ]
+      },
+      "capacity": null,
+      "failure_recovery": {
+        "rejected_awaits": 2,
+        "identity_preserved": true,
+        "concurrent_successes": 2,
+        "reusable": true
+      }
+    },
+    {
+      "backend": "async-std",
+      "mode": "std",
+      "allocator": "taraba",
+      "id": "async-std-std-taraba-sync",
+      "workload": "sync",
+      "cargo_features": [
+        "std",
+        "async-std"
+      ],
+      "raw_rust_wasm_bytes": 73483,
+      "raw_rust_sha256": "3a2af5f07f7c81fe00a1d968310b21730366ca112043a697150d22ff6fee8802",
+      "runtime": {
+        "raw": 1861,
+        "gzip": 1156,
+        "brotli": 1019
+      },
+      "wasm_bytes": 911,
+      "js_bytes": 950,
+      "declaration_bytes": 1610,
+      "component_bytes": 0,
+      "payload_bytes": 3471,
+      "npm_tarball_bytes": 1969,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "3a74d47b4f149ee5e8bdf6ec2e6dbeaeb223672f37ce3e4bfe6693a864c157b7",
+            "sizes": {
+              "raw": 950,
+              "gzip": 535,
+              "brotli": 475
+            }
+          },
+          {
+            "path": "app_bg.wasm",
+            "sha256": "0eab4bf55cf0b52e9d157eba11f06ad25a7fee3d355b82410619e42fe0957fc1",
+            "sizes": {
+              "raw": 911,
+              "gzip": 621,
+              "brotli": 544
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "170c372be2f97d7f881b24ffb1fe5ee0d27a3b7cd723b0892eacf6c5a9647863",
+            "sizes": {
+              "raw": 1270,
+              "gzip": 514,
+              "brotli": 426
+            }
+          },
+          {
+            "path": "app_bg.wasm.d.ts",
+            "sha256": "fc9eb7d2aaa60ac234acc0548b2a6b51d8a8109185090708764d4047475ccf6c",
+            "sizes": {
+              "raw": 233,
+              "gzip": 154,
+              "brotli": 144
+            }
+          },
+          {
+            "path": "driver.d.mts",
+            "sha256": "723559e2d454dbd1bfdc754c8a56b827825275b0522e4f162955877f2002bb12",
+            "sizes": {
+              "raw": 107,
+              "gzip": 112,
+              "brotli": 88
+            }
+          }
+        ],
+        "container": null
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "actual_suspensions": 0
+      },
+      "scheduling": null,
+      "capacity": null,
+      "failure_recovery": null
+    },
+    {
+      "backend": "async-std",
+      "mode": "std",
+      "allocator": "taraba",
+      "id": "async-std-std-taraba-async",
+      "workload": "async",
+      "cargo_features": [
+        "std",
+        "async-workload",
+        "async-std"
+      ],
+      "raw_rust_wasm_bytes": 501878,
+      "raw_rust_sha256": "c92873244f3050b0e882f3241f36e3241ccafea76dab371a1873daf8fd1a4d2f",
+      "runtime": {
+        "raw": 22372,
+        "gzip": 10472,
+        "brotli": 9245
+      },
+      "wasm_bytes": 17930,
+      "js_bytes": 4442,
+      "declaration_bytes": 3419,
+      "component_bytes": 0,
+      "payload_bytes": 25791,
+      "npm_tarball_bytes": 11205,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "22c3ed3ebb928bc4d1692e0e08f92c0d6d345e8a55d63788b76d2099dea9b134",
+            "sizes": {
+              "raw": 4442,
+              "gzip": 1825,
+              "brotli": 1652
+            }
+          },
+          {
+            "path": "app_bg.wasm",
+            "sha256": "5abe5bc0952068894259f8cfd04b0f7cc95e87c8037bd45d5f610a819c9868d7",
+            "sizes": {
+              "raw": 17930,
+              "gzip": 8647,
+              "brotli": 7593
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "761a567bd21a5feaffec5ec9c8ef7feabc503caa5ecf4630a4ccb3ad5f8873c5",
+            "sizes": {
+              "raw": 2173,
+              "gzip": 738,
+              "brotli": 637
+            }
+          },
+          {
+            "path": "app_bg.wasm.d.ts",
+            "sha256": "02aab6a307ef794f1c1b67335c05023363cc1f43f4ae19c7009b4dc699d49dc3",
+            "sizes": {
+              "raw": 1130,
+              "gzip": 365,
+              "brotli": 326
+            }
+          },
+          {
+            "path": "driver.d.mts",
+            "sha256": "41293a2dcab1fd6190552c5278166b1bc7f7e1840a5c63bdd2dd37bcd9b157a2",
+            "sizes": {
+              "raw": 116,
+              "gzip": 122,
+              "brotli": 90
+            }
+          }
+        ],
+        "container": null
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ],
+          [
+            20,
+            2
+          ]
+        ],
+        "completed_while_a_blocked": [
+          "B"
+        ],
+        "completion_order": [
+          "B",
+          "A"
+        ]
+      },
+      "capacity": null,
+      "failure_recovery": {
+        "rejected_awaits": 2,
+        "identity_preserved": true,
+        "concurrent_successes": 2,
+        "reusable": true
+      }
+    },
+    {
+      "backend": "futures-unordered",
+      "mode": "no_std",
+      "allocator": "taraba",
+      "id": "futures-unordered-no_std-taraba-sync",
+      "workload": "sync",
+      "cargo_features": [
+        "futures-unordered"
+      ],
+      "raw_rust_wasm_bytes": 20518,
+      "raw_rust_sha256": "2748e20f3a6cae2cced52ce99eefd806ebf10d08c8426a456293e52dcd906757",
+      "runtime": {
+        "raw": 1244,
+        "gzip": 779,
+        "brotli": 687
+      },
+      "wasm_bytes": 294,
+      "js_bytes": 950,
+      "declaration_bytes": 1610,
+      "component_bytes": 0,
+      "payload_bytes": 2854,
+      "npm_tarball_bytes": 1581,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "3a74d47b4f149ee5e8bdf6ec2e6dbeaeb223672f37ce3e4bfe6693a864c157b7",
+            "sizes": {
+              "raw": 950,
+              "gzip": 535,
+              "brotli": 475
+            }
+          },
+          {
+            "path": "app_bg.wasm",
+            "sha256": "b927eabfca35bfa484e45e6315e4ac66600cecc07e58cade172acf0a966d20b8",
+            "sizes": {
+              "raw": 294,
+              "gzip": 244,
+              "brotli": 212
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "170c372be2f97d7f881b24ffb1fe5ee0d27a3b7cd723b0892eacf6c5a9647863",
+            "sizes": {
+              "raw": 1270,
+              "gzip": 514,
+              "brotli": 426
+            }
+          },
+          {
+            "path": "app_bg.wasm.d.ts",
+            "sha256": "fc9eb7d2aaa60ac234acc0548b2a6b51d8a8109185090708764d4047475ccf6c",
+            "sizes": {
+              "raw": 233,
+              "gzip": 154,
+              "brotli": 144
+            }
+          },
+          {
+            "path": "driver.d.mts",
+            "sha256": "723559e2d454dbd1bfdc754c8a56b827825275b0522e4f162955877f2002bb12",
+            "sizes": {
+              "raw": 107,
+              "gzip": 112,
+              "brotli": 88
+            }
+          }
+        ],
+        "container": null
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "actual_suspensions": 0
+      },
+      "scheduling": null,
+      "capacity": null,
+      "failure_recovery": null
+    },
+    {
+      "backend": "futures-unordered",
+      "mode": "no_std",
+      "allocator": "taraba",
+      "id": "futures-unordered-no_std-taraba-async",
+      "workload": "async",
+      "cargo_features": [
+        "async-workload",
+        "futures-unordered"
+      ],
+      "raw_rust_wasm_bytes": 445212,
+      "raw_rust_sha256": "8f95d2f1aca4b6343c874c34b71d5639b060cb18544dd453034acb2e75787ee1",
+      "runtime": {
+        "raw": 16525,
+        "gzip": 7893,
+        "brotli": 7082
+      },
+      "wasm_bytes": 12083,
+      "js_bytes": 4442,
+      "declaration_bytes": 3419,
+      "component_bytes": 0,
+      "payload_bytes": 19944,
+      "npm_tarball_bytes": 8632,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "dc3100f4e0135d2ee5eee3d5cadcf47dfba03b6f80074617fbddd75f66f0a459",
+            "sizes": {
+              "raw": 4442,
+              "gzip": 1826,
+              "brotli": 1636
+            }
+          },
+          {
+            "path": "app_bg.wasm",
+            "sha256": "5c6dc81588e2733472ec80b1a3299e1898b0115e992a362ed6f924b86d044c83",
+            "sizes": {
+              "raw": 12083,
+              "gzip": 6067,
+              "brotli": 5446
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "1a2a5c5bb658724c7c347c7042a16e71dd0a5ff8b37502afd9526ff5d143250b",
+            "sizes": {
+              "raw": 2173,
+              "gzip": 739,
+              "brotli": 641
+            }
+          },
+          {
+            "path": "app_bg.wasm.d.ts",
+            "sha256": "cf46b679ad187d0ad36d965df5bfb35cdede93d965fef46dd3555d023beec87a",
+            "sizes": {
+              "raw": 1130,
+              "gzip": 366,
+              "brotli": 321
+            }
+          },
+          {
+            "path": "driver.d.mts",
+            "sha256": "41293a2dcab1fd6190552c5278166b1bc7f7e1840a5c63bdd2dd37bcd9b157a2",
+            "sizes": {
+              "raw": 116,
+              "gzip": 122,
+              "brotli": 90
+            }
+          }
+        ],
+        "container": null
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ],
+          [
+            20,
+            2
+          ]
+        ],
+        "completed_while_a_blocked": [
+          "B"
+        ],
+        "completion_order": [
+          "B",
+          "A"
+        ]
+      },
+      "capacity": null,
+      "failure_recovery": {
+        "rejected_awaits": 2,
+        "identity_preserved": true,
+        "concurrent_successes": 2,
+        "reusable": true
+      }
+    },
+    {
+      "backend": "futures-unordered",
+      "mode": "std",
+      "allocator": "taraba",
+      "id": "futures-unordered-std-taraba-sync",
+      "workload": "sync",
+      "cargo_features": [
+        "std",
+        "futures-unordered"
+      ],
+      "raw_rust_wasm_bytes": 73483,
+      "raw_rust_sha256": "5d9f5899ad6449199642bddd800829aa0203a57c164f3e65c6b34a41501ba5c7",
+      "runtime": {
+        "raw": 1861,
+        "gzip": 1156,
+        "brotli": 1019
+      },
+      "wasm_bytes": 911,
+      "js_bytes": 950,
+      "declaration_bytes": 1610,
+      "component_bytes": 0,
+      "payload_bytes": 3471,
+      "npm_tarball_bytes": 1974,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "3a74d47b4f149ee5e8bdf6ec2e6dbeaeb223672f37ce3e4bfe6693a864c157b7",
+            "sizes": {
+              "raw": 950,
+              "gzip": 535,
+              "brotli": 475
+            }
+          },
+          {
+            "path": "app_bg.wasm",
+            "sha256": "0eab4bf55cf0b52e9d157eba11f06ad25a7fee3d355b82410619e42fe0957fc1",
+            "sizes": {
+              "raw": 911,
+              "gzip": 621,
+              "brotli": 544
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "170c372be2f97d7f881b24ffb1fe5ee0d27a3b7cd723b0892eacf6c5a9647863",
+            "sizes": {
+              "raw": 1270,
+              "gzip": 514,
+              "brotli": 426
+            }
+          },
+          {
+            "path": "app_bg.wasm.d.ts",
+            "sha256": "fc9eb7d2aaa60ac234acc0548b2a6b51d8a8109185090708764d4047475ccf6c",
+            "sizes": {
+              "raw": 233,
+              "gzip": 154,
+              "brotli": 144
+            }
+          },
+          {
+            "path": "driver.d.mts",
+            "sha256": "723559e2d454dbd1bfdc754c8a56b827825275b0522e4f162955877f2002bb12",
+            "sizes": {
+              "raw": 107,
+              "gzip": 112,
+              "brotli": 88
+            }
+          }
+        ],
+        "container": null
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "actual_suspensions": 0
+      },
+      "scheduling": null,
+      "capacity": null,
+      "failure_recovery": null
+    },
+    {
+      "backend": "futures-unordered",
+      "mode": "std",
+      "allocator": "taraba",
+      "id": "futures-unordered-std-taraba-async",
+      "workload": "async",
+      "cargo_features": [
+        "std",
+        "async-workload",
+        "futures-unordered"
+      ],
+      "raw_rust_wasm_bytes": 500821,
+      "raw_rust_sha256": "28f85764c75ed9f3676d26a84eca4bf160dff02cf99daf4034b35500c558211f",
+      "runtime": {
+        "raw": 22935,
+        "gzip": 10850,
+        "brotli": 9589
+      },
+      "wasm_bytes": 18495,
+      "js_bytes": 4440,
+      "declaration_bytes": 3415,
+      "component_bytes": 0,
+      "payload_bytes": 26350,
+      "npm_tarball_bytes": 11585,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "4bcbb0f42f4d7d8ad406634d74a05d5256c92fd0ee6d08edaae38882e3af2b1a",
+            "sizes": {
+              "raw": 4440,
+              "gzip": 1824,
+              "brotli": 1634
+            }
+          },
+          {
+            "path": "app_bg.wasm",
+            "sha256": "3504f8e3664105b2545773ebddc0c0f9b052f141dc75c9081a301b76ffda9efa",
+            "sizes": {
+              "raw": 18495,
+              "gzip": 9026,
+              "brotli": 7955
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "d3fd370e245ba5a59e7ee7551c47c03c2a3db87ea5f973e8251763e7a45919d7",
+            "sizes": {
+              "raw": 2171,
+              "gzip": 738,
+              "brotli": 641
+            }
+          },
+          {
+            "path": "app_bg.wasm.d.ts",
+            "sha256": "87d409c3f6c8667657d0cdfce703569f1bda090e16112f98a4ad4339e57ac139",
+            "sizes": {
+              "raw": 1128,
+              "gzip": 366,
+              "brotli": 323
+            }
+          },
+          {
+            "path": "driver.d.mts",
+            "sha256": "41293a2dcab1fd6190552c5278166b1bc7f7e1840a5c63bdd2dd37bcd9b157a2",
+            "sizes": {
+              "raw": 116,
+              "gzip": 122,
+              "brotli": 90
+            }
+          }
+        ],
+        "container": null
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": {
+        "tasks": 2,
+        "host_requests": 4,
+        "started_before_release": [
+          [
+            10,
+            1
+          ],
+          [
+            20,
+            2
+          ]
+        ],
+        "completed_while_a_blocked": [
+          "B"
+        ],
+        "completion_order": [
+          "B",
+          "A"
+        ]
+      },
+      "capacity": null,
+      "failure_recovery": {
+        "rejected_awaits": 2,
+        "identity_preserved": true,
+        "concurrent_successes": 2,
+        "reusable": true
+      }
+    },
+    {
+      "backend": "component",
+      "mode": "no_std",
+      "allocator": "taraba",
+      "id": "component-no_std-taraba-sync",
+      "workload": "sync",
+      "cargo_features": [
+        "component"
+      ],
+      "raw_rust_wasm_bytes": 3279,
+      "raw_rust_sha256": "9ede7ec27eb5dc73c642aac5e755b2f481b23135681ee4ac1d67c8511cdc8034",
+      "runtime": {
+        "raw": 49182,
+        "gzip": 14400,
+        "brotli": 13068
+      },
+      "wasm_bytes": 1210,
+      "js_bytes": 47972,
+      "declaration_bytes": 2136,
+      "component_bytes": 1560,
+      "payload_bytes": 52878,
+      "npm_tarball_bytes": 16909,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "299632f916b6ed11ec9e854cae8970469b0e5cc95e7051e077fd67261f4f1727",
+            "sizes": {
+              "raw": 47972,
+              "gzip": 13673,
+              "brotli": 12371
+            }
+          },
+          {
+            "path": "app.core.wasm",
+            "sha256": "a84c5d88b00bb30be57e1aaf64e39f41c9d91ad93d92690780b42ae586918658",
+            "sizes": {
+              "raw": 1210,
+              "gzip": 727,
+              "brotli": 697
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "5ca39eb2890f3477948f10876418c80f6284f14de984ac2957c4659eabe2f4cd",
+            "sizes": {
+              "raw": 2136,
+              "gzip": 823,
+              "brotli": 657
+            }
+          }
+        ],
+        "container": {
+          "path": "app.component.wasm",
+          "sha256": "3d2b0ce9788fadd2455679e886d791f5abd74af0be453de859dd64282ee7fbab",
+          "sizes": {
+            "raw": 1560,
+            "gzip": 923,
+            "brotli": 867
+          }
+        }
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "actual_suspensions": 0
+      },
+      "scheduling": null,
+      "capacity": null,
+      "failure_recovery": null
+    },
+    {
+      "backend": "component",
+      "mode": "no_std",
+      "allocator": "taraba",
+      "id": "component-no_std-taraba-async",
+      "workload": "async",
+      "cargo_features": [
+        "async-workload",
+        "component"
+      ],
+      "raw_rust_wasm_bytes": 33675,
+      "raw_rust_sha256": "d4b298655d9320cfa242704f0d82203babe0a9953df469c69746470e4a873f8a",
+      "runtime": {
+        "raw": 80467,
+        "gzip": 25332,
+        "brotli": 22625
+      },
+      "wasm_bytes": 13691,
+      "js_bytes": 66776,
+      "declaration_bytes": 2154,
+      "component_bytes": 14844,
+      "payload_bytes": 97465,
+      "npm_tarball_bytes": 28744,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "85903c25bad9fe26f3868cb2696f2d37928a377f15516711c9ea5df5a88690b5",
+            "sizes": {
+              "raw": 66776,
+              "gzip": 18592,
+              "brotli": 16604
+            }
+          },
+          {
+            "path": "app.conditional-suspending-1-i32-to-i32.wasm",
+            "sha256": "5649c11b15524e0b3e2eade9dc70464d44596ad16d8b72cd0bec9101fefe3f04",
+            "sizes": {
+              "raw": 76,
+              "gzip": 91,
+              "brotli": 70
+            }
+          },
+          {
+            "path": "app.core.wasm",
+            "sha256": "95d414b980e785ad2a7b1ab80d287b41291b9c96ce9d270cb8099ce737555cd6",
+            "sizes": {
+              "raw": 13466,
+              "gzip": 6475,
+              "brotli": 5821
+            }
+          },
+          {
+            "path": "app.core2.wasm",
+            "sha256": "3a3100478a75210849131b2164c75c226543bcac2927f0d26c437ed95fc962fa",
+            "sizes": {
+              "raw": 87,
+              "gzip": 97,
+              "brotli": 74
+            }
+          },
+          {
+            "path": "app.core3.wasm",
+            "sha256": "656e9b978626b86f1c94e314b25701e0c2c1bbe454c1f954f6bd715acfc3203d",
+            "sizes": {
+              "raw": 62,
+              "gzip": 77,
+              "brotli": 56
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "8e76a72fbbed37344cba3e9d4ad5b434c42f5ee0bf0f9f56e76922b73a5fdce2",
+            "sizes": {
+              "raw": 2154,
+              "gzip": 828,
+              "brotli": 662
+            }
+          }
+        ],
+        "container": {
+          "path": "app.component.wasm",
+          "sha256": "778cb5bf422eaee6ad7e680569a9df7dc1867f61e4361abd06b132be41a56d07",
+          "sizes": {
+            "raw": 14844,
+            "gzip": 7061,
+            "brotli": 6302
+          }
+        }
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": null,
+      "capacity": null,
+      "failure_recovery": null
+    },
+    {
+      "backend": "component",
+      "mode": "std",
+      "allocator": "taraba",
+      "id": "component-std-taraba-sync",
+      "workload": "sync",
+      "cargo_features": [
+        "std",
+        "component"
+      ],
+      "raw_rust_wasm_bytes": 56434,
+      "raw_rust_sha256": "28bc051d4bec5f71967465aa1edc0549948940d97f7dc80318106beb12df5346",
+      "runtime": {
+        "raw": 53140,
+        "gzip": 16480,
+        "brotli": 14923
+      },
+      "wasm_bytes": 5168,
+      "js_bytes": 47972,
+      "declaration_bytes": 2136,
+      "component_bytes": 5518,
+      "payload_bytes": 60794,
+      "npm_tarball_bytes": 19356,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "299632f916b6ed11ec9e854cae8970469b0e5cc95e7051e077fd67261f4f1727",
+            "sizes": {
+              "raw": 47972,
+              "gzip": 13673,
+              "brotli": 12371
+            }
+          },
+          {
+            "path": "app.core.wasm",
+            "sha256": "a8c4a950ae88817834b78ecbf439216053a6731cc0ff1020da6351bea58f4907",
+            "sizes": {
+              "raw": 5168,
+              "gzip": 2807,
+              "brotli": 2552
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "5ca39eb2890f3477948f10876418c80f6284f14de984ac2957c4659eabe2f4cd",
+            "sizes": {
+              "raw": 2136,
+              "gzip": 823,
+              "brotli": 657
+            }
+          }
+        ],
+        "container": {
+          "path": "app.component.wasm",
+          "sha256": "39b68d9c42c25bb178f5407f3506f1a176fd205e63d0731013dbef1fe47f84ee",
+          "sizes": {
+            "raw": 5518,
+            "gzip": 3003,
+            "brotli": 2737
+          }
+        }
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "actual_suspensions": 0
+      },
+      "scheduling": null,
+      "capacity": null,
+      "failure_recovery": null
+    },
+    {
+      "backend": "component",
+      "mode": "std",
+      "allocator": "taraba",
+      "id": "component-std-taraba-async",
+      "workload": "async",
+      "cargo_features": [
+        "std",
+        "async-workload",
+        "component"
+      ],
+      "raw_rust_wasm_bytes": 100449,
+      "raw_rust_sha256": "6a597c72aa88345de57363fa228d9d666ced07b2d97e8ff06366404e10c3daba",
+      "runtime": {
+        "raw": 92126,
+        "gzip": 30692,
+        "brotli": 27091
+      },
+      "wasm_bytes": 25350,
+      "js_bytes": 66776,
+      "declaration_bytes": 2154,
+      "component_bytes": 26504,
+      "payload_bytes": 120784,
+      "npm_tarball_bytes": 34298,
+      "packed_artifacts_verified": true,
+      "typescript_strict": true,
+      "files": {
+        "runtime": [
+          {
+            "path": "bundle.mjs",
+            "sha256": "85903c25bad9fe26f3868cb2696f2d37928a377f15516711c9ea5df5a88690b5",
+            "sizes": {
+              "raw": 66776,
+              "gzip": 18592,
+              "brotli": 16604
+            }
+          },
+          {
+            "path": "app.conditional-suspending-1-i32-to-i32.wasm",
+            "sha256": "5649c11b15524e0b3e2eade9dc70464d44596ad16d8b72cd0bec9101fefe3f04",
+            "sizes": {
+              "raw": 76,
+              "gzip": 91,
+              "brotli": 70
+            }
+          },
+          {
+            "path": "app.core.wasm",
+            "sha256": "e9fbc2894b1320ef1684978d934195e15e32806155978f7c7ece0e6e1b38c26e",
+            "sizes": {
+              "raw": 25125,
+              "gzip": 11835,
+              "brotli": 10287
+            }
+          },
+          {
+            "path": "app.core2.wasm",
+            "sha256": "3a3100478a75210849131b2164c75c226543bcac2927f0d26c437ed95fc962fa",
+            "sizes": {
+              "raw": 87,
+              "gzip": 97,
+              "brotli": 74
+            }
+          },
+          {
+            "path": "app.core3.wasm",
+            "sha256": "656e9b978626b86f1c94e314b25701e0c2c1bbe454c1f954f6bd715acfc3203d",
+            "sizes": {
+              "raw": 62,
+              "gzip": 77,
+              "brotli": 56
+            }
+          }
+        ],
+        "declarations": [
+          {
+            "path": "app.d.ts",
+            "sha256": "8e76a72fbbed37344cba3e9d4ad5b434c42f5ee0bf0f9f56e76922b73a5fdce2",
+            "sizes": {
+              "raw": 2154,
+              "gzip": 828,
+              "brotli": 662
+            }
+          }
+        ],
+        "container": {
+          "path": "app.component.wasm",
+          "sha256": "4d4d9be28d3174ae2747995296b5a8380e46f11e5bdc909e1345009e3873462c",
+          "sizes": {
+            "raw": 26504,
+            "gzip": 12382,
+            "brotli": 10816
+          }
+        }
+      },
+      "verified": {
+        "all_passed": true,
+        "tasks": 3507,
+        "host_requests": 7014,
+        "controlled_io": [
+          [
+            7,
+            9
+          ],
+          [
+            16,
+            1
+          ]
+        ],
+        "actual_suspensions": 2
+      },
+      "scheduling": null,
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "bindgen",
@@ -1675,6 +2832,9 @@
       "allocator": "wee",
       "id": "bindgen-no_std-wee-sync",
       "workload": "sync",
+      "cargo_features": [
+        "wee"
+      ],
       "raw_rust_wasm_bytes": 19540,
       "raw_rust_sha256": "474587532494843f30d8f94a4422265d5bbb9a629673fca2e8c528e923f74ab7",
       "runtime": {
@@ -1749,7 +2909,8 @@
         "actual_suspensions": 0
       },
       "scheduling": null,
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "bindgen",
@@ -1757,6 +2918,10 @@
       "allocator": "wee",
       "id": "bindgen-no_std-wee-async",
       "workload": "async",
+      "cargo_features": [
+        "async-workload",
+        "wee"
+      ],
       "raw_rust_wasm_bytes": 438776,
       "raw_rust_sha256": "d3cc7fb0bef192ddbf3a8a34cf4103ffbd830038812dbcfb9eb419608ef11ea3",
       "runtime": {
@@ -1861,7 +3026,13 @@
           "A"
         ]
       },
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": {
+        "rejected_awaits": 2,
+        "identity_preserved": true,
+        "concurrent_successes": 2,
+        "reusable": true
+      }
     },
     {
       "backend": "bindgen",
@@ -1869,6 +3040,10 @@
       "allocator": "wee",
       "id": "bindgen-std-wee-sync",
       "workload": "sync",
+      "cargo_features": [
+        "std",
+        "wee"
+      ],
       "raw_rust_wasm_bytes": 65278,
       "raw_rust_sha256": "1a9b28d49af143e84bbfa16e0288e0bd53f3084c49556573eae29359cd8ec948",
       "runtime": {
@@ -1943,7 +3118,8 @@
         "actual_suspensions": 0
       },
       "scheduling": null,
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "bindgen",
@@ -1951,12 +3127,17 @@
       "allocator": "wee",
       "id": "bindgen-std-wee-async",
       "workload": "async",
+      "cargo_features": [
+        "std",
+        "async-workload",
+        "wee"
+      ],
       "raw_rust_wasm_bytes": 492692,
-      "raw_rust_sha256": "943c93ea117211d0ca9b00eea5b3800e3d17f9f950a04c5fe8cae467f3efe044",
+      "raw_rust_sha256": "b587e22d8d24c89f51525a8656bfa5c9cdf7fff85e072642b7be12cf083f6393",
       "runtime": {
         "raw": 19417,
-        "gzip": 9264,
-        "brotli": 8197
+        "gzip": 9265,
+        "brotli": 8198
       },
       "wasm_bytes": 14975,
       "js_bytes": 4442,
@@ -1979,11 +3160,11 @@
           },
           {
             "path": "app_bg.wasm",
-            "sha256": "957dad110576876c96f2b8f1e5f7ce7d116ce7be6446622d4776b455dd19ddb6",
+            "sha256": "5b5754e399dd35544b4471253a34eaba55132ccced6ee63d21a1a22d7c83a7b0",
             "sizes": {
               "raw": 14975,
-              "gzip": 7436,
-              "brotli": 6562
+              "gzip": 7437,
+              "brotli": 6563
             }
           }
         ],
@@ -2055,7 +3236,13 @@
           "A"
         ]
       },
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": {
+        "rejected_awaits": 2,
+        "identity_preserved": true,
+        "concurrent_successes": 2,
+        "reusable": true
+      }
     },
     {
       "backend": "embassy",
@@ -2063,6 +3250,11 @@
       "allocator": "wee",
       "id": "embassy-std-wee-sync",
       "workload": "sync",
+      "cargo_features": [
+        "std",
+        "embassy",
+        "wee"
+      ],
       "raw_rust_wasm_bytes": 65278,
       "raw_rust_sha256": "9dad8086804c82936a4a0dfc266a47eb9e974cba7224d4ac54495b45d7dc5b78",
       "runtime": {
@@ -2137,7 +3329,8 @@
         "actual_suspensions": 0
       },
       "scheduling": null,
-      "capacity": null
+      "capacity": null,
+      "failure_recovery": null
     },
     {
       "backend": "embassy",
@@ -2145,19 +3338,25 @@
       "allocator": "wee",
       "id": "embassy-std-wee-async",
       "workload": "async",
+      "cargo_features": [
+        "std",
+        "async-workload",
+        "embassy",
+        "wee"
+      ],
       "raw_rust_wasm_bytes": 488051,
-      "raw_rust_sha256": "3dd3929d0072340aff930319082b266486822fae967ef4d099fcab1a66f73169",
+      "raw_rust_sha256": "8168d5f77b9a96f0c3137346d101925483694fb9c201862865f0bb4d3818fbd5",
       "runtime": {
         "raw": 18411,
-        "gzip": 8827,
-        "brotli": 7818
+        "gzip": 8824,
+        "brotli": 7848
       },
       "wasm_bytes": 13200,
       "js_bytes": 5211,
       "declaration_bytes": 4457,
       "component_bytes": 0,
       "payload_bytes": 22868,
-      "npm_tarball_bytes": 9805,
+      "npm_tarball_bytes": 9804,
       "packed_artifacts_verified": true,
       "typescript_strict": true,
       "files": {
@@ -2173,11 +3372,11 @@
           },
           {
             "path": "app_bg.wasm",
-            "sha256": "2f960eaccd9fa19af693e735286159ba5885041d4c6452ac9971e2d5f1e9dd9c",
+            "sha256": "e5bd3983df130a697f04414233aa4a318f9ef15590e511ed62b4169d6fb19f29",
             "sizes": {
               "raw": 13200,
-              "gzip": 6632,
-              "brotli": 5829
+              "gzip": 6629,
+              "brotli": 5859
             }
           }
         ],
@@ -2253,6 +3452,12 @@
         "capacity": 1024,
         "excess_rejected": 1,
         "reusable": true
+      },
+      "failure_recovery": {
+        "rejected_awaits": 2,
+        "identity_preserved": true,
+        "concurrent_successes": 2,
+        "reusable": true
       }
     }
   ],
@@ -2306,27 +3511,15 @@
       }
     },
     {
-      "backend": "component",
-      "mode": "no_std",
-      "allocator": "taraba",
-      "sync": "component-no_std-taraba-sync",
-      "async": "component-no_std-taraba-async",
-      "growth": {
-        "wasm_bytes": 12481,
-        "js_bytes": 18804,
-        "runtime_bytes": 31285
-      }
-    },
-    {
-      "backend": "component",
+      "backend": "embassy",
       "mode": "std",
       "allocator": "taraba",
-      "sync": "component-std-taraba-sync",
-      "async": "component-std-taraba-async",
+      "sync": "embassy-std-taraba-sync",
+      "async": "embassy-std-taraba-async",
       "growth": {
-        "wasm_bytes": 20182,
-        "js_bytes": 18804,
-        "runtime_bytes": 38986
+        "wasm_bytes": 12449,
+        "js_bytes": 4261,
+        "runtime_bytes": 16710
       }
     },
     {
@@ -2354,15 +3547,87 @@
       }
     },
     {
-      "backend": "embassy",
+      "backend": "tokio",
       "mode": "std",
       "allocator": "taraba",
-      "sync": "embassy-std-taraba-sync",
-      "async": "embassy-std-taraba-async",
+      "sync": "tokio-std-taraba-sync",
+      "async": "tokio-std-taraba-async",
       "growth": {
-        "wasm_bytes": 12449,
-        "js_bytes": 4261,
-        "runtime_bytes": 16710
+        "wasm_bytes": 51810,
+        "js_bytes": 3492,
+        "runtime_bytes": 55302
+      }
+    },
+    {
+      "backend": "async-executor",
+      "mode": "std",
+      "allocator": "taraba",
+      "sync": "async-executor-std-taraba-sync",
+      "async": "async-executor-std-taraba-async",
+      "growth": {
+        "wasm_bytes": 31413,
+        "js_bytes": 3492,
+        "runtime_bytes": 34905
+      }
+    },
+    {
+      "backend": "async-std",
+      "mode": "std",
+      "allocator": "taraba",
+      "sync": "async-std-std-taraba-sync",
+      "async": "async-std-std-taraba-async",
+      "growth": {
+        "wasm_bytes": 17019,
+        "js_bytes": 3492,
+        "runtime_bytes": 20511
+      }
+    },
+    {
+      "backend": "futures-unordered",
+      "mode": "no_std",
+      "allocator": "taraba",
+      "sync": "futures-unordered-no_std-taraba-sync",
+      "async": "futures-unordered-no_std-taraba-async",
+      "growth": {
+        "wasm_bytes": 11789,
+        "js_bytes": 3492,
+        "runtime_bytes": 15281
+      }
+    },
+    {
+      "backend": "futures-unordered",
+      "mode": "std",
+      "allocator": "taraba",
+      "sync": "futures-unordered-std-taraba-sync",
+      "async": "futures-unordered-std-taraba-async",
+      "growth": {
+        "wasm_bytes": 17584,
+        "js_bytes": 3490,
+        "runtime_bytes": 21074
+      }
+    },
+    {
+      "backend": "component",
+      "mode": "no_std",
+      "allocator": "taraba",
+      "sync": "component-no_std-taraba-sync",
+      "async": "component-no_std-taraba-async",
+      "growth": {
+        "wasm_bytes": 12481,
+        "js_bytes": 18804,
+        "runtime_bytes": 31285
+      }
+    },
+    {
+      "backend": "component",
+      "mode": "std",
+      "allocator": "taraba",
+      "sync": "component-std-taraba-sync",
+      "async": "component-std-taraba-async",
+      "growth": {
+        "wasm_bytes": 20182,
+        "js_bytes": 18804,
+        "runtime_bytes": 38986
       }
     },
     {
@@ -2404,15 +3669,94 @@
   ],
   "safari_browser_verified": false,
   "native_component_host_verified": false,
+  "backends": [
+    {
+      "id": "jspi",
+      "name": "taraba JSPI",
+      "modes": [
+        "no_std",
+        "std"
+      ],
+      "transport": "core"
+    },
+    {
+      "id": "future",
+      "name": "taraba Future",
+      "modes": [
+        "no_std",
+        "std"
+      ],
+      "transport": "core"
+    },
+    {
+      "id": "embassy",
+      "name": "Embassy WASM + JsFuture",
+      "modes": [
+        "std"
+      ],
+      "transport": "bindgen"
+    },
+    {
+      "id": "bindgen",
+      "name": "wasm-bindgen-futures",
+      "modes": [
+        "no_std",
+        "std"
+      ],
+      "transport": "bindgen"
+    },
+    {
+      "id": "tokio",
+      "name": "Tokio current-thread + LocalSet",
+      "modes": [
+        "std"
+      ],
+      "transport": "bindgen"
+    },
+    {
+      "id": "async-executor",
+      "name": "async-executor LocalExecutor",
+      "modes": [
+        "std"
+      ],
+      "transport": "bindgen"
+    },
+    {
+      "id": "async-std",
+      "name": "async-std spawn_local",
+      "modes": [
+        "std"
+      ],
+      "transport": "bindgen"
+    },
+    {
+      "id": "futures-unordered",
+      "name": "FuturesUnordered task set",
+      "modes": [
+        "no_std",
+        "std"
+      ],
+      "transport": "bindgen"
+    },
+    {
+      "id": "component",
+      "name": "Component + jco",
+      "modes": [
+        "no_std",
+        "std"
+      ],
+      "transport": "core"
+    }
+  ],
   "inputs": {
     "Cargo.lock": "5180d385d10e55d8c54beeb77117685129e0623692d6902bdf126ffb60061c47",
     "rust-toolchain.toml": "8af15b24d337d34a26b257ce39a67ed05d31f5e504d2a6cd9f2b9621a2afdb84",
     "tests/consumer.test.mjs": "5b661007c486613bee52822bc2e5a55605ad250e3c62df616e8aa3338ee9e1a6",
     "pnpm-lock.yaml": "e720aed95868804440e6f3e4b1d3757ab09038f66dc8d7e93de734c8f224505e",
-    "tools/compare-async-size.mjs": "c229704309297cf94ad008deda9ec0116a5f840fc3f45d73178b4c8b75b3c986",
+    "tools/compare-async-size.mjs": "52c330b0dad6c7f86df46e582df494fcb469f063b8d228fcceecf523e3d8fa56",
     "tools/install-wasm-bindgen.mjs": "ddf59e0c4bd3187735ae5e3fdbb1f02be10bcd3873f6a6b1312eddc836412bff",
     "tools/wasm-opt-contract.mjs": "d0a3bce52aaa74fd71e22d1d0509c479b81f95fd49f347dd71ae2707899a5cba",
-    "tests/async-size.test.mjs": "f54b52baa7f0cbbd222e9308f7699ceb54325da7885f9bcdad627ce267e4070f",
+    "tests/async-size.test.mjs": "7510c466da0dc8e4b2ead93db8bae559779585ed0dbf77e324587aa56d7e849e",
     "tests/docs.test.mjs": "14dd4759664b151db8ad6c0590f5aac8e6e9bd1bd246fcaf7ae58988a4a1bb31",
     "tests/support/wit-contract.mjs": "e9e8db4af3aadea1b423dafac9e32ba54480e92c8694c3dc052e5aea76d20589",
     "tests/support/async-contract.mjs": "6ec8416a13d55b8623d2a69e34a16275668664cc5e9906ddaabb0d82856ddfce",
@@ -2468,16 +3812,18 @@
     "crates/taraba-cli/src/templates/component.wit": "3b192edcf0ea4b58869a22461653e86ebb67b8f014bbb523a368af155a498a40",
     "crates/taraba-cli/src/templates/jspi.rs": "682ecb4ee02a68ab7190f89837451b68e8731c198a654b60796c60eacc2c51a3",
     "crates/taraba-cli/src/templates/jspi.wit": "9a67e6c1c9b5e768ba27d5b2e9981c530e015f47cf7038296185c57da43ace7a",
-    "experiments/async-size/Cargo.lock": "53d2ee29232c90480c058eb4e05fcf14d8d062f0c09850210d27d3f002f41dbe",
+    "experiments/async-size/Cargo.lock": "d9a7ef30e100cc94a42c94f46ef870ebd23f550bebfe356334d834207dff4ade",
     "experiments/async-size/Cargo.toml": "4864aeb6164ba37012a9f6e4fca2e61cd12f5eb0e50742ee1b8ea8b599cb6a5d",
-    "experiments/async-size/contract.mjs": "221e4dcba5edb8a2e6510ca47f66f93d2b65437163b333a49bba09c3251aaeb0",
+    "experiments/async-size/backends.mjs": "3889d60022fb355b6b62215e839c3a8d4e97be64b823b920dd7a3cdaca9cf8b1",
+    "experiments/async-size/contract.mjs": "2fe89e24493581f7237c8dd402c38aa4b433a7304d26eea467ddcdfd2419715e",
     "experiments/async-size/metrics.mjs": "19ad0d9474aa73fcf2bbc744f95771c95e2e1fb1c26116c1d487cb25d6e1c343",
-    "experiments/async-size/report.mjs": "f2817f8e1c951923b6c71e427e582ad392475ecf09ee30a4527416c0ee41f530",
+    "experiments/async-size/report.mjs": "25fe7a157fa71de25993b9fba2eb6ee024f821c0d99014713fffe1813860cef8",
     "experiments/async-size/sync.rs": "5c2bc27c979122b46e17d289044c397e982c500d672697896069f6b16288ee5c",
-    "experiments/async-size/bindgen/Cargo.toml": "d30ca658db04d589fe1f6402881aa196157604be032a57dc6d2c2d8f34021248",
+    "experiments/async-size/bindgen/Cargo.toml": "15828cc7af32efea0f1178b8f93ca5a8e3cf2aeda0b5dc96b75d657181f513ab",
     "experiments/async-size/bindgen/io.mjs": "6c8a4750fdbab040ec94507e7d8e926760070dae7f5cfe8ed4f65a6c8011f054",
     "experiments/async-size/core/Cargo.toml": "8002f62b792926e0ebda32ae6338ca472ae3dfa90c62c2b29a45fa66d8441535",
-    "experiments/async-size/bindgen/src/lib.rs": "9acac82a342adc8a1896e13a5972c0e7a9638c05c43743aa0d14de84e94241ff",
+    "experiments/async-size/bindgen/src/executors.rs": "2cb5e571c965f1b87b372ae02ee5aff8544d47d8160efb7a26a6f4d1d5e08e53",
+    "experiments/async-size/bindgen/src/lib.rs": "a0b920e579d08dab62358119f549526c68f2050b72eb73b6b0224f7ecba2ba86",
     "experiments/async-size/core/src/lib.rs": "f59106bf8e441cffbaa6b2d0ae250cb6f48d9d18063a38f026a9dbf8abb12d10",
     "experiments/async-size/core/wit/async/app.wit": "2f7a5d6f42a888685fb3e7ecd4723535916883f5af8edf70daffe952e20dc32b",
     "experiments/async-size/core/wit/future/app.wit": "189f8c4aaf20a98460cce3fa6e477652db44b9ea171c0b1f7935e3f06e1a911a",

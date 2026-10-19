@@ -23,9 +23,11 @@ import { asyncCases } from "../tests/support/async-contract.mjs";
 import {
   verifySync,
   verifyEmbassyCapacity,
+  verifyPromiseFailures,
 } from "../experiments/async-size/contract.mjs";
 import { account, growth } from "../experiments/async-size/metrics.mjs";
 import { optimizationArgs } from "./wasm-opt-contract.mjs";
+import { backends, profiles } from "../experiments/async-size/backends.mjs";
 
 const check = process.argv.includes("--check"),
   root = resolve("."),
@@ -74,6 +76,10 @@ const report = {
     wasm_bindgen_futures: "0.4.79",
     js_sys: "0.3.106",
     embassy_executor: "0.10.0",
+    tokio: "1.53.3",
+    async_executor: "1.14.0",
+    async_std: "1.13.2",
+    futures_util: "0.3.34",
     wee_alloc: "0.4.5",
     jco: "1.39.0",
     esbuild: esbuild.version,
@@ -94,30 +100,28 @@ const report = {
       "common successful arithmetic/I/O only; JSPI serialization, canonical typed errors, and Future cancellation/Drop contracts are not equivalent",
     official_embassy:
       "platform-wasm + executor-thread; upstream links std (critical-section/std); no no_std result is claimed; JsFuture bridges host I/O and Embassy drives its static 1024-worker pool",
+    tokio:
+      "rt only, one current-thread Runtime and LocalSet per instance; a persistent wasm-bindgen driver polls LocalSet inside a Tokio block_on whose root immediately returns Poll; JS wakers resume later, so no blocking/idle park or timer/net/multithread features are used; safe custom bridge is included",
+    async_executor:
+      "one LocalExecutor per instance; persistent wasm-bindgen spawn_local drives run(pending), LocalExecutor.spawn schedules compute and its Task is joined; no smol I/O reactor is claimed",
+    async_std:
+      "default features plus unstable for task::spawn_local; upstream WASM branch uses wasm-bindgen-futures and a channel JoinHandle; async-std 1.13.2 is deprecated and is included as a historical compatibility control",
+    futures_unordered:
+      "alloc/async-await, std only in std rows; per-invocation FuturesUnordered containing one compute Future, driven by StreamExt::next and wasm-bindgen; a task collection reference, not an independent runtime/reactor",
   },
   entries: [],
   comparisons: [],
   safari_browser_verified: false,
   native_component_host_verified: false,
 };
-const profiles = [
-  ...["jspi", "future", "component", "bindgen"].flatMap((backend) =>
-    ["no_std", "std"].map((mode) => ({ backend, mode, allocator: "taraba" })),
-  ),
-  { backend: "embassy", mode: "std", allocator: "taraba" },
-  ...["no_std", "std"].map((mode) => ({
-    backend: "bindgen",
-    mode,
-    allocator: "wee",
-  })),
-  { backend: "embassy", mode: "std", allocator: "wee" },
-];
+report.backends = backends;
 let instance = 0;
 try {
   for (const p of profiles)
     for (const workload of ["sync", "async"]) {
       const async = workload === "async",
-        bindgen = ["bindgen", "embassy"].includes(p.backend);
+        bindgen =
+          backends.find((b) => b.id === p.backend).transport === "bindgen";
       const id = `${p.backend}-${p.mode}-${p.allocator}-${workload}`,
         dir = join(out, id),
         pkg = join(dir, "pkg");
@@ -126,11 +130,7 @@ try {
       const features = [
         ...(p.mode === "std" ? ["std"] : []),
         ...(async ? ["async-workload"] : []),
-        ...(bindgen
-          ? p.backend === "embassy"
-            ? ["embassy"]
-            : []
-          : [p.backend]),
+        ...(p.backend === "bindgen" ? [] : [p.backend]),
         ...(p.allocator === "wee" ? ["wee"] : []),
       ];
       run("cargo", [
@@ -352,8 +352,17 @@ try {
         ? await verifyWit(factory, batches)
         : await verifySync(factory, batches);
       let scheduling = null;
-      if (async && p.backend === "embassy") {
-        // Embassy may start B before A: its ready queue need not promise FIFO.
+      if (
+        async &&
+        [
+          "embassy",
+          "tokio",
+          "async-executor",
+          "async-std",
+          "futures-unordered",
+        ].includes(p.backend)
+      ) {
+        // Ready queues need not promise FIFO; require independent progress.
         scheduling = await inspectScheduling(factory);
         assert.deepEqual(
           [...scheduling.started_before_release].sort((a, b) => a[0] - b[0]),
@@ -373,10 +382,13 @@ try {
         async && p.backend === "embassy"
           ? await verifyEmbassyCapacity(factory)
           : null;
+      const failureRecovery =
+        async && bindgen ? await verifyPromiseFailures(factory) : null;
       const row = {
         ...p,
         id,
         workload,
+        cargo_features: features,
         raw_rust_wasm_bytes: rawBytes.length,
         raw_rust_sha256: hash(rawBytes),
         ...measured,
@@ -387,6 +399,7 @@ try {
         verified,
         scheduling,
         capacity,
+        failure_recovery: failureRecovery,
       };
       report.entries.push(row);
       console.log(

@@ -1,5 +1,33 @@
 import assert from "node:assert/strict";
 
+// These profiles share a wasm-bindgen Promise boundary. Other backends have
+// separate fatal/typed-error contracts and are deliberately not checked here.
+export async function verifyPromiseFailures(factory) {
+  for (const step of [0, 1]) {
+    const reason = Object.freeze({ rejected_await: step });
+    const run = await factory((a, b) =>
+      (step === 0 ? a === 7 && b === 9 : a === 16 && b === 1)
+        ? Promise.reject(reason)
+        : Promise.resolve((a + b) | 0),
+    );
+    const [failed, other] = await Promise.allSettled([run(7, 9), run(20, 21)]);
+    assert.equal(failed.status, "rejected");
+    assert.equal(failed.reason, reason, "Promise rejection identity changed");
+    assert.deepEqual(other, { status: "fulfilled", value: 42 });
+    assert.equal(
+      await run(1, 2),
+      4,
+      "executor must be reusable after rejection",
+    );
+  }
+  return {
+    rejected_awaits: 2,
+    identity_preserved: true,
+    concurrent_successes: 2,
+    reusable: true,
+  };
+}
+
 export async function verifySync(factory, batches) {
   const calls = [];
   const run = await factory((a, b) => {

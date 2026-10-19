@@ -18,7 +18,7 @@ setup は依存・Rust Wasm target・Binaryen 133・wasm-tools 1.245.1 を用意
 | `just check` | Rust/JS、format、Core の fatal/所有権、JSPI stack spill、npm 利用側、現在のドキュメントリンク |
 | `just library-check` | 現在の CLI から pack・外部 install・strict TS、3構成×std/no_std、Component のドメイン値とエラー |
 | `just package-check` | 3 crate を package し、展開した CLI で外部アプリと npm 生成を再検証 |
-| `just compare-async-size` | Embassy / wasm-bindgen と同じ同期・非同期処理をビルドし、docs/async-size.{json,md} と日本語結果を更新 |
+| `just compare-async-size` | Embassy / Tokio / async-executor / async-std / wasm-bindgen / FuturesUnordered と同じ同期・非同期処理をビルドし、日英の結果を更新 |
 | `just check-async-size` | 同じサイズ・正当性検証。出力は .cache/async-size のみ |
 | `just compare-allocator` / `just check-allocator` | 変更前・現在の既定版/realloc feature・wee_alloc の共通 allocator 検査と9種類の V8 kernel 測定。check は .cache のみ |
 | `just workers --jspi-concurrent` | 未採用の並行実験を含む既存 fixture を local workerd で実行 |
@@ -28,7 +28,7 @@ setup は依存・Rust Wasm target・Binaryen 133・wasm-tools 1.245.1 を用意
 
 レジストリ公開前の package-check は、依存を .crate 展開先へ patch します。アーカイブの内容と外部アプリのビルドを検証するもので、crates.io からのインストール成功とは区別します。npm/crates.io へ publish するタスクはありません。利用ガイドの registry コマンドは公開後の手順です。
 
-unsafe な所有権・寿命を変えた場合は check / miri / kani / stress を実行します。native の部品証明は JS・V8/WebKit・生成 Wasm・intrusive WAT 全体や、比較に使う upstream Embassy executor の証明ではありません。JSPI と Component Canonical ABI は実行テストでも確認します。
+unsafe な所有権・寿命を変えた場合は check / miri / kani / stress を実行します。native の部品証明は JS・V8/WebKit・生成 Wasm・intrusive WAT 全体や、比較に使う upstream executor の証明ではありません。JSPI と Component Canonical ABI は実行テストでも確認します。
 
 通常の Kani タスクは realloc のワード分類・容量の判定を native64 の全有効サイズで
 検証します。`just kani-explore` / `just kani-realloc-explore` のポインタ・データ・free list の証明は60秒の上限を超え、
