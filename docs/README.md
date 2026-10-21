@@ -6,6 +6,8 @@ English | [日本語](README.ja.md)
 
 | Question | Read |
 |---|---|
+| What works today, what is unsupported, and what remains unverified? | [Current capabilities and limits](status.md) |
+| WIT → Rust async → TS, interfaces, resources, disposal and pool capacity | [TypeScript interop](typescript.md) |
 | Which backend or distribution format should I choose? | [Project overview](../README.md) |
 | How do I write WIT, Rust async and a typed npm library? | [Usage guide](guide.md) |
 | How do I publish pkg/ and choose the package name/version? | [Generated npm package](guide.md#generated-npm-package) |
@@ -30,6 +32,7 @@ Each report is dated and records source hashes. The new async-size report is the
 |---|---|
 | What remains in Wasm, and do twiggy/wasm-snip help? | [Section breakdown and snip experiment](wasm-size-analysis.md) (Japanese) |
 | [Async size](async-size.md) / [JSON](async-size.json) | Common sync/async algorithm; taraba, Embassy, Tokio, async-executor, async-std, wasm-bindgen and FuturesUnordered; all runtime files |
+| [Rich async](rich-async-size.md) / [JSON](rich-async-size.json) | Same record/string/bytes/Result Rust workflow against wit-bindgen; deployed size, local timing and measured memory |
 | [Allocator optimization](allocator.md) / [JSON](allocator.json) | Before/after size, V8 kernels, memory reuse/OOM and wee_alloc control (Japanese) |
 | [WIT comparison](wit-comparison.md) | Earlier Core, standard Component sync/native async, compile/runtime timing |
 | [JSPI Future measurements](jspi-future-measurements.md) | Experimental Future adapter and adoption gates |
@@ -39,3 +42,5 @@ Each report is dated and records source hashes. The new async-size report is the
 | [Extraction verification](verification.md) / [provenance](../provenance.json) | Historical extraction evidence |
 
 [JSPI Future source](../experiments/jspi-future/README.md) and [concurrent JSPI source](../experiments/jspi-concurrent/README.md) remain separate from library builds.
+
+[Bundle tuning before/after](bundle-tuning.md): Wasm, JS, gzip and Brotli for the same workload.

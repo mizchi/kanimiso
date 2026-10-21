@@ -2,9 +2,32 @@ import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { stripUsedCounter } from "./import-contract.mjs";
-import esbuild from "esbuild";
+import { rolldown, VERSION as rolldownVersion } from "rolldown";
 import { helperOperations } from "./helper-assets.mjs";
 import { importNames, mangleProps } from "./import-contract.mjs";
+async function bundleAsset(entry, define, cache) {
+  const bundle = await rolldown({
+    input: entry,
+    platform: "neutral",
+    transform: { target: "es2022", define },
+  });
+  try {
+    const result = await bundle.generate({
+      format: "esm",
+      comments: false,
+      minify: cache
+        ? { mangleProps: { include: new RegExp(mangleProps), cache } }
+        : true,
+    });
+    assert.equal(result.output.length, 1, `${entry}: self-contained runtime`);
+    return {
+      contents: Buffer.from(result.output[0].code),
+      mangleCache: result.mangleCache,
+    };
+  } finally {
+    await bundle.close();
+  }
+}
 mkdirSync("dist", { recursive: true });
 let names;
 for (const [variant, debug, mangle] of [
@@ -12,20 +35,12 @@ for (const [variant, debug, mangle] of [
   ["debug", true, true],
   ["canonical", false, false],
 ]) {
-  const b = await esbuild.build({
-    entryPoints: ["src/host.mjs"],
-    bundle: true,
-    minify: true,
-    format: "esm",
-    platform: "neutral",
-    target: "es2022",
-    write: false,
-    define: { __JSRT_DEBUG_ERRORS__: String(debug) },
-    ...(mangle
-      ? { mangleProps: new RegExp(mangleProps), mangleCache: names ?? {} }
-      : {}),
-  });
-  writeFileSync(`dist/${variant}.mjs`, b.outputFiles[0].contents);
+  const b = await bundleAsset(
+    "src/host.mjs",
+    { __JSRT_DEBUG_ERRORS__: String(debug), __TARABA_ABORT__: "false" },
+    mangle ? (names ?? {}) : undefined,
+  );
+  writeFileSync(`dist/${variant}.mjs`, b.contents);
   if (mangle) {
     const current = Object.fromEntries(
       importNames.map((k) => [k, b.mangleCache[k]]),
@@ -33,6 +48,26 @@ for (const [variant, debug, mangle] of [
     if (names) assert.deepEqual(current, names);
     names = current;
   }
+}
+for (const [variant, debug, mangle] of [
+  ["abort", false, true],
+  ["abort-debug", true, true],
+  ["abort-canonical", false, false],
+]) {
+  const b = await bundleAsset(
+    "src/host.mjs",
+    {
+      __JSRT_DEBUG_ERRORS__: String(debug),
+      __TARABA_ABORT__: "true",
+    },
+    mangle ? names : undefined,
+  );
+  if (mangle)
+    assert.deepEqual(
+      Object.fromEntries(importNames.map((k) => [k, b.mangleCache[k]])),
+      names,
+    );
+  writeFileSync(`dist/${variant}.mjs`, b.contents);
 }
 writeFileSync(
   "dist/private-imports.json",
@@ -44,20 +79,10 @@ for (const file of ["dist/index.mjs", "dist/index-debug.mjs"])
   rmSync(file, { force: true });
 
 for (const debug of [false, true]) {
-  const b = await esbuild.build({
-    entryPoints: ["src/jspi.mjs"],
-    bundle: true,
-    minify: true,
-    format: "esm",
-    platform: "neutral",
-    target: "es2022",
-    write: false,
-    define: { __JSRT_DEBUG_ERRORS__: String(debug) },
+  const b = await bundleAsset("src/jspi.mjs", {
+    __JSRT_DEBUG_ERRORS__: String(debug),
   });
-  writeFileSync(
-    `dist/jspi${debug ? "-debug" : ""}.mjs`,
-    b.outputFiles[0].contents,
-  );
+  writeFileSync(`dist/jspi${debug ? "-debug" : ""}.mjs`, b.contents);
 }
 
 // The crates.io CLI embeds these ready-to-use assets. Consumers need neither
@@ -82,6 +107,8 @@ const assets = {
   "regexp.wit": readFileSync("crates/taraba-helpers/wit/regexp.wit"),
   "text.wit": readFileSync("crates/taraba-helpers/wit/text.wit"),
   "taraba.mjs": readFileSync("dist/release.mjs"),
+  "taraba-abort.mjs": readFileSync("dist/abort.mjs"),
+  "taraba-abort-debug.mjs": readFileSync("dist/abort-debug.mjs"),
   "taraba-debug.mjs": readFileSync("dist/debug.mjs"),
   "taraba-jspi.mjs": readFileSync("dist/jspi.mjs"),
   "taraba-jspi-debug.mjs": readFileSync("dist/jspi-debug.mjs"),
@@ -107,20 +134,11 @@ for (const debug of [false, true]) {
     ["regexp", "regexp-strings", true],
     ["helper-values", "helper-values", false],
   ]) {
-    const b = await esbuild.build({
-      entryPoints: [`src/${entry}.mjs`],
-      bundle: true,
-      minify: true,
-      format: "esm",
-      platform: "neutral",
-      target: "es2022",
-      write: false,
-      define: {
-        __JSRT_DEBUG_ERRORS__: String(debug),
-        __TARABA_STRINGS__: String(strings),
-      },
+    const b = await bundleAsset(`src/${entry}.mjs`, {
+      __JSRT_DEBUG_ERRORS__: String(debug),
+      __TARABA_STRINGS__: String(strings),
     });
-    assets[`${name}${debug ? "-debug" : ""}.mjs`] = b.outputFiles[0].contents;
+    assets[`${name}${debug ? "-debug" : ""}.mjs`] = b.contents;
   }
 }
 for (const name of ["strings", "iterator", "segmenter", "encoding"])
@@ -161,7 +179,7 @@ writeFileSync(
   JSON.stringify(
     {
       version: "0.1.0",
-      esbuild: esbuild.version,
+      rolldown: rolldownVersion,
       inputs: Object.fromEntries(inputs.map((f) => [f, sha(readFileSync(f))])),
       assets: Object.fromEntries(
         Object.entries(assets).map(([f, b]) => [f, sha(b)]),

@@ -6,6 +6,8 @@
 
 | 知りたいこと | 読むページ |
 |---|---|
+| 今できること・未対応・未検証の違いは？ | [現在の対応状況と制限](status.ja.md) |
+| WIT → Rust async → TS、interface・resource・終了処理・pool 容量 | [TypeScript との疎通](typescript.ja.md) |
 | どの実行方式・配布形式を選ぶか | [概要と選択表](../README.ja.md) |
 | WIT と Rust async を書き、型付き npm ライブラリを作る | [利用ガイド](guide.ja.md) |
 | pkg/ をそのまま npm に公開する・名前と版を設定する | [生成する npm パッケージ](guide.ja.md#生成する-npm-パッケージ) |
@@ -30,6 +32,7 @@
 |---|---|
 | Wasm の内訳と twiggy / wasm-snip の効果 | [セクション内訳と snip の実験](wasm-size-analysis.md) |
 | [非同期サイズ](async-size.ja.md) / [JSON](async-size.json) | 同期・非同期の共通処理、taraba / Embassy / Tokio / async-executor / async-std / wasm-bindgen / FuturesUnordered、全配信ファイル |
+| [複合型 async](rich-async-size.ja.md) / [JSON](rich-async-size.json) | wit-bindgen と同じ record/string/bytes/Result の処理で、配布サイズ・速度・メモリを比較 |
 | [Allocator 最適化](allocator.md) / [JSON](allocator.json) | 変更前後のサイズ・V8 速度・再利用と OOM、wee_alloc 対照 |
 | [WIT 比較](wit-comparison.md) | 過去の Core / Component sync・native async、コンパイル・実行時間 |
 | [JSPI Future 測定](jspi-future-measurements.md) | 未採用の Future adapter と採用条件 |
@@ -39,3 +42,5 @@
 | [抽出時の検証](verification.md) / [来歴](../provenance.json) | 過去の切り出し時点の証跡 |
 
 [JSPI Future の実装](../experiments/jspi-future/README.md)と[並行 JSPI の実装](../experiments/jspi-concurrent/README.md)は通常のライブラリビルドには含めません。
+
+[バンドルのチューニング前後](bundle-tuning.ja.md)：同じ処理の Wasm / JS / gzip / Brotli。

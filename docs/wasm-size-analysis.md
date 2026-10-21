@@ -76,3 +76,22 @@ retained size は支配関係に依存し、各行を単純に足して除去量
 fmt snip は正規の formatting 経路を trap にし、panicking snip は hook の設定・呼び出しを含む panic 契約を変える。現時点では opt-in の実験として扱う。custom section だけを除く strip とは意味が異なる。
 
 [twiggy](https://github.com/rustwasm/twiggy) / [wasm-snip の実装](https://docs.rs/wasm-snip/0.4.0/src/wasm_snip/lib.rs.html) / [現在の通常ビルド比較](async-size.ja.md)
+
+## 追記: 型付き Core async の軽量化（2026-10-20）
+
+同じ二段 await の型付き Core binding で、出力の `async move { future.await.map(...) }` を、Future を移動せずに poll 結果を変換する adapter に置き換えた。利用側の WIT と `async fn` は変更しない。JS は Rolldown に統一し、アプリ用 factory で private な dispatch 関数だけを取り出し、公開 host の重複した組み立てを省いた。
+
+wasm-opt と JS minify 後の非圧縮サイズ。アプリ全体の比較で、ランタイム単体の固定費ではない。
+
+| Rust | Wasm: 変更前 → 変更後 B | JS: 変更前 → 変更後 B | 合計: 変更前 → 変更後 B |
+|---|---:|---:|---:|
+| no_std | 1,712 → 1,571 | 3,620 → 3,520 | 5,332 → 5,091 |
+| std | 6,803 → 6,636 | 3,620 → 3,520 | 10,423 → 10,156 |
+
+Brotli 合計も no_std は 2,678 → 2,558 B、std は 5,028 → 4,918 B に減った。共有 JS ランタイム単体は 3,470 → 3,410 B。生成アプリ用 JS と共有ランタイムをまとめた値が上表の JS 列になる。
+
+変更後の std Wasm を `taraba insight` で調べると、関数本体の shallow size は formatting 1,954 B、panic 941 B、allocator 1,291 B、それ以外（アプリ・executor・ABI 変換を含む）1,270 B。data section は別に733 Bある。まだ std の panic・整形・割り当て経路が大きく、これらを trap に置き換える snip は上記のとおり契約を変えてしまう。
+
+wasm-opt の GUFA、類似関数の統合、inline 閾値の変更も比較したが、後段の再最適化は今回の対照で no_std が最大1 B、std が最大6 Bの削減にとどまり、既定の最適化設定は変更しなかった。公開 API、JS エラーの identity、キャンセル後の解放は維持する。pin の位置維持と Drop は native の専用テストと Miri で検査する。
+
+[最新の42構成の測定・共通3,507ケース](async-size.ja.md)、[解析コマンド](insight.ja.md)。

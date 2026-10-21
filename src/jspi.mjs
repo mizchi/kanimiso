@@ -10,6 +10,9 @@ export function createHost({ bindings = {} } = {}, exportNames = []) {
     completions = 0,
     queued = 0;
   let functions, memory;
+  const noop = () => {};
+  const stopped = Promise.withResolvers();
+  stopped.promise.catch(noop);
   const alive = () => {
     if (dead) throw fatal;
   };
@@ -17,6 +20,8 @@ export function createHost({ bindings = {} } = {}, exportNames = []) {
     if (!dead) {
       dead = true;
       fatal = error;
+      bindings = undefined;
+      stopped.reject(error);
       // Queued entries check alive() before touching the dispatch table.
       functions = null;
       if (__JSRT_DEBUG_ERRORS__) memory = null;
@@ -24,10 +29,11 @@ export function createHost({ bindings = {} } = {}, exportNames = []) {
     return fatal;
   };
   const app = Object.create(null);
-  for (const [name, fn] of Object.entries(bindings)) {
+  for (const name of Object.keys(bindings)) {
     app[name] = new WebAssembly.Suspending(async (...args) => {
       alive();
       try {
+        const fn = bindings[name];
         const value = await fn(...args);
         alive();
         return value;
@@ -46,29 +52,35 @@ export function createHost({ bindings = {} } = {}, exportNames = []) {
   };
   let tail = Promise.resolve();
   const call = (name, ...args) => {
-    if (!functions && !dead) return Promise.reject(runtimeError("RT06"));
+    if (dead) return Promise.reject(fatal);
+    if (!functions) return Promise.reject(runtimeError("RT06"));
     queued++;
-    const result = tail
-      .then(async () => {
+    const pending = tail.then(async () => {
+      alive();
+      calls++;
+      try {
+        const value = await functions[name](...args);
         alive();
-        calls++;
-        try {
-          const value = await functions[name](...args);
-          alive();
-          completions++;
-          return value;
-        } catch (error) {
-          throw poison(error);
-        }
-      })
-      .finally(() => queued--);
-    // A failed call never leaves an unhandled queue-tail rejection.
-    tail = result.catch(() => {});
+        completions++;
+        return value;
+      } catch (error) {
+        throw poison(error);
+      }
+    });
+    // Keep execution serialized even when public calls are disposed early.
+    tail = pending.catch(noop);
+    const result = Promise.race([pending, stopped.promise]).finally(
+      () => queued--,
+    );
+    result.catch(noop);
     return result;
   };
   return {
     imports: { app, "taraba:panic": panicImports(() => memory, poison) },
     attach,
+    dispose() {
+      if (!dead) poison(runtimeError("RT13"));
+    },
     call,
     stats: () => ({ calls, completions, queued, dead }),
   };

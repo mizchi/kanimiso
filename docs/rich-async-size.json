@@ -1,0 +1,543 @@
+{
+  "schema": 1,
+  "engine_flags": [
+    "--no-liftoff"
+  ],
+  "created_at": "2026-10-21T08:02:08.724Z",
+  "engine": "Node v24.21.0 / V8 13.6.233.17-node.53",
+  "machine": {
+    "cpu": "Apple M5",
+    "arch": "arm64",
+    "os": "25.6.0"
+  },
+  "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "versions": {
+    "wit_bindgen": "0.58.0 (macros/async; no async-spawn)",
+    "jco": "1.39.0",
+    "binaryen": 133
+  },
+  "methodology": {
+    "algorithm": "One shared Rust workflow: record {id:u32,label:string,payload:list<u8>}; two async host transforms; UTF-8 string/bytes copies; wrapping byte arithmetic; result<packet,string>. Domain errors are normalized by the test harness.",
+    "sizes": "Optimized release -Oz, LTO, one codegen unit, same taraba allocator with default features disabled. Rollup-style single minified ESM by Rolldown. All deployed core Wasm + JS counted; Component container and declarations excluded from runtime total.",
+    "performance": "Non-instrumented artifacts; 30 warmup batches, 7 samples of 20 batches. Same host Promise microtask. --no-liftoff recommended; timings are local observations, not universal guarantees.",
+    "memory": "Separate measured binaries with identical counting allocator wrappers. Four timer/immediate turns before/after each batch drain deferred post-return work. Peak requested Rust heap bytes excludes allocator metadata, fragmentation, JS heap, and static storage. Linear bytes includes static pool, stack and reserved pages; monotone Wasm high-water mark. Instrumentation is excluded from reported size/timing.",
+    "host": "Both run on the same Node/V8. Component uses standard Canonical ABI / JSPI via jco; Core uses private Promise ABI. Not a Wasmtime/WASI comparison.",
+    "safari_browser_verified": false
+  },
+  "entries": [
+    {
+      "backend": "taraba",
+      "mode": "no_std",
+      "wasm_bytes": 4280,
+      "js_bytes": 4449,
+      "total_bytes": 8729,
+      "component_container_bytes": 0,
+      "verified": {
+        "cases": 216,
+        "host_calls": 429,
+        "unicode_bytes_result_concurrent": true
+      },
+      "performance": [
+        {
+          "payload_bytes": 32,
+          "concurrency": 1,
+          "median_us_per_call": 11.874999999997726,
+          "min_us_per_call": 10.158350000000382,
+          "max_us_per_call": 16.316649999998845,
+          "samples": 7,
+          "calls_per_sample": 20
+        },
+        {
+          "payload_bytes": 32,
+          "concurrency": 16,
+          "median_us_per_call": 7.436456250000134,
+          "min_us_per_call": 7.235546875000054,
+          "max_us_per_call": 9.068228125000033,
+          "samples": 7,
+          "calls_per_sample": 320
+        },
+        {
+          "payload_bytes": 1024,
+          "concurrency": 1,
+          "median_us_per_call": 162.70209999999565,
+          "min_us_per_call": 105.58959999999615,
+          "max_us_per_call": 193.83960000000116,
+          "samples": 7,
+          "calls_per_sample": 20
+        },
+        {
+          "payload_bytes": 1024,
+          "concurrency": 16,
+          "median_us_per_call": 62.22083124999997,
+          "min_us_per_call": 61.04440000000011,
+          "max_us_per_call": 65.14010312499998,
+          "samples": 7,
+          "calls_per_sample": 320
+        }
+      ],
+      "memory": {
+        "initial_linear_bytes": 262144,
+        "measurements": [
+          {
+            "payload_bytes": 32,
+            "concurrency": 1,
+            "initial_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 78,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 327680
+          },
+          {
+            "payload_bytes": 1024,
+            "concurrency": 16,
+            "initial_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 16639,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 327680
+          },
+          {
+            "payload_bytes": 1024,
+            "concurrency": 128,
+            "initial_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 133007,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 458752
+          }
+        ],
+        "retention_probe": {
+          "requested_heap_after_each_call": [
+            0,
+            0,
+            0
+          ],
+          "output_shares_guest_memory": false,
+          "realloc_calls": 0,
+          "zero_size_realloc_calls": 0
+        }
+      },
+      "artifacts": [
+        {
+          "path": "bundle.mjs",
+          "sha256": "aa7a27fb3a1351a08ccf0056419c771b9dd4f1e79adf7a983ad10a17b532b0eb",
+          "raw": 4449,
+          "gzip": 2243,
+          "brotli": 2062
+        },
+        {
+          "path": "app.wasm",
+          "sha256": "172eec29be0e8751a36d71e77fe0077f43a66be8a5c5b0454c1d90f35da368c6",
+          "raw": 4280,
+          "gzip": 2409,
+          "brotli": 2273
+        }
+      ]
+    },
+    {
+      "backend": "wit-bindgen",
+      "mode": "no_std",
+      "wasm_bytes": 13202,
+      "js_bytes": 83310,
+      "total_bytes": 96512,
+      "component_container_bytes": 14351,
+      "verified": {
+        "cases": 216,
+        "host_calls": 429,
+        "unicode_bytes_result_concurrent": true
+      },
+      "performance": [
+        {
+          "payload_bytes": 32,
+          "concurrency": 1,
+          "median_us_per_call": 2591.26040000001,
+          "min_us_per_call": 2449.6187499999905,
+          "max_us_per_call": 2666.645850000009,
+          "samples": 7,
+          "calls_per_sample": 20
+        },
+        {
+          "payload_bytes": 32,
+          "concurrency": 16,
+          "median_us_per_call": 2453.6996093749995,
+          "min_us_per_call": 2404.023306249999,
+          "max_us_per_call": 2488.8789062499995,
+          "samples": 7,
+          "calls_per_sample": 320
+        },
+        {
+          "payload_bytes": 1024,
+          "concurrency": 1,
+          "median_us_per_call": 2940.862500000003,
+          "min_us_per_call": 2813.3646000000226,
+          "max_us_per_call": 3272.631249999995,
+          "samples": 7,
+          "calls_per_sample": 20
+        },
+        {
+          "payload_bytes": 1024,
+          "concurrency": 16,
+          "median_us_per_call": 2765.4822906249988,
+          "min_us_per_call": 2505.6471375,
+          "max_us_per_call": 2964.7869781249997,
+          "samples": 7,
+          "calls_per_sample": 320
+        }
+      ],
+      "memory": {
+        "initial_linear_bytes": 131072,
+        "measurements": [
+          {
+            "payload_bytes": 32,
+            "concurrency": 1,
+            "initial_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 613,
+            "after_requested_heap_bytes": 118,
+            "linear_bytes": 196608
+          },
+          {
+            "payload_bytes": 1024,
+            "concurrency": 16,
+            "initial_requested_heap_bytes": 118,
+            "peak_requested_heap_bytes": 36229,
+            "after_requested_heap_bytes": 33750,
+            "linear_bytes": 196608
+          },
+          {
+            "payload_bytes": 1024,
+            "concurrency": 128,
+            "initial_requested_heap_bytes": 33750,
+            "peak_requested_heap_bytes": 305285,
+            "after_requested_heap_bytes": 302806,
+            "linear_bytes": 589824
+          }
+        ],
+        "retention_probe": {
+          "requested_heap_after_each_call": [
+            85,
+            170,
+            255
+          ],
+          "output_shares_guest_memory": false,
+          "realloc_calls": 30,
+          "zero_size_realloc_calls": 0
+        }
+      },
+      "artifacts": [
+        {
+          "path": "bundle.mjs",
+          "sha256": "05657cdd31fb2253d1d83517aa2f4cfbee84fb6bfb76b25bf747598e9c2c8483",
+          "raw": 83310,
+          "gzip": 22390,
+          "brotli": 19873
+        },
+        {
+          "path": "app.conditional-suspending-1-i32-to-i32.wasm",
+          "sha256": "84e0e4b98fc97c749ba967a311969f7f7c9e6025e1aa3815fd80493ecd5a9918",
+          "raw": 75,
+          "gzip": 91,
+          "brotli": 69
+        },
+        {
+          "path": "app.core.wasm",
+          "sha256": "46b8205b367c386c21f0b016d28b4f7646d62d756c9d5adecc1d71f847189a2a",
+          "raw": 12835,
+          "gzip": 6398,
+          "brotli": 5773
+        },
+        {
+          "path": "app.core2.wasm",
+          "sha256": "a3f211083400173bb9476b43eadf03328ea07bf18ae9b80b248cdecf5a93f91a",
+          "raw": 167,
+          "gzip": 154,
+          "brotli": 126
+        },
+        {
+          "path": "app.core3.wasm",
+          "sha256": "b33a947a3b81820d4842a9228948e5724cf583df73cc0577cb4b2306ddbda604",
+          "raw": 125,
+          "gzip": 130,
+          "brotli": 99
+        }
+      ]
+    },
+    {
+      "backend": "taraba",
+      "mode": "std",
+      "wasm_bytes": 8415,
+      "js_bytes": 4449,
+      "total_bytes": 12864,
+      "component_container_bytes": 0,
+      "verified": {
+        "cases": 216,
+        "host_calls": 429,
+        "unicode_bytes_result_concurrent": true
+      },
+      "performance": [
+        {
+          "payload_bytes": 32,
+          "concurrency": 1,
+          "median_us_per_call": 10.689599999932398,
+          "min_us_per_call": 9.904150000147638,
+          "max_us_per_call": 12.145849999978964,
+          "samples": 7,
+          "calls_per_sample": 20
+        },
+        {
+          "payload_bytes": 32,
+          "concurrency": 16,
+          "median_us_per_call": 6.962240625000504,
+          "min_us_per_call": 6.780990624997685,
+          "max_us_per_call": 7.768228125007681,
+          "samples": 7,
+          "calls_per_sample": 320
+        },
+        {
+          "payload_bytes": 1024,
+          "concurrency": 1,
+          "median_us_per_call": 61.47710000004736,
+          "min_us_per_call": 59.985450000021956,
+          "max_us_per_call": 66.42915000011271,
+          "samples": 7,
+          "calls_per_sample": 20
+        },
+        {
+          "payload_bytes": 1024,
+          "concurrency": 16,
+          "median_us_per_call": 62.03059687500172,
+          "min_us_per_call": 60.025131249994956,
+          "max_us_per_call": 75.91939999999795,
+          "samples": 7,
+          "calls_per_sample": 320
+        }
+      ],
+      "memory": {
+        "initial_linear_bytes": 262144,
+        "measurements": [
+          {
+            "payload_bytes": 32,
+            "concurrency": 1,
+            "initial_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 78,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 327680
+          },
+          {
+            "payload_bytes": 1024,
+            "concurrency": 16,
+            "initial_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 16639,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 327680
+          },
+          {
+            "payload_bytes": 1024,
+            "concurrency": 128,
+            "initial_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 133007,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 458752
+          }
+        ],
+        "retention_probe": {
+          "requested_heap_after_each_call": [
+            0,
+            0,
+            0
+          ],
+          "output_shares_guest_memory": false,
+          "realloc_calls": 0,
+          "zero_size_realloc_calls": 0
+        }
+      },
+      "artifacts": [
+        {
+          "path": "bundle.mjs",
+          "sha256": "aa7a27fb3a1351a08ccf0056419c771b9dd4f1e79adf7a983ad10a17b532b0eb",
+          "raw": 4449,
+          "gzip": 2243,
+          "brotli": 2062
+        },
+        {
+          "path": "app.wasm",
+          "sha256": "35cdf4e00003fbfd49c05b49496857fbc0655aa5bec1503185ee1acfa9480896",
+          "raw": 8415,
+          "gzip": 4547,
+          "brotli": 4206
+        }
+      ]
+    },
+    {
+      "backend": "wit-bindgen",
+      "mode": "std",
+      "wasm_bytes": 23727,
+      "js_bytes": 83310,
+      "total_bytes": 107037,
+      "component_container_bytes": 24877,
+      "verified": {
+        "cases": 216,
+        "host_calls": 429,
+        "unicode_bytes_result_concurrent": true
+      },
+      "performance": [
+        {
+          "payload_bytes": 32,
+          "concurrency": 1,
+          "median_us_per_call": 2441.3791999999376,
+          "min_us_per_call": 2272.814600000129,
+          "max_us_per_call": 2635.8917000001384,
+          "samples": 7,
+          "calls_per_sample": 20
+        },
+        {
+          "payload_bytes": 32,
+          "concurrency": 16,
+          "median_us_per_call": 2455.3667968750005,
+          "min_us_per_call": 2416.8098937500076,
+          "max_us_per_call": 2479.135418750002,
+          "samples": 7,
+          "calls_per_sample": 320
+        },
+        {
+          "payload_bytes": 1024,
+          "concurrency": 1,
+          "median_us_per_call": 2918.14585000011,
+          "min_us_per_call": 2725.1124999998865,
+          "max_us_per_call": 3496.6228999999657,
+          "samples": 7,
+          "calls_per_sample": 20
+        },
+        {
+          "payload_bytes": 1024,
+          "concurrency": 16,
+          "median_us_per_call": 2852.195962499991,
+          "min_us_per_call": 2604.781640625015,
+          "max_us_per_call": 2892.308593749999,
+          "samples": 7,
+          "calls_per_sample": 320
+        }
+      ],
+      "memory": {
+        "initial_linear_bytes": 131072,
+        "measurements": [
+          {
+            "payload_bytes": 32,
+            "concurrency": 1,
+            "initial_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 613,
+            "after_requested_heap_bytes": 118,
+            "linear_bytes": 196608
+          },
+          {
+            "payload_bytes": 1024,
+            "concurrency": 16,
+            "initial_requested_heap_bytes": 118,
+            "peak_requested_heap_bytes": 36229,
+            "after_requested_heap_bytes": 33750,
+            "linear_bytes": 196608
+          },
+          {
+            "payload_bytes": 1024,
+            "concurrency": 128,
+            "initial_requested_heap_bytes": 33750,
+            "peak_requested_heap_bytes": 305285,
+            "after_requested_heap_bytes": 302806,
+            "linear_bytes": 589824
+          }
+        ],
+        "retention_probe": {
+          "requested_heap_after_each_call": [
+            85,
+            170,
+            255
+          ],
+          "output_shares_guest_memory": false,
+          "realloc_calls": 30,
+          "zero_size_realloc_calls": 0
+        }
+      },
+      "artifacts": [
+        {
+          "path": "bundle.mjs",
+          "sha256": "05657cdd31fb2253d1d83517aa2f4cfbee84fb6bfb76b25bf747598e9c2c8483",
+          "raw": 83310,
+          "gzip": 22390,
+          "brotli": 19873
+        },
+        {
+          "path": "app.conditional-suspending-1-i32-to-i32.wasm",
+          "sha256": "84e0e4b98fc97c749ba967a311969f7f7c9e6025e1aa3815fd80493ecd5a9918",
+          "raw": 75,
+          "gzip": 91,
+          "brotli": 69
+        },
+        {
+          "path": "app.core.wasm",
+          "sha256": "152396b4231382508fbc27cb01f07f6fe85044a89cdf6a6cf32eca1e8a3cf558",
+          "raw": 23360,
+          "gzip": 11360,
+          "brotli": 9872
+        },
+        {
+          "path": "app.core2.wasm",
+          "sha256": "a3f211083400173bb9476b43eadf03328ea07bf18ae9b80b248cdecf5a93f91a",
+          "raw": 167,
+          "gzip": 154,
+          "brotli": 126
+        },
+        {
+          "path": "app.core3.wasm",
+          "sha256": "b33a947a3b81820d4842a9228948e5724cf583df73cc0577cb4b2306ddbda604",
+          "raw": 125,
+          "gzip": 130,
+          "brotli": 99
+        }
+      ]
+    }
+  ],
+  "inputs": {
+    "experiments/rich-async/Cargo.toml": "4c778496afd8c5beafe1a339c93feccf313b5242ae4f1314ef7cbf6089454f21",
+    "experiments/rich-async/Cargo.lock": "d95673a18633e0455383af3e79f1ff03d36d6de43c489b3f47de0d0f72ca16df",
+    "experiments/rich-async/build.rs": "ed2e034b4c01e2784f8b31a5bac155b8e1d781c2cabf52c3841d4d72cf5a2f6d",
+    "experiments/rich-async/wit/app.wit": "e62cbefde2fa0e8d51a18e4260fcb2a2690f3ef67516dc8d224efc35941769ee",
+    "experiments/rich-async/src/lib.rs": "b62535c951d22848840f158f0a70ba4d4b58e563bc8279efe0d1d9860da178db",
+    "experiments/rich-async/src/workflow.rs": "7c4fd56555d5cd568bc2e041909dfaf60a0e66b114ea34069a4d5568087881c2",
+    "experiments/rich-async/src/measured.rs": "cc27ee3c5312856b38c09068966e6f556c670982900877c00e1d68dae132f7a1",
+    "experiments/rich-async/contract.mjs": "11eb0b457c1c480ca92802d67f64a996935b688e82341e156416b13c7e059736",
+    "experiments/rich-async/report.mjs": "7c74ecdbdd3d8721f9e45ebbf012252e5a474158cb31eade5ad58beeb61fe28f",
+    "experiments/rich-async/metrics.mjs": "c9a59ec7e24936e7c774c63be04af68547acbbf9b35181261d615d76f10162f2",
+    "crates/taraba/src/task.rs": "f9faa7d801e07be531809404a06056b9ff4128b0ee4027c0dc67da51c5ec03ee",
+    "src/host.mjs": "03ef18025cd66e50333702fec42b44dab701865da0e514d7be6546b818c1a5a4",
+    "src/intrusive.wat": "27192707942e78f29b4c59c316037a8d160e9bcfc38feec168d0f4e32375d1ae",
+    "crates/taraba-cli/assets/provenance.json": "85cbe3799740f44c5549dd259084c9490dca7deea595fa7cbf8243be56dcbf59",
+    "crates/taraba-cli/src/bindings.rs": "4916406ac8f6fd2270fd51ac98b64c8919a02ae13475180f48cb9ab67d73b740",
+    "crates/taraba-cli/src/core_async.rs": "e7b1ab3debe465586d1f45871fa02d9c92632b4c0434f33c67704da5b1073f49",
+    "crates/taraba-cli/src/core_types.rs": "8a0983fc50e1fe287d933d9bcf79e6341d90b4122eeb50c11ab3e6edad396b10",
+    "Cargo.lock": "ff3a97c55b2f14a3b9d0965941987ec477a2fc643c0750c7cc65d5f6f39298f7",
+    "pnpm-lock.yaml": "d9bc41ad5eecb519c5e086ad26beae77dae3bb5356f3f2078b15b108cb804e1b",
+    "tools/compare-rich-async.mjs": "09eda7ba9c5821de5df64775d1356206a6904bfa5ed8e42e3af6171c25921ee4"
+  },
+  "size_budget": [
+    {
+      "backend": "taraba",
+      "mode": "std",
+      "wasm_growth": 0,
+      "js_growth": -16
+    },
+    {
+      "backend": "taraba",
+      "mode": "no_std",
+      "wasm_growth": 0,
+      "js_growth": -16
+    },
+    {
+      "backend": "wit-bindgen",
+      "mode": "std",
+      "wasm_growth": 0,
+      "js_growth": 0
+    },
+    {
+      "backend": "wit-bindgen",
+      "mode": "no_std",
+      "wasm_growth": 0,
+      "js_growth": 0
+    }
+  ]
+}

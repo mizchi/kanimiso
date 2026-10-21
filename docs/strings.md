@@ -148,16 +148,16 @@ Unicode equivalence proof or performance ranking.
 <!-- strings-size:begin -->
 | Variant | no_std Wasm B | std Wasm B | Generated JS B | Rolldown JS B |
 |---|---:|---:|---:|---:|
-| unused | 575 | 575 | 1232 | 1074 |
-| utf16-len | 507 | 507 | 2292 | 1833 |
-| uppercase | 681 | 6692 | 2438 | 1978 |
-| normalize | 718 | 6882 | 2467 | 2004 |
-| rust-normalize | 121937 | 129032 | 1232 | 1074 |
-| segment-count | 662 | 5738 | 3002 | 2318 |
-| rust-grapheme-count | 28268 | 43166 | 1232 | 1074 |
-| roundtrip | 623 | 6639 | 2377 | 1918 |
-| decoder | 475 | 6657 | 2900 | 2328 |
-| full | 8789 | 11854 | 5283 | 4340 |
+| unused | 575 | 575 | 1338 | 1209 |
+| utf16-len | 507 | 507 | 2788 | 2249 |
+| uppercase | 681 | 6692 | 2934 | 2394 |
+| normalize | 718 | 6882 | 2963 | 2420 |
+| rust-normalize | 121937 | 129032 | 1338 | 1209 |
+| segment-count | 662 | 5738 | 3498 | 2734 |
+| rust-grapheme-count | 28268 | 43166 | 1338 | 1209 |
+| roundtrip | 623 | 6639 | 2873 | 2334 |
+| decoder | 475 | 6657 | 3396 | 2744 |
+| full | 8789 | 11854 | 5862 | 4845 |
 <!-- strings-size:end -->
 
 **Generated JS** sums the runtime, app bindings and selected helper `.mjs`

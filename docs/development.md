@@ -15,11 +15,19 @@ setup installs dependencies, the Wasm Rust target, Binaryen 133 and wasm-tools 1
 
 | Task | Verifies / produces |
 |---|---|
+| `just browser-check` | Chrome and Playwright WebKit E2E: rich values, memory growth, JSPI, fetch cancellation, resources and disposal; not Safari.app |
+| `just interfaces-check` / `just resources-check` | Namespaced bindings and opaque own/borrow resources, async lifetimes, cancellation, strict TS and cross-instance rejection |
+| `just pool-check` | Compiled task-pool capacity, raw-Wasm metadata agreement, exhaustion, memory and watch/update preservation |
+| `just check-rich-async` | Same 216 rich-async workload cases and deployed-size ceilings; writes only .cache |
+| `just core-types-check` / `just compare-core-types` | Core value-codec round trips, ownership, strict TS, unused types +0 B; per-type size snapshots |
+| `just task-features-check` | Oversized/over-aligned Futures, zero-cost small frames, AbortSignal isolation, real fetch abort, watch/update and strict TS |
+| `just compare-rich-async` | Shared record/string/bytes/Result algorithm against wit-bindgen; deployed size, local timing and separately instrumented memory |
 | `just msrv-check` | Rust 1.85.0: native CLI and all-feature Wasm libraries; install the toolchain and Wasm target first |
 | `just panic-check` | Core std/no_std × JSPI/Future panic reports, release/debug, ordinary formatting/traps and payload formatting before the hook; also part of check |
 | `just insight-check` | Formatting hints, optimized size/retention inspection, common cases against ordinary builds, npm analysis exclusion and stale-view rejection |
 | `just check` | Rust/JS tests, formatting, Core fatal/ownership behavior, JSPI spills, npm consumer checks and active documentation links |
 | `just library-check` | Current CLI: pack/install, strict TS, three profiles × std/no_std, raw/Cargo/watch update replay and rollback, rich Component domain/errors, shared Core ESM and instance isolation |
+| `node tools/check-runtime-abi.mjs` | Published 0.1.0 runtime as a negative control: same SemVer line, incompatible raw/Cargo inputs rejected, previous output preserved; also included in library/package checks |
 | `just package-check` | Packages all four crates, installs an unpacked CLI, repeats external consumers and npm library generation |
 | `just watch-check` | Real Cargo/CLI watch: workspace/features/local dependencies, recovery, output exclusions, edits during builds and Ctrl-C |
 | `just compare-async-size` | Common sync/async implementations with Embassy, Tokio, async-executor, async-std, wasm-bindgen and FuturesUnordered; writes docs/async-size.{json,md} and Japanese report |
@@ -70,8 +78,10 @@ just experiment-jspi-concurrent
 
 These commands regenerate dated snapshots. Their check variants validate fixtures without rewriting the historical measurement docs. Concurrent JSPI and the Future adapter stay experimental; [adoption gates](jspi-adoption.md) apply. Do not silently promote them into public builds.
 
-CI runs the product, comparison, package, modern-feature, stress and workerd checks. Its verification artifact includes library-check.json, async-size/check.json, package-check.json and the older fixture reports. Compare input hashes when relating a downloaded artifact to a checkout.
+The CI workflow is configured for product, comparison, package, modern-feature, stress and workerd checks. Its verification artifact includes library-check.json, async-size/check.json, package-check.json and the older fixture reports. Compare input hashes when relating a downloaded artifact to a checkout; a successful local run alone is not evidence that the same commit passed GitHub Actions.
 
 [Documentation index](README.md) · [source/license provenance](../THIRD_PARTY.md).
 
 `just strings-check` verifies normalization, segmentation, decoding and typed iterators. `just compare-strings` updates the [size table](strings.md). Miri/Kani include shared Root/Iterator ownership.
+
+`just browser-check` runs rich values, memory.grow, JSPI, real fetch cancellation, resource ownership and disposal. Local Chrome 156 and Playwright WebKit 27.2 checks passed. This is not Safari.app verification; Safari 27 remains unverified. Independent browser and rich-async jobs are configured in CI for these engines and the same 216 workload cases with deployed-size ceilings. Timing is reported without a CI threshold. See the [verification boundary](status.md#verification-boundary).

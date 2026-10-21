@@ -41,10 +41,14 @@ Use this helper for generated, self-contained Core runtimes. It does not merge a
 
 `just library-check` and `just package-check` independently pack the std/no_std JSPI and Future libraries, install them into one app and run this check. Package-check repeats it with output from an archived, installed CLI. Results appear under `esm_cache` in `.cache/library-check.json`.
 
+<!-- esm-cache-size:begin -->
 | Two libraries with the same profile | Runtime source | JS before sharing | JS after sharing | Runtime copies |
 |---|---:|---:|---:|---|
-| Core/JSPI | 975 B | 2,524 B | 1,537 B | 2 → 1 |
-| Core/Future | 3,470 B | 7,652 B | 4,145 B | 2 → 1 |
+| Core/JSPI | 1,128 B | 2,794 B | 1,638 B | 2 → 1 |
+| Core/Future | 3,585 B | 7,766 B | 4,121 B | 2 → 1 |
+<!-- esm-cache-size:end -->
+
+Snapshot: 2026-10-21. [Verified results and runtime hashes](esm-cache-size.json). After rerunning `just library-check`, refresh this snapshot and both tables together; documentation tests compare them with the shipped runtime assets.
 
 These are total JavaScript bytes in verification ESM bundles on Node.js 24 / V8 with Rolldown 1.2.14. They include exports used to inspect function identity, so they are a separate measurement from the single-package distribution size table. Wasm, declarations and compression are excluded here. A real Safari browser has not been tested.
 

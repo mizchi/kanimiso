@@ -15,6 +15,9 @@ export function createValues(memory) {
     return id;
   };
   return {
+    [Symbol.dispose]() {
+      values.clear();
+    },
     get,
     put,
     take(id) {

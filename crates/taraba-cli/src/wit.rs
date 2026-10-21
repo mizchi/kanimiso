@@ -9,7 +9,11 @@ pub(crate) fn parse(path: &Path, world: Option<&str>) -> Result<Bindings> {
     let mut r = Resolve::default();
     let (pkg, _) = r.push_path(path)?;
     let world = r.select_world(&[pkg], world)?;
-    let bindings = convert(&r, world, true)?;
+    let bindings = if crate::core_async::needed(&r, world) {
+        crate::core_async::Contract::bindings(&r, world)?
+    } else {
+        convert(&r, world, true)?
+    };
     if bindings
         .imports
         .keys()
@@ -21,6 +25,9 @@ pub(crate) fn parse(path: &Path, world: Option<&str>) -> Result<Bindings> {
 }
 #[cfg(test)]
 pub(crate) fn parse_text(text: &str) -> Result<Bindings> {
+    parse_contract(text)
+}
+pub(crate) fn parse_contract(text: &str) -> Result<Bindings> {
     parse_inline(text, true)
 }
 pub(crate) fn parse_private_helpers(text: &str) -> Result<Bindings> {
@@ -30,7 +37,17 @@ fn parse_inline(text: &str, flatten_imports: bool) -> Result<Bindings> {
     let mut r = Resolve::default();
     let pkg = r.push_str("app.wit", text)?;
     let world = r.select_world(&[pkg], None)?;
-    convert(&r, world, flatten_imports)
+    if flatten_imports && crate::core_async::needed(&r, world) {
+        crate::core_async::Contract::bindings(&r, world)
+    } else {
+        convert(&r, world, flatten_imports)
+    }
+}
+pub(crate) fn parse_wire(text: &str) -> Result<Bindings> {
+    let mut r = Resolve::default();
+    let package = r.push_str("wire.wit", text)?;
+    let world = r.select_world(&[package], None)?;
+    convert(&r, world, true)
 }
 fn value(r: &Resolve, ty: Type) -> Result<Abi> {
     Ok(match ty {
@@ -132,12 +149,7 @@ mod tests {
     use super::*;
     #[test]
     fn rejects_unsupported_contracts_instead_of_silent_scalar_lowering() {
-        for decl in [
-            "export x: func(a: string);",
-            "export x: async func(a: s32) -> s32;",
-            "export rt_poll: func();",
-            "export cabi_hidden: func();",
-        ] {
+        for decl in ["export rt_poll: func();", "export cabi_hidden: func();"] {
             assert!(parse_text(&format!("package test:app; world app {{ {decl} }}")).is_err());
         }
         assert!(parse_text("package test:app; interface js { resource value; } world app { import js; use js.{value}; export x: func(v: borrow<value>); }").is_err());

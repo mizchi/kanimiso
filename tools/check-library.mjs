@@ -17,6 +17,8 @@ import { verifyWit } from "../tests/support/wit-contract.mjs";
 import { verifyScheduling } from "../tests/support/scheduling.mjs";
 import { asyncCases } from "../tests/support/async-contract.mjs";
 import { verifyEsmCache } from "./check-esm-cache.mjs";
+import { verifyTaskFeatures } from "./check-task-features.mjs";
+import { verifyCoreAsync } from "./check-core-async.mjs";
 import { verifyWatchOutput } from "./check-watch.mjs";
 
 const root = resolve(".");
@@ -31,6 +33,7 @@ const wasmTools = resolve(
 );
 const env = {
   ...rustEnvironment(root),
+  TARABA_BINDGEN: cli,
   TARABA_BINARYEN: resolve(".cache/toolchains/binaryen-version_133/bin"),
   CARGO_TARGET_DIR: resolve(".cache/library-consumer-target"),
 };
@@ -260,10 +263,10 @@ import {instantiate as removedLoader} from '${pkg.name}';
 const explicit = createHost({bindings: {add: async (a,b) => a+b}});
 const loaded = await WebAssembly.instantiate(new Uint8Array(), explicit.imports);
 explicit.attach(loaded.instance.exports);
-const explicitResult: ${profile === "jspi" ? "number" : "unknown"} = await explicit.run(1,2);
+const explicitResult: number = await explicit.run(1,2);
 // @ts-expect-error bindings must match WIT
 createHost({bindings: {add: async (_: string) => 1}});
-const result: ${profile === "jspi" ? "number" : "unknown"} = await api.run(1,2);
+const result: number = await api.run(1,2);
 // @ts-expect-error invalid argument
 await api.run('bad',2);
 // @ts-expect-error generic dispatch is private
@@ -272,7 +275,8 @@ api.call('run', 1, 2);
 api.root({});
 // @ts-expect-error unknown export
 await api.missing(1,2);
-${profile === "future" ? "// @ts-expect-error opaque Promise resource payload must stay unknown\nconst scalar: number = await api.run(1,2);" : ""}
+// @ts-expect-error typed Future payload must be numeric
+const badResult: string = await api.run(1,2);
 `;
   const plainTypes =
     profile === "component"
@@ -282,7 +286,7 @@ import {createHost as plainHost, type AppBindings} from './node_modules/${pkg.na
 const bindings: AppBindings = {add: async (a,b) => { const n: number = a; return n+b; }};
 const plain = plainHost({bindings});
 plain.attach((await WebAssembly.instantiate(new Uint8Array(), plain.imports)).instance.exports);
-const plainResult: ${profile === "jspi" ? "number" : "unknown"} = await plain.run(1,2);
+const plainResult: number = await plain.run(1,2);
 // @ts-expect-error callback argument comes from WIT
 plainHost({bindings: {add: (_: string) => 1}});
 // @ts-expect-error missing WIT import
@@ -297,7 +301,8 @@ plain.run('bad',2);
 plain.missing(1,2);
 // @ts-expect-error direct methods always return Promises
 const synchronous: number = plain.run(1,2);
-${profile === "jspi" ? "// @ts-expect-error scalar callback result must match WIT\nplainHost({bindings: {add: async (a,b) => 'bad'}});" : "// @ts-expect-error opaque Promise payload stays unknown\nconst opaque: number = await plain.run(1,2);"}
+// @ts-expect-error scalar callback result must match WIT
+plainHost({bindings: {add: async (a,b) => 'bad'}});
 `;
   writeFileSync(join(consumer, "consumer.mts"), ts + plainTypes);
   if (profile !== "component") {
@@ -713,10 +718,51 @@ export!(App);`,
       `library ${id}: record/string/list/result and strict TypeScript passed`,
     );
   }
+  report.core_async = await verifyCoreAsync({ cli, env, runtime, allocator });
+  console.log(
+    execFileSync(process.execPath, ["tools/check-core-types.mjs"], {
+      cwd: root,
+      env: { ...env, TARABA_LIBRARY_CLI: cli },
+      encoding: "utf8",
+      maxBuffer: 32 * 1024 * 1024,
+    }),
+  );
+  report.core_types = JSON.parse(
+    readFileSync(".cache/core-types-check.json", "utf8"),
+  );
+  report.task_features = await verifyTaskFeatures({
+    cli,
+    env,
+    runtime,
+    allocator,
+  });
+  for (const script of [
+    "check-runtime-abi.mjs",
+    "check-interfaces.mjs",
+    "check-resources.mjs",
+    "check-pool.mjs",
+  ]) {
+    console.log(
+      execFileSync(process.execPath, [`tools/${script}`], {
+        cwd: root,
+        env: {
+          ...env,
+          TARABA_LIBRARY_CLI: cli,
+          TARABA_LIBRARY_RUNTIME: runtime,
+          TARABA_LIBRARY_ALLOCATOR: allocator,
+        },
+        encoding: "utf8",
+        maxBuffer: 32 * 1024 * 1024,
+      }),
+    );
+  }
   report.all_passed = true;
   report.inputs = Object.fromEntries(
     [
       "tools/check-library.mjs",
+      "tools/check-core-async.mjs",
+      "tools/check-task-features.mjs",
+      "tools/check-core-types.mjs",
       "tools/check-esm-cache.mjs",
       "tools/shared-runtime.mjs",
       "tools/check-watch.mjs",

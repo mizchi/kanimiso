@@ -11,5 +11,6 @@
   "RT10": "duplicate task outcome",
   "RT11": "private runtime ABI",
   "RT12": "runtime already attached/closed",
-  "PN01": "Rust panic"
+  "PN01": "Rust panic",
+  "RT13": "host disposed"
 }

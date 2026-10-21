@@ -20,6 +20,14 @@ a custom host is a different configuration, not mislabeled as the same backend.
 The std critical-section implementation and official WASM event-loop integration
 are included. Safe Executor/start and a thread-local Spawner manage initialization.
 
+The `wit-bindgen` profile uses 0.58.0 with `macros`/`async`, WIT `async func`
+and Rust `async fn`/Futures. The separate `component` control enables
+`async-spawn`, retaining the upstream FuturesUnordered task set, even though the
+algorithm does not explicitly spawn a child. Both use standard Canonical ABI
+and count jco's JS and every required core Wasm. Neither measures explicit WIT
+`future<T>` values. The Rust guest, component container and JS deployment size
+are separate quantities; totals are not solely the Rust executor cost.
+
 Additional configurations use Tokio 1.53.3 (rt only, a shared current-thread Runtime
 and LocalSet), async-executor 1.14.0 (shared LocalExecutor), and async-std 1.13.2
 (default features plus unstable spawn_local). Tokio's safe JS driver polls the
@@ -38,8 +46,9 @@ Every Promise-based wasm-bindgen profile also checks rejected I/O at both await
 points, rejection-object identity, an independent successful task and subsequent
 reuse. This recovery contract is not imposed on JSPI/Core Future/Component.
 
-Metrics include the bundled required JS and every deployed core Wasm, optimized
-with the same tools. Component containers and declarations are separate; npm
+Metrics include the required JS bundled/minified with Rolldown and every deployed
+core Wasm optimized with Binaryen 133, with the same settings for all rows.
+Component containers and declarations are separate; npm
 tarballs are packed, extracted and hash checked. Strict TS uses the extracted
 package declarations. Benchmark package manifests are minimal; this is a
 controlled post-bundle size measurement, not the unmodified CLI package size.

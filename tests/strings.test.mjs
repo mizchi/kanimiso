@@ -216,3 +216,15 @@ test("embedded operation closures contain no unused codecs and match source beha
   assert.equal(read(strings.trim(id)), "e\u0301🦀");
   assert.equal(strings["utf16-len"](id), 8);
 });
+
+test("helper disposal clears per-instance roots and regex handles", () => {
+  const { values, put, memory } = host();
+  const root = put("held");
+  const regex = regexpImports(() => memory, values);
+  const pattern = put("x");
+  const id = regex["compile-string"](pattern);
+  regex[Symbol.dispose]();
+  values[Symbol.dispose]();
+  assert.equal(values.get(root), undefined);
+  assert.throws(() => regex["test-string"](id, root));
+});

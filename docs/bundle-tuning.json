@@ -1,0 +1,170 @@
+{
+  "created_at": "2026-10-21T08:03:39.591Z",
+  "engine": "Node v24.21.0 / V8 13.6.233.17-node.53",
+  "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "versions": {
+    "wit_bindgen": "0.58.0 (macros/async; no async-spawn)",
+    "jco": "1.39.0",
+    "binaryen": 133
+  },
+  "method": "Same pre-existing working tree before/after tuning; no_std/std identical WIT and Rust workflow. Minified ESM includes the shared runtime once. Gzip level 9 and Brotli quality 11 are summed across separately compressed Wasm and JS files. Baseline hashes identify artifacts captured at the start of this task, not a published release.",
+  "runtimes": [
+    {
+      "name": "release",
+      "before": {
+        "raw": 3639,
+        "gzip": 1883,
+        "brotli": 1716,
+        "sha256": "6de31b30e986cbe488531ea4ae5b3d0e587ce85a1a4a8669b2de4f33428ab963"
+      },
+      "after": {
+        "raw": 3585,
+        "gzip": 1877,
+        "brotli": 1715,
+        "sha256": "b84754cfe6a1f5a06af21e88f7c4ee7cb8f9b3a106890ab2efb27b12537b60f8"
+      }
+    },
+    {
+      "name": "abort",
+      "before": {
+        "raw": 4666,
+        "gzip": 2224,
+        "brotli": 2043,
+        "sha256": "f8c38e147d74d61529cfc9cddee2f032f88958025466da3bf2ef72bab9cea4f9"
+      },
+      "after": {
+        "raw": 4414,
+        "gzip": 2180,
+        "brotli": 2003,
+        "sha256": "edc44a9747717dbecf52faeab93c801b8428eb9628358b84556bfeef1c2d8c62"
+      }
+    },
+    {
+      "name": "jspi",
+      "before": {
+        "raw": 1138,
+        "gzip": 647,
+        "brotli": 584,
+        "sha256": "d216d6ce2120027b20f9c9dc1a16e5473c71d15fe44be288a8045bd7b2520570"
+      },
+      "after": {
+        "raw": 1128,
+        "gzip": 646,
+        "brotli": 571,
+        "sha256": "daba57afced3edbd5e6e580913a511ff10c6455ecfc318c46a0cc705e10ef20e"
+      }
+    }
+  ],
+  "workloads": [
+    {
+      "mode": "no_std",
+      "verified_before": {
+        "cases": 216,
+        "host_calls": 429,
+        "unicode_bytes_result_concurrent": true
+      },
+      "verified_after": {
+        "cases": 216,
+        "host_calls": 429,
+        "unicode_bytes_result_concurrent": true
+      },
+      "artifacts": [
+        {
+          "name": "app.wasm",
+          "before": {
+            "raw": 5318,
+            "gzip": 2843,
+            "brotli": 2669,
+            "sha256": "a73c03936334085e628431c0262b35ddc060ec80aa5b830654e6c2f4cd4edcef"
+          },
+          "after": {
+            "raw": 4280,
+            "gzip": 2409,
+            "brotli": 2273,
+            "sha256": "172eec29be0e8751a36d71e77fe0077f43a66be8a5c5b0454c1d90f35da368c6"
+          }
+        },
+        {
+          "name": "bundle.mjs",
+          "before": {
+            "raw": 4893,
+            "gzip": 2323,
+            "brotli": 2133,
+            "sha256": "20ea0ff7c529209d89cea3e3f302f566f13beeee8db7d285dcca56e655cb570b"
+          },
+          "after": {
+            "raw": 4449,
+            "gzip": 2243,
+            "brotli": 2062,
+            "sha256": "aa7a27fb3a1351a08ccf0056419c771b9dd4f1e79adf7a983ad10a17b532b0eb"
+          }
+        }
+      ],
+      "before": {
+        "raw": 10211,
+        "gzip": 5166,
+        "brotli": 4802
+      },
+      "after": {
+        "raw": 8729,
+        "gzip": 4652,
+        "brotli": 4335
+      }
+    },
+    {
+      "mode": "std",
+      "verified_before": {
+        "cases": 216,
+        "host_calls": 429,
+        "unicode_bytes_result_concurrent": true
+      },
+      "verified_after": {
+        "cases": 216,
+        "host_calls": 429,
+        "unicode_bytes_result_concurrent": true
+      },
+      "artifacts": [
+        {
+          "name": "app.wasm",
+          "before": {
+            "raw": 9453,
+            "gzip": 4969,
+            "brotli": 4560,
+            "sha256": "813a34139c076a8ed378d7db92a7a08d89c201d19c8e16023c6822ea90f17d72"
+          },
+          "after": {
+            "raw": 8415,
+            "gzip": 4547,
+            "brotli": 4206,
+            "sha256": "35cdf4e00003fbfd49c05b49496857fbc0655aa5bec1503185ee1acfa9480896"
+          }
+        },
+        {
+          "name": "bundle.mjs",
+          "before": {
+            "raw": 4893,
+            "gzip": 2323,
+            "brotli": 2133,
+            "sha256": "20ea0ff7c529209d89cea3e3f302f566f13beeee8db7d285dcca56e655cb570b"
+          },
+          "after": {
+            "raw": 4449,
+            "gzip": 2243,
+            "brotli": 2062,
+            "sha256": "aa7a27fb3a1351a08ccf0056419c771b9dd4f1e79adf7a983ad10a17b532b0eb"
+          }
+        }
+      ],
+      "before": {
+        "raw": 14346,
+        "gzip": 7292,
+        "brotli": 6693
+      },
+      "after": {
+        "raw": 12864,
+        "gzip": 6790,
+        "brotli": 6268
+      }
+    }
+  ]
+}

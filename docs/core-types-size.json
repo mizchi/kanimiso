@@ -1,0 +1,60 @@
+{
+  "all_passed": true,
+  "conditions": {
+    "sample_algorithm": "one async host echo, one await, same value returned",
+    "rust": "cargo release, scaffold defaults",
+    "wasm_opt": "Binaryen 133 -Oz",
+    "js": "Rolldown minify, ESM",
+    "compression": "none",
+    "sample_std": false,
+    "js_includes_shared_runtime": true
+  },
+  "measurements": [
+    {
+      "std": false,
+      "types": 41,
+      "wasm_bytes": 24737,
+      "glue_bytes": 9191
+    },
+    {
+      "std": true,
+      "types": 41,
+      "wasm_bytes": 30006,
+      "glue_bytes": 9191
+    }
+  ],
+  "samples": [
+    {
+      "type": "s32",
+      "wasm_bytes": 1394,
+      "js_bytes": 3695,
+      "shared_runtime_bytes": 3585
+    },
+    {
+      "type": "bool",
+      "wasm_bytes": 1461,
+      "js_bytes": 3751,
+      "shared_runtime_bytes": 3585
+    },
+    {
+      "type": "u64",
+      "wasm_bytes": 1469,
+      "js_bytes": 3856,
+      "shared_runtime_bytes": 3585
+    },
+    {
+      "type": "string",
+      "wasm_bytes": 2554,
+      "js_bytes": 4158,
+      "shared_runtime_bytes": 3585
+    },
+    {
+      "type": "list<u8>",
+      "wasm_bytes": 2554,
+      "js_bytes": 4079,
+      "shared_runtime_bytes": 3585
+    }
+  ],
+  "unused_wasm_growth": 0,
+  "unused_js_growth": 0
+}

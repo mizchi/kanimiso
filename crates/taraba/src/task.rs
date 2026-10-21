@@ -55,7 +55,7 @@ impl JoinHandle {
         self.promise
     }
 }
-fn spawn<F>(future: F) -> JoinHandle
+fn spawn_inline<F>(future: F) -> JoinHandle
 where
     F: Future<Output = Result<JsValue, JsValue>> + 'static,
 {
@@ -93,6 +93,24 @@ where
     }
     JoinHandle { key, promise }
 }
+// The linked intrusive pool has 128-byte slots aligned to 64 bytes. This
+// condition is constant per monomorphization: small Futures never link Box code.
+const fn fits_inline<F>() -> bool {
+    let layout = Layout::new::<Task<F>>();
+    layout.size() <= 128 && layout.align() <= 64
+}
+fn spawn<F>(future: F) -> JoinHandle
+where
+    F: Future<Output = Result<JsValue, JsValue>> + 'static,
+{
+    if fits_inline::<F>() {
+        spawn_inline(future)
+    } else {
+        // Pin before publishing the task address. Moving the pointer-sized
+        // wrapper into the pool cannot move the !Unpin Future it owns.
+        spawn_inline(alloc::boxed::Box::pin(future))
+    }
+}
 pub fn spawn_local<F>(future: F) -> JoinHandle
 where
     F: Future<Output = ()> + 'static,
@@ -116,5 +134,65 @@ pub(crate) unsafe fn drop_task(pointer: u32) {
     let header = pointer as *mut Header;
     unsafe {
         ((*header).drop)(header);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::boxed::Box;
+    use core::marker::PhantomPinned;
+
+    #[test]
+    fn inline_policy_includes_the_header_and_alignment() {
+        assert!(fits_inline::<core::future::Ready<Result<JsValue, JsValue>>>());
+        assert!(!fits_inline::<[u8; 128]>());
+        #[repr(align(128))]
+        struct Aligned;
+        assert!(!fits_inline::<Aligned>());
+    }
+
+    #[test]
+    fn boxed_pinned_future_survives_moves_and_drops_once() {
+        use core::cell::Cell;
+        use core::task::Waker;
+        struct Large<'a> {
+            bytes: [u8; 256],
+            address: Cell<usize>,
+            drops: &'a Cell<u32>,
+            _pin: PhantomPinned,
+        }
+        impl Future for Large<'_> {
+            type Output = u8;
+            fn poll(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<u8> {
+                let address = self.as_ref().get_ref() as *const _ as usize;
+                let previous = self.address.replace(address);
+                if previous == 0 {
+                    Poll::Pending
+                } else {
+                    assert_eq!(previous, address);
+                    Poll::Ready(self.bytes[255])
+                }
+            }
+        }
+        impl Drop for Large<'_> {
+            fn drop(&mut self) {
+                self.drops.set(self.drops.get() + 1);
+            }
+        }
+        let drops = Cell::new(0);
+        let mut future = Box::pin(Large {
+            bytes: [42; 256],
+            address: Cell::new(0),
+            drops: &drops,
+            _pin: PhantomPinned,
+        });
+        assert!(fits_inline::<Pin<Box<Large<'_>>>>());
+        let mut context = Context::from_waker(Waker::noop());
+        assert_eq!(future.as_mut().poll(&mut context), Poll::Pending);
+        let mut moved = future;
+        assert_eq!(moved.as_mut().poll(&mut context), Poll::Ready(42));
+        drop(moved);
+        assert_eq!(drops.get(), 1);
     }
 }

@@ -12,8 +12,16 @@ for (const profile of ["", "-jspi"])
       assert.deepEqual(
         Object.keys(host).sort(),
         (profile
-          ? ["imports", "attach", "call", "stats"]
-          : ["imports", "attach", "call", "stats", "cancel", "activeTasks"]
+          ? ["imports", "attach", "call", "stats", "dispose"]
+          : [
+              "imports",
+              "attach",
+              "call",
+              "stats",
+              "cancel",
+              "activeTasks",
+              "dispose",
+            ]
         ).sort(),
       );
     });

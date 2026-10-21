@@ -8,9 +8,16 @@ export const backends = [
   },
   {
     id: "future",
+    name: "taraba Future (manual ABI)",
+    modes: ["no_std", "std"],
+    transport: "core",
+  },
+  {
+    id: "future-typed",
     name: "taraba Future",
     modes: ["no_std", "std"],
     transport: "core",
+    core_profile: "future",
   },
   {
     id: "embassy",
@@ -49,10 +56,20 @@ export const backends = [
     transport: "bindgen",
   },
   {
-    id: "component",
-    name: "Component + jco",
+    id: "wit-bindgen",
+    name: "wit-bindgen async + jco",
     modes: ["no_std", "std"],
     transport: "core",
+    component: true,
+    cargo_features: ["component"],
+  },
+  {
+    id: "component",
+    name: "wit-bindgen async-spawn + jco",
+    modes: ["no_std", "std"],
+    transport: "core",
+    component: true,
+    cargo_features: ["component-spawn"],
   },
 ];
 export const profiles = [

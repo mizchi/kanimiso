@@ -9,6 +9,8 @@ use std::{
 };
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 pub struct Options {
+    pub world: Option<String>,
+    pub task_slots: Option<u32>,
     pub input: Option<PathBuf>,
     pub wit: Option<PathBuf>,
     pub output: PathBuf,
@@ -202,6 +204,19 @@ pub(crate) fn project(o: &Options) -> Result<Project> {
 
 pub(crate) fn compile(o: &Options, p: &Project) -> Result<PathBuf> {
     let mut command = Command::new("cargo");
+    if let Some(slots) = o.task_slots {
+        command.env("TARABA_TASK_SLOTS", slots.to_string());
+    }
+    command.env("TARABA_BINDGEN", std::env::current_exe()?);
+    command.env(
+        "TARABA_WIT",
+        absolute(o.wit.as_deref().unwrap_or(&p.root.join("wit")))?,
+    );
+    if let Some(world) = &o.world {
+        command.env("TARABA_WORLD", world);
+    } else {
+        command.env_remove("TARABA_WORLD");
+    }
     command
         .args([
             "build",

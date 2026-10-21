@@ -136,16 +136,16 @@ release / opt-level=z / LTO、同じ compact allocator、Binaryen 133 の wasm-o
 <!-- strings-size:begin -->
 | 構成 | no_std Wasm B | std Wasm B | 生成 JS B | Rolldown JS B |
 |---|---:|---:|---:|---:|
-| unused | 575 | 575 | 1232 | 1074 |
-| utf16-len | 507 | 507 | 2292 | 1833 |
-| uppercase | 681 | 6692 | 2438 | 1978 |
-| normalize | 718 | 6882 | 2467 | 2004 |
-| rust-normalize | 121937 | 129032 | 1232 | 1074 |
-| segment-count | 662 | 5738 | 3002 | 2318 |
-| rust-grapheme-count | 28268 | 43166 | 1232 | 1074 |
-| roundtrip | 623 | 6639 | 2377 | 1918 |
-| decoder | 475 | 6657 | 2900 | 2328 |
-| full | 8789 | 11854 | 5283 | 4340 |
+| unused | 575 | 575 | 1338 | 1209 |
+| utf16-len | 507 | 507 | 2788 | 2249 |
+| uppercase | 681 | 6692 | 2934 | 2394 |
+| normalize | 718 | 6882 | 2963 | 2420 |
+| rust-normalize | 121937 | 129032 | 1338 | 1209 |
+| segment-count | 662 | 5738 | 3498 | 2734 |
+| rust-grapheme-count | 28268 | 43166 | 1338 | 1209 |
+| roundtrip | 623 | 6639 | 2873 | 2334 |
+| decoder | 475 | 6657 | 3396 | 2744 |
+| full | 8789 | 11854 | 5862 | 4845 |
 <!-- strings-size:end -->
 
 表の **生成 JS** は、ランタイム・アプリ bindings・選択されたヘルパーの `.mjs` ファイルの合計です。**Rolldown JS** はそれらを一つにバンドルした合計です。追加 JS の費用は、同じ列の `unused` との差で読みます。0 B というのはヘルパーによる増分で、アプリ全体の JS が 0 B になる意味ではありません。Wasm 列は各 fixture の全体サイズです。

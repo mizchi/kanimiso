@@ -119,15 +119,11 @@ export async function verifyStorage(bytes, factory, backend) {
   clean(host);
   const reservedBytes = host.call("storage_reserved"),
     memory = api.memory.buffer.byteLength;
-  // A captured Future bigger than one pool slot is fatal there, valid in arena.
+  // The pool boxes oversized captured Futures; the arena stores them inline.
   const big = host.promise("self-wake", 0x40000000);
-  if (backend === "pool")
-    await assert.rejects(big, (e) => e.code === "ERR_WASM_OOM");
-  else {
-    assert.equal(await big, 42);
-    assert.equal(used(), 0);
-    clean(host);
-  }
+  assert.equal(await big, 42);
+  assert.equal(used(), 0);
+  clean(host);
   return {
     applicable: true,
     all_passed: true,
@@ -136,7 +132,7 @@ export async function verifyStorage(bytes, factory, backend) {
     reserved_bytes: reservedBytes,
     payload_bytes: 131072,
     held_task_reuse_spawns: 4096,
-    large_future: backend === "pool" ? "fatal OOM" : "fulfilled",
+    large_future: backend === "pool" ? "boxed and fulfilled" : "fulfilled",
     memory_bytes: memory,
   };
 }

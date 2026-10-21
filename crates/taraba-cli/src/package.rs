@@ -277,7 +277,7 @@ fn component_entry(dir: &Path) -> Result<(&'static str, &'static str)> {
 }
 
 /// Produce a lightweight Core npm package with an application-specific typed exports object.
-/// Opaque WIT resource payloads stay `unknown`; use Component WIT for typed async results.
+/// Typed Core futures preserve s32/unit payloads; legacy opaque resources stay `unknown`.
 pub fn package_core(o: &BuildOptions, npm: &NpmOptions) -> Result<()> {
     npm.validate()?;
     prevent_input_overwrite(&o.input, &o.output.join("app.wasm"))?;
@@ -290,6 +290,8 @@ pub fn package_core(o: &BuildOptions, npm: &NpmOptions) -> Result<()> {
         binaryen: o.binaryen.clone(),
         debug: o.debug,
         probes: o.probes,
+        abort_signal: o.abort_signal,
+        task_slots: o.task_slots,
         insight: o.insight,
         profile: o.profile,
     };

@@ -12,7 +12,7 @@ import {
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import os from "node:os";
-import esbuild from "esbuild";
+import { rolldown, VERSION as rolldownVersion } from "rolldown";
 import { artifactSizes } from "../tests/support/metrics.mjs";
 import { verifyWit } from "../tests/support/wit-contract.mjs";
 import {
@@ -25,7 +25,11 @@ import {
   verifyEmbassyCapacity,
   verifyPromiseFailures,
 } from "../experiments/async-size/contract.mjs";
-import { account, growth } from "../experiments/async-size/metrics.mjs";
+import {
+  account,
+  growth,
+  verifyTypedSizeBudget,
+} from "../experiments/async-size/metrics.mjs";
 import { optimizationArgs } from "./wasm-opt-contract.mjs";
 import { backends, profiles } from "../experiments/async-size/backends.mjs";
 
@@ -48,6 +52,7 @@ const env = {
   CARGO_TARGET_DIR: join(out, "target"),
   RUSTFLAGS: "-C link-arg=-zstack-size=65536 -C link-arg=--max-memory=1048576",
   TARABA_BINARYEN: binaryen,
+  TARABA_BINDGEN: resolve("target/release/taraba"),
 };
 const run = (bin, args, cwd = root) =>
   execFileSync(bin, args, {
@@ -80,9 +85,10 @@ const report = {
     async_executor: "1.14.0",
     async_std: "1.13.2",
     futures_util: "0.3.34",
+    wit_bindgen: "0.58.0",
     wee_alloc: "0.4.5",
     jco: "1.39.0",
-    esbuild: esbuild.version,
+    rolldown: rolldownVersion,
   },
   method: {
     algorithm:
@@ -91,7 +97,7 @@ const report = {
     sync_control:
       "experiments/async-size/sync.rs: same arithmetic and host I/O, synchronous Rust; selected backend glue still included",
     optimization:
-      "release z/LTO/1CGU; CLI then identical Binaryen 133 Oz/flatten/rereloop/Oz/converge on every deployed core; all required JS bundled/minified with esbuild es2022",
+      "release z/LTO/1CGU; CLI then identical Binaryen 133 Oz/flatten/rereloop/Oz/converge on every deployed core; all required JS bundled/minified with Rolldown es2022",
     runtime_size:
       "all deployed JS + all required core Wasm, independently gzip9/brotli11; no declarations or Component container double-counting",
     allocation:
@@ -108,6 +114,12 @@ const report = {
       "default features plus unstable for task::spawn_local; upstream WASM branch uses wasm-bindgen-futures and a channel JoinHandle; async-std 1.13.2 is deprecated and is included as a historical compatibility control",
     futures_unordered:
       "alloc/async-await, std only in std rows; per-invocation FuturesUnordered containing one compute Future, driven by StreamExt::next and wasm-bindgen; a task collection reference, not an independent runtime/reactor",
+    wit_bindgen:
+      "0.58.0 with macros/async only; WIT async func maps to Rust async fn/Future; standard Canonical ABI and all jco JS/core Wasm included; no async-spawn, streams or explicit WIT future<T> workload",
+    wit_bindgen_spawn_control:
+      "same Component workload with async-spawn enabled, retaining upstream FuturesUnordered task support; no explicit spawn is used by this two-await algorithm; kept separately from the minimal baseline",
+    typed_core:
+      "world-level WIT future<s32> with safe generated Rust async imports/Guest and typed TS, compared to the existing manual resource bridge; same runtime, algorithm, allocator and optimization; gate requires no additional Wasm or JavaScript bytes in std/no_std",
   },
   entries: [],
   comparisons: [],
@@ -120,8 +132,9 @@ try {
   for (const p of profiles)
     for (const workload of ["sync", "async"]) {
       const async = workload === "async",
-        bindgen =
-          backends.find((b) => b.id === p.backend).transport === "bindgen";
+        backend = backends.find((b) => b.id === p.backend),
+        bindgen = backend.transport === "bindgen",
+        component = backend.component === true;
       const id = `${p.backend}-${p.mode}-${p.allocator}-${workload}`,
         dir = join(out, id),
         pkg = join(dir, "pkg");
@@ -130,7 +143,8 @@ try {
       const features = [
         ...(p.mode === "std" ? ["std"] : []),
         ...(async ? ["async-workload"] : []),
-        ...(p.backend === "bindgen" ? [] : [p.backend]),
+        ...(backend.cargo_features ??
+          (p.backend === "bindgen" ? [] : [p.backend])),
         ...(p.allocator === "wee" ? ["wee"] : []),
       ];
       run("cargo", [
@@ -185,7 +199,7 @@ try {
         types = "driver.d.mts";
       } else {
         const wit = resolve(
-          `experiments/async-size/core/wit/${async && p.backend === "component" ? "async" : async && p.backend === "future" ? "future" : "sync"}`,
+          `experiments/async-size/core/wit/${async && component ? "async" : async && p.backend === "future-typed" ? "typed" : async && p.backend === "future" ? "future" : "sync"}`,
         );
         run(resolve("target/release/taraba"), [
           "build",
@@ -194,12 +208,18 @@ try {
           wit,
           "--out-dir",
           pkg,
-          ...(p.backend === "jspi" ? [] : [`--${p.backend}`]),
+          ...(p.backend === "jspi"
+            ? []
+            : [
+                component
+                  ? "--component"
+                  : `--${backend.core_profile ?? p.backend}`,
+              ]),
           "--npm-name",
           `@taraba-bench/${p.backend}-${p.mode.replace("_", "-")}`,
           "--npm-version",
           "0.0.0",
-          ...(p.backend === "component"
+          ...(component
             ? [
                 "--wasm-tools",
                 wasmTools,
@@ -211,16 +231,27 @@ try {
         entry = join(pkg, "index.js");
         types = "index.d.ts";
       }
-      const bundled = await esbuild.build({
-        entryPoints: [entry],
-        bundle: true,
-        minify: true,
-        format: "esm",
+      const bundle = await rolldown({
+        input: entry,
         platform: "neutral",
-        target: "es2022",
-        write: false,
+        transform: { target: "es2022" },
       });
-      writeFileSync(join(pkg, "bundle.mjs"), bundled.outputFiles[0].contents);
+      let bundled;
+      try {
+        bundled = await bundle.generate({ format: "esm", minify: true });
+      } finally {
+        await bundle.close();
+      }
+      assert.equal(bundled.output.length, 1, "count every bundled file");
+      const chunk = bundled.output[0];
+      assert.equal(chunk.type, "chunk");
+      assert.equal(chunk.imports.length, 0, "no uncounted external imports");
+      assert.equal(
+        chunk.dynamicImports.length,
+        0,
+        "no uncounted dynamic imports",
+      );
+      writeFileSync(join(pkg, "bundle.mjs"), chunk.code);
       const wasm = files(pkg).filter(
         (f) => f.endsWith(".wasm") && f !== "app.component.wasm",
       );
@@ -246,8 +277,7 @@ try {
         declarations = files(pkg)
           .filter((f) => /\.d\.(?:ts|mts)$/.test(f))
           .map(describe);
-      const container =
-        p.backend === "component" ? describe("app.component.wasm") : null;
+      const container = component ? describe("app.component.wasm") : null;
       const measured = account({ runtime, declarations, container });
       const packageFiles = [
         ...runtime,
@@ -302,7 +332,7 @@ try {
       const provider = async ? "Promise.resolve((a+b)|0)" : "(a+b)|0";
       const typing = bindgen
         ? `import {initSync,run,setBinding} from '${packageName}';\nsetBinding((a,b)=>${provider});\nconst value:number=await run(1,2);\n// @ts-expect-error invalid argument\nrun('bad',2);\n`
-        : p.backend === "component"
+        : component
           ? `import {instantiate} from '${packageName}';\nconst api=await instantiate(()=>new WebAssembly.Module(new Uint8Array()),{add:{default:(a,b)=>${provider}}});\nconst value:number=await api.run(1,2);\n// @ts-expect-error invalid argument\napi.run('bad',2);\n`
           : `import {createHost} from '${packageName}';\nconst api=createHost({bindings:{add:(a,b)=>${provider}}});\napi.attach((await WebAssembly.instantiate(new Uint8Array(),api.imports)).instance.exports);\nconst value:${p.backend === "future" && async ? "unknown" : "number"}=await api.run(1,2);\n// @ts-expect-error invalid argument\napi.run('bad',2);\n`;
       writeFileSync(
@@ -334,7 +364,7 @@ try {
           api.initSync({ module: readFileSync(join(deployed, "app_bg.wasm")) });
           return api.run;
         }
-        if (p.backend === "component")
+        if (component)
           return (
             await api.instantiate(
               (name) =>
@@ -375,7 +405,7 @@ try {
         );
         assert.deepEqual(scheduling.completed_while_a_blocked, ["B"]);
         assert.deepEqual(scheduling.completion_order, ["B", "A"]);
-      } else if (async && p.backend !== "component") {
+      } else if (async && !component) {
         scheduling = await verifyScheduling(factory, {
           serialized: p.backend === "jspi",
         });
@@ -434,6 +464,7 @@ try {
     "tools/install-wasm-bindgen.mjs",
     "tools/wasm-opt-contract.mjs",
     "tests/async-size.test.mjs",
+    "tests/async-size-chart.test.mjs",
     "tests/docs.test.mjs",
     "tests/support/wit-contract.mjs",
     "tests/support/async-contract.mjs",
@@ -454,6 +485,7 @@ try {
   report.inputs = Object.fromEntries(
     inputs.map((f) => [f, hash(readFileSync(f))]),
   );
+  report.typed_core_size_budget = verifyTypedSizeBudget(report.entries);
   report.all_passed = true;
   writeFileSync(
     join(out, "check.json"),
@@ -466,6 +498,8 @@ try {
     );
     const { render, summary } =
       await import("../experiments/async-size/report.mjs");
+    const { sizeChart } = await import("../experiments/async-size/chart.mjs");
+    writeFileSync("docs/assets/async-size.svg", sizeChart(report));
     for (const lang of ["en", "ja"]) {
       writeFileSync(
         `docs/async-size${lang === "ja" ? ".ja" : ""}.md`,

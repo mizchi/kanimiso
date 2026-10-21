@@ -41,10 +41,14 @@ await build({
 
 `just library-check` と `just package-check` は、JSPI と Future それぞれの std/no_std を独立した npm パッケージとして pack し、同じ利用アプリへ install して検証します。package-check はアーカイブからインストールした CLI の出力でも再実行します。結果は `.cache/library-check.json` の `esm_cache` に保存します。
 
+<!-- esm-cache-size:begin -->
 | 同じ profile の2ライブラリ | ランタイム元ファイル | 集約前の JS | 集約後の JS | ランタイムの実体 |
 |---|---:|---:|---:|---|
-| Core/JSPI | 975 B | 2,524 B | 1,537 B | 2 → 1 |
-| Core/Future | 3,470 B | 7,652 B | 4,145 B | 2 → 1 |
+| Core/JSPI | 1,128 B | 2,794 B | 1,638 B | 2 → 1 |
+| Core/Future | 3,585 B | 7,766 B | 4,121 B | 2 → 1 |
+<!-- esm-cache-size:end -->
+
+2026-10-21 の記録です。[検証結果とランタイムのハッシュ](esm-cache-size.json)。`just library-check` で再計測した際は、この記録と日英の表を一緒に更新します。ドキュメントのテストで同梱アセットとの一致も検査します。
 
 Node.js 24 / V8、Rolldown 1.2.14 の検証用 ESM bundle の全 JS を計上しています。関数の同一性を検査する export も含むため、配布パッケージ単体のサイズ表とは別の測定です。Wasm・型定義・圧縮はこの表に含めません。Safari 実ブラウザーは未検証です。
 

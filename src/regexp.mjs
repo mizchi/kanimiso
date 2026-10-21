@@ -12,6 +12,9 @@ export function regexpImports(memory, strings) {
     return decoder.decode(new Uint8Array(m.buffer, ptr >>> 0, len >>> 0));
   };
   const api = {
+    [Symbol.dispose]() {
+      values.clear();
+    },
     compile(ptr, len) {
       const pattern = text(ptr, len);
       let value;

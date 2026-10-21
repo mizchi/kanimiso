@@ -6,7 +6,7 @@ const built = await esbuild.build({
   bundle: true,
   format: "esm",
   write: false,
-  define: { __JSRT_DEBUG_ERRORS__: "false" },
+  define: { __JSRT_DEBUG_ERRORS__: "false", __TARABA_ABORT__: "false" },
 });
 const { createHost } = await import(
   `data:text/javascript;base64,${Buffer.from(built.outputFiles[0].contents).toString("base64")}`

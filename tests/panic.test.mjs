@@ -11,7 +11,10 @@ for (const profile of ["host", "jspi"])
         minify: true,
         format: "esm",
         write: false,
-        define: { __JSRT_DEBUG_ERRORS__: String(debug) },
+        define: {
+          __JSRT_DEBUG_ERRORS__: String(debug),
+          __TARABA_ABORT__: "false",
+        },
       });
       const { createHost } = await import(
         `data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString("base64")}`

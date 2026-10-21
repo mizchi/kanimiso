@@ -38,6 +38,19 @@ fn write_string(s: &str, out: &mut Vec<u8>) {
     out.extend_from_slice(s.as_bytes())
 }
 pub(crate) fn rename(bytes: &[u8], names: &BTreeMap<String, String>) -> Result<Vec<u8>> {
+    rename_in(bytes, Some("jsrt"), names)
+}
+pub(crate) fn rename_app(bytes: &[u8], names: &BTreeMap<String, String>) -> Result<Vec<u8>> {
+    rename_in(bytes, Some("app"), names)
+}
+pub(crate) fn rename_exports(bytes: &[u8], names: &BTreeMap<String, String>) -> Result<Vec<u8>> {
+    rename_in(bytes, None, names)
+}
+fn rename_in(
+    bytes: &[u8],
+    target: Option<&str>,
+    names: &BTreeMap<String, String>,
+) -> Result<Vec<u8>> {
     if bytes.get(..8) != Some(b"\0asm\x01\0\0\0") {
         return Err("expected Core Wasm v1".into());
     }
@@ -50,7 +63,37 @@ pub(crate) fn rename(bytes: &[u8], names: &BTreeMap<String, String>) -> Result<V
         let size = uint(bytes, &mut p)? as usize;
         let end = p.checked_add(size).ok_or("section overflow")?;
         let section = bytes.get(p..end).ok_or("truncated section")?;
-        if id != 2 {
+        if target.is_none() && id == 7 {
+            let mut q = 0;
+            let count = uint(section, &mut q)?;
+            let mut body = Vec::new();
+            leb(count, &mut body);
+            for _ in 0..count {
+                let name = string(section, &mut q)?;
+                let start = q;
+                let kind = *section.get(q).ok_or("missing export kind")?;
+                q += 1;
+                uint(section, &mut q)?;
+                write_string(
+                    if kind == 0 {
+                        names.get(&name).unwrap_or(&name)
+                    } else {
+                        &name
+                    },
+                    &mut body,
+                );
+                body.extend_from_slice(&section[start..q]);
+            }
+            if q != section.len() {
+                return Err("trailing export bytes".into());
+            }
+            out.push(7);
+            leb(body.len() as u32, &mut out);
+            out.extend(body);
+            p = end;
+            continue;
+        }
+        if id != 2 || target.is_none() {
             out.extend_from_slice(&bytes[start..end]);
             p = end;
             continue;
@@ -86,7 +129,7 @@ pub(crate) fn rename(bytes: &[u8], names: &BTreeMap<String, String>) -> Result<V
                 _ => return Err("unsupported import kind".into()),
             }
             write_string(&module, &mut body);
-            let renamed = if module == "jsrt" && kind == 0 {
+            let renamed = if target == Some(module.as_str()) && kind == 0 {
                 names.get(&name).unwrap_or(&name)
             } else {
                 &name
@@ -110,6 +153,55 @@ pub(crate) fn rename(bytes: &[u8], names: &BTreeMap<String, String>) -> Result<V
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn private_export_names_preserve_imports_and_instructions() {
+        let input=wat::parse_str(r#"(module (import "$exports" "taraba-iface-61-run" (func)) (func (export "taraba-iface-61-run") (result i32) i32.const 42) (func (export "user")))"#).unwrap();
+        let short = rename_exports(
+            &input,
+            &BTreeMap::from([("taraba-iface-61-run".into(), "a".into())]),
+        )
+        .unwrap();
+        assert!(
+            walrus::Module::from_buffer(&short)
+                .unwrap()
+                .imports
+                .get_func("$exports", "taraba-iface-61-run")
+                .is_ok()
+        );
+        assert!(
+            walrus::Module::from_buffer(&short)
+                .unwrap()
+                .exports
+                .iter()
+                .any(|e| e.name == "a")
+        );
+        assert_eq!(
+            rename_exports(
+                &short,
+                &BTreeMap::from([("a".into(), "taraba-iface-61-run".into())])
+            )
+            .unwrap(),
+            input
+        );
+    }
+    #[test]
+    fn private_app_names_preserve_other_sections_and_user_imports() {
+        let input = wat::parse_str(r#"(module (import "app" "taraba-codec-12-copy" (func $copy)) (import "app" "user" (func)) (import "jsrt" "number" (func)) (func (export "run") call $copy))"#).unwrap();
+        let names = BTreeMap::from([("taraba-codec-12-copy".into(), "a".into())]);
+        let short = rename_app(&input, &names).unwrap();
+        let m = walrus::Module::from_buffer(&short).unwrap();
+        assert!(m.imports.get_func("app", "a").is_ok());
+        assert!(m.imports.get_func("app", "user").is_ok());
+        assert!(m.imports.get_func("jsrt", "number").is_ok());
+        assert_eq!(
+            rename_app(
+                &short,
+                &BTreeMap::from([("a".into(), "taraba-codec-12-copy".into())])
+            )
+            .unwrap(),
+            input
+        );
+    }
     #[test]
     fn patch_preserves_code_and_rejects_truncation() {
         let input=wat::parse_str(r#"(module (import "jsrt" "number" (func $n (param i32) (result i32))) (func (export "x") (result i32) i32.const 42 call $n))"#).unwrap();

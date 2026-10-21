@@ -2,7 +2,7 @@
 
 JSPI を標準とし、Rust Future 対応は必要時に追加する。既存 Future バックエンドは移行条件を満たすまで維持する。直接 JSPI と Rust Future は同じ層の機能ではなく、JSPI 上でも Future の poll・子 Waker・Drop を扱うアダプターが必要になる。
 
-## 今回の変更
+## 現在のビルド方式
 
 `taraba new` は直接 JSPI を既定とし、Future の雛形には `--future` を指定する。`taraba build` は生成 Wasm のランタイム import/export と WIT resource から方式を判定する。`--jspi` / `--future` は明示指定として維持し、併用はエラーにする。Rust の build API は `ExecutionProfile::{Jspi, Future}` で区別する。
 
@@ -24,12 +24,13 @@ JSPI 上の Future アダプターは引き続き [experiments/jspi-future](../e
 
 | 項目 | 既定の直接 JSPI | 既存 `--future` | 実験 JSPI＋Future |
 |---|---|---|---|
-| ホスト境界 | scalar WIT | scalar / imported resource | 実験用 driver imports |
-| 待機状態 | JSPI の停止した stack | pool 上の Future | stack 上の Future と JSPI park |
+| ホスト境界 | scalar WIT | world/interface の値型・imported opaque own/borrow、typed async | 実験用 driver imports |
+| 待機状態 | JSPI の停止した stack | pool 内の Future、または Box へのポインタ | stack 上の Future と JSPI park |
 | 独立した呼び出し | instance 内で直列 | I/O 待機中も他のタスクを進める | instance 内で直列 |
-| 任意の Pending Future | executor なし | 対応。slot のサイズ・alignment 上限あり | driver の範囲で対応 |
+| 任意の Pending Future | executor なし | 対応。大きい・alignment の大きい Future は自動 Box 化 | driver の範囲で対応 |
 | join / select | Rust Future 用 driver なし | Future による合成 | 子 Waker と Drop を probe 済み |
-| root のキャンセル | API なし | 既存 cancel / Drop 契約 | 未実装 |
+| root のキャンセル | 呼び出し単位の API なし | cancel / Drop、任意の `--abort-signal` | 未実装 |
+| instance の終了 | `host.dispose()`。呼び出し元は reject、停止 stack は I/O 完了まで保持 | `host.dispose()`。task の cancel/Drop と JS root の解放 | 製品の終了契約には未統合 |
 | host reject | instance を閉じる | Promise rejection を Rust の Result へ渡す | instance を閉じる |
 | trap | instance を閉じる | instance を閉じる | instance を閉じる |
 
@@ -37,7 +38,11 @@ JSPI 上の Future アダプターは引き続き [experiments/jspi-future](../e
 
 JSPI の reject / trap で Rust の Drop が走るとは仮定しない。Promise の参照を捨てることも Rust Future のキャンセルとは扱わない。実験アダプターの子 Future の Drop は登録を解除するが、元の JS I/O 自体を abort する保証はない。
 
+Core Future の既定 pool は 1,024 × 128 B。`--task-slots` でコンパイル時の容量を変えられ、大きな Future の Box 化は同時 task 数の上限を増やさない。`--abort-signal` は協調する host I/O へキャンセルを伝えるオプションで、任意の Promise を中止するものではない。[型・resource・終了処理の詳細](typescript.ja.md)と[現在の対応状況](status.ja.md)を参照。
+
 ## 速度・サイズの判断
+
+以下は過去の実験時点のスナップショット。現在の配布サイズは[非同期サイズ比較](async-size.ja.md)と[最適化前後の比較](bundle-tuning.ja.md)を参照し、ここに残す速度測定と混ぜない。
 
 [保存済みの比較](jspi-future-measurements.md)では、同じ二段 await / 3,507 ケースを通した no_std 例で、既存 Future は合計5,618 B・1.137 μs/task、直接 JSPI は1,572 B・0.550 μs/task、bounded アダプターは4,236 B・1.196 μs/task。アプリを含む値であり、機能が同一なランタイムの固定費ではない。
 

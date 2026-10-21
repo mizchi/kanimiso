@@ -6,27 +6,31 @@ Build Rust/Wasm libraries from **WIT contracts**, including async functions, and
 
 ## Choose an execution contract and a distribution format
 
-| Use case | Execution option | Distribution option | What the user writes / receives |
-|---|---|---|---|
-| A Component Model library for an async-capable component host | `--component` | no npm flag | WIT `async func`, Rust `async fn`; `app.component.wasm` with Canonical ABI |
-| An npm library with typed async/domain values | `--component` | `--npm-name @scope/library` | Standard `wit-bindgen` Rust bindings and `jco` JS/TS bindings; records, strings, lists, `result`, typed async results |
-| A small browser/JS library with numeric boundaries | default / `--jspi` | npm package by default | Synchronous Rust imports suspend through JSPI; WIT-derived typed exports, `Promise<number>` |
-| Concurrent Rust Future tasks, `spawn_local`, explicit cancellation | `--future` | npm package by default | The existing Core Promise/resource runtime; opaque resource payloads are `unknown` in TS |
+| Use case                                                           | Execution option   | Distribution option         | What the user writes / receives                                                                                       |
+| ------------------------------------------------------------------ | ------------------ | --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| A Component Model library for an async-capable component host      | `--component`      | no npm flag                 | WIT `async func`, Rust `async fn`; `app.component.wasm` with Canonical ABI                                            |
+| An npm library with standard Component async/domain bindings      | `--component`      | `--npm-name @scope/library` | Standard `wit-bindgen` Rust bindings and `jco` JS/TS bindings; records, strings, lists, `result`, typed async results |
+| A typed JS/TS library with rich values and Rust async               | `--future`         | npm package by default      | Safe WIT-derived Rust/TS bindings; only used value codecs are emitted |
+| A small browser/JS library with numeric boundaries                 | default / `--jspi` | npm package by default      | Synchronous Rust imports suspend through JSPI; WIT-derived typed exports, `Promise<number>`                           |
+| Concurrent Rust Future tasks, `spawn_local`, explicit cancellation | `--future`         | npm package by default      | WIT `future<T>` / async func, safe Rust async imports/Guest, typed TS results                                         |
 
-**Choose Component for WIT-first async application libraries.** Choose Core/JSPI when size is the main constraint and s32/u32/f64 boundaries are sufficient. `taraba new` defaults to a JSPI scaffold. `taraba build` selects Core JSPI/Future from the compiled jsrt/pool imports, rt_poll/rt_drop/rt_settle exports, WIT resources and resource-drop imports, rather than Rust source keywords. `--jspi` / `--future` override detection; Component output requires `--component`.
+**Choose Component for standard async ABI interoperability.** Core Future supports WIT-typed numeric and rich-value async APIs for JS hosts. Choose Core/JSPI when size is the main constraint and s32/u32/f64 boundaries are sufficient. `taraba new` defaults to a JSPI scaffold. `taraba build` selects Core JSPI/Future from the compiled jsrt/pool imports, rt_poll/rt_drop/rt_settle exports, WIT resources and resource-drop imports, rather than Rust source keywords. `--jspi` / `--future` override detection; Component output requires `--component`.
 
 `--component` uses standard Component Model Canonical ABI. The two Core profiles use a private JS ABI. Component and Core artifacts are different contracts; they are not interchangeable. npm packaging is a separate choice that can be combined with either.
 
+The typed Core async API and newer runtime features are unreleased. Use the CLI and matching Rust runtime from this checkout; see [installation](#installation). The [capability summary](status.md) separates implemented features, unsupported forms and unverified environments.
+
 ## Generated files and editing workflow
 
-| Location | Role |
-|---|---|
-| `wit/app.wit` | Public API: change types, imports/exports and async contracts here |
-| `src/lib.rs` | Implement the generated Guest; keep domain logic in ordinary Rust modules |
-| `Cargo.toml` | std/no_std, allocator, dependencies and release settings |
-| `.cargo/config.toml` | Scaffold stack 64 KiB / memory limit 1 MiB; adjust for the application |
-| `justfile` | Optional build/npm shortcuts pinned to the selected execution contract |
-| `pkg/` | Generated artifacts; change WIT/Rust and regenerate these files |
+| Location                 | Role                                                                      |
+| ------------------------ | ------------------------------------------------------------------------- |
+| `wit/app.wit`            | Public API: change types, imports/exports and async contracts here        |
+| `src/lib.rs`             | Implement the generated Guest; keep domain logic in ordinary Rust modules |
+| `build.rs` (Core Future) | Generate Rust bindings from WIT into OUT_DIR using the installed CLI      |
+| `Cargo.toml`             | std/no_std, allocator, dependencies and release settings                  |
+| `.cargo/config.toml`     | Scaffold stack 64 KiB / memory limit 1 MiB; adjust for the application    |
+| `justfile`               | Optional build/npm shortcuts pinned to the selected execution contract    |
+| `pkg/`                   | Generated artifacts; change WIT/Rust and regenerate these files           |
 
 Edit WIT, update Guest/imports using Rust's type errors, run taraba build, and typecheck/test the consumer. std and no_std have the same interface but different panic/allocator code sizes.
 
@@ -39,25 +43,25 @@ Output is dedicated to generated files. A one-shot `taraba build` replaces it on
 Core `taraba build` assembles a complete npm directory in `pkg/` by default.
 No `--npm-name` is required.
 
-| File | Purpose |
-|---|---|
-| `index.js` | Application-specific `createHost` and typed methods |
-| `index.d.ts` | WIT-derived `AppBindings`, `AppExports` and `AppHost` |
-| `app.wasm` | Optimized Wasm, exported as `package-name/app.wasm` |
-| `runtime.mjs` / `runtime.d.mts` | Shared runtime and declarations |
-| `package.json` | ESM type, main/module, types, exports and explicit files list |
-| `wit/` | Public WIT and resolved WIT dependencies |
-| `helpers-*.mjs` | Included only when helpers are used |
-| `LICENSE.taraba` / `build.json` | taraba license and build/size records |
+| File                            | Purpose                                                       |
+| ------------------------------- | ------------------------------------------------------------- |
+| `index.js`                      | Application-specific `createHost` and typed methods           |
+| `index.d.ts`                    | WIT-derived `AppBindings`, `AppExports` and `AppHost`         |
+| `app.wasm`                      | Optimized Wasm, exported as `package-name/app.wasm`           |
+| `runtime.mjs` / `runtime.d.mts` | Shared runtime and declarations                               |
+| `package.json`                  | ESM type, main/module, types, exports and explicit files list |
+| `wit/`                          | Public WIT and resolved WIT dependencies                      |
+| `helpers-*.mjs`                 | Included only when helpers are used                           |
+| `LICENSE.taraba` / `build.json` | taraba license and build/size records                         |
 
 `main` / `module` point to `./index.js`; `types` and the exports types condition
 point to `./index.d.ts`. The old `taraba.mjs` entry is not generated as an alias.
 
-| npm field | Cargo project default | Override |
-|---|---|---|
-| name | Selected package name, lowercased | `--npm-name @scope/library` |
-| version | Package version | `--npm-version 1.2.3` |
-| license | Package license, or UNLICENSED when absent | `--license MIT` |
+| npm field | Cargo project default                      | Override                    |
+| --------- | ------------------------------------------ | --------------------------- |
+| name      | Selected package name, lowercased          | `--npm-name @scope/library` |
+| version   | Package version                            | `--npm-version 1.2.3`       |
+| license   | Package license, or UNLICENSED when absent | `--license MIT`             |
 
 Workspace builds use the package selected by `--package`, including inherited
 Cargo metadata; `[lib].name` does not set the npm name. Watch rebuilds refresh
@@ -164,6 +168,21 @@ cargo install taraba-cli --version 0.1.0 --locked
 
 Component builds also require `wasm-tools 1.245.1`. Component **npm** builds additionally require Node.js 24+ and `@bytecodealliance/jco@1.39.0`; `--jco /path/to/jco` selects the executable. Core builds embed their JS runtime and require neither Node nor jco. No consumer needs this repository checkout or esbuild.
 
+For the unreleased Core APIs in this guide, install from a checkout instead:
+
+```sh
+cargo install --path /path/to/taraba/crates/taraba-cli --locked --force
+```
+
+After `taraba new hello --future`, add this override to the generated application's `Cargo.toml` to use the matching runtime. It is required for the current Box fallback and configurable task pool; installing the CLI alone does not update Rust dependencies.
+
+```toml
+[patch.crates-io]
+taraba = { path = "/path/to/taraba/crates/taraba" }
+```
+
+If developing the allocator or helpers too, point those dependencies to their corresponding checkout directories. Generated npm packages remain standalone; this setup is for library authors using unreleased code.
+
 ## A WIT-first async Component library
 
 ```sh
@@ -211,11 +230,11 @@ Use WIT records/lists/strings/results for domain contracts. Imported interfaces 
 The generated Cargo.toml uses taraba-allocator with `default-features = false` for
 the smallest Wasm. Add features to that dependency according to your workload:
 
-| Workload | Features |
-|---|---|
-| Minimum code size | none |
-| Frequent small allocations | `size_classes`; measure against the main free list |
-| Repeated resizing within one rounded 4-byte word, such as 25→28→25 bytes | `realloc_in_place` |
+| Workload                                                                 | Features                                           |
+| ------------------------------------------------------------------------ | -------------------------------------------------- |
+| Minimum code size                                                        | none                                               |
+| Frequent small allocations                                               | `size_classes`; measure against the main free list |
+| Repeated resizing within one rounded 4-byte word, such as 25→28→25 bytes | `realloc_in_place`                                 |
 
 The features can be combined. `realloc_in_place` is off by default and uses the
 usual allocate/copy/free path when the rounded word count changes. Its benchmark
@@ -241,12 +260,12 @@ This prepares `package.json` with ESM exports, a `types` condition, an explicit 
 A Node consumer installs the tarball (or, after publication, the package) and provides its imports and a core-module loader:
 
 ```js
-import { readFile } from 'node:fs/promises';
-import { instantiate } from '@example/orders';
+import { readFile } from "node:fs/promises";
+import { instantiate } from "@example/orders";
 
-const base = new URL(import.meta.resolve('@example/orders/package.json'));
+const base = new URL(import.meta.resolve("@example/orders/package.json"));
 const api = await instantiate(
-  async name => WebAssembly.compile(await readFile(new URL(name, base))),
+  async (name) => WebAssembly.compile(await readFile(new URL(name, base))),
   { add: { default: async (a, b) => (a + b) | 0 } },
 );
 console.log(await api.run(20, 21)); // 42; typed Promise<number>
@@ -288,17 +307,17 @@ export!(App);
 A TypeScript consumer uses the generated types. Supply the same core-module load callback as in the Node example:
 
 ```ts
-import { instantiate, type ImportObject } from '@example/orders';
+import { instantiate, type ImportObject } from "@example/orders";
 
 const imports: ImportObject = {
-  'example:orders/domain@0.1.0': {
-    evaluate: async order => ({ ...order, label: order.label + ' ✓' }),
+  "example:orders/domain@0.1.0": {
+    evaluate: async (order) => ({ ...order, label: order.label + " ✓" }),
   },
 };
 const api = await instantiate(load, imports);
 const order = await api.process({
   id: 4294967295,
-  label: '注文 🍣',
+  label: "注文 🍣",
   amounts: new Uint32Array([1, 2]),
 });
 const label: string = order.label;
@@ -318,12 +337,12 @@ taraba build \
 ```
 
 ```js
-import { readFile } from 'node:fs/promises';
-import { createHost } from '@example/tiny';
+import { readFile } from "node:fs/promises";
+import { createHost } from "@example/tiny";
 
 const host = createHost({ bindings: { add: async (a, b) => (a + b) | 0 } });
 const { instance } = await WebAssembly.instantiate(
-  await readFile(new URL(import.meta.resolve('@example/tiny/app.wasm'))),
+  await readFile(new URL(import.meta.resolve("@example/tiny/app.wasm"))),
   host.imports,
 );
 host.attach(instance.exports);
@@ -334,7 +353,7 @@ Core JSPI/Future uses `createHost`, native Wasm instantiation, then `attach`. Th
 
 The numeric Core API has `AppBindings`, `AppExports`, and `AppHost` generated from WIT; export names/arguments are checked by TypeScript. The default `pkg/index.js`/`index.d.ts` and package.json exports provide this typed API without `--npm-name`. Application methods are generated statically, so editors can complete `host.run(a, b)` without string-based dispatch. `runtime.mjs`/`runtime.d.mts` contain the separate shared runtime. Both formats support debug errors via `--debug`; release uses codes linked to the [error reference](error-codes.md), without shipping a description dictionary.
 
-Core/JSPI serializes each instance across I/O waits; a slow call blocks later calls. Host rejection/trap closes the instance, with no cancellation or Rust Drop guarantee on that path. It does not drive arbitrary Rust Futures or native WIT async. Use `--future` when the existing executor's independent task progress and cancellation are required. Its WIT Promise resource has no payload type, so TS correctly returns `Promise<unknown>`; use Component for WIT-typed async results. See the [Core runtime reference](core-runtime.md) for APIs, ownership, task limits and error behavior.
+Core/JSPI serializes each instance across I/O waits; a slow call blocks later calls. Host rejection/trap closes the instance, with no per-call cancellation or Rust Drop guarantee on that path. It does not drive arbitrary Rust Futures or native WIT async. Use `--future` when independent task progress and cancellation are required. Its generated bindings accept world-level and interface WIT `future<T>` / `future` or equivalent `async func`, including numeric, string, list, record and other supported value types, and imported opaque own/borrow resources. Only used codecs are generated. Standard Canonical async ABI requires Component; legacy opaque Promise payloads stay `unknown`. Both Core profiles provide `host.dispose()` with different suspended-task behavior. See the [Core runtime reference](core-runtime.md) and [typed resource/lifecycle examples](typescript.md).
 
 ## Helpers for JavaScript builtins
 

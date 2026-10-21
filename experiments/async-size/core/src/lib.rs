@@ -2,7 +2,10 @@
 #[cfg(any(
     all(feature = "jspi", feature = "future"),
     all(feature = "jspi", feature = "component"),
-    all(feature = "future", feature = "component")
+    all(feature = "future", feature = "component"),
+    all(feature = "future-typed", feature = "jspi"),
+    all(feature = "future-typed", feature = "future"),
+    all(feature = "future-typed", feature = "component")
 ))]
 compile_error!("select exactly one backend");
 #[global_allocator]
@@ -24,10 +27,26 @@ mod workflow;
 wit_bindgen::generate!({path:"wit/async",world:"app"});
 #[cfg(all(feature = "async-workload", feature = "future"))]
 wit_bindgen::generate!({path:"wit/future",world:"app"});
-#[cfg(any(not(feature = "async-workload"), feature = "jspi"))]
+#[cfg(all(
+    not(feature = "future-typed"),
+    any(not(feature = "async-workload"), feature = "jspi")
+))]
 wit_bindgen::generate!({path:"wit/sync",world:"app"});
+#[cfg(feature = "future-typed")]
+include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+#[cfg(feature = "future-typed")]
+bindings!();
 
 struct App;
+#[cfg(all(feature = "async-workload", feature = "future-typed"))]
+impl Guest for App {
+    fn run(a: i32, b: i32) -> impl core::future::Future<Output = HostResult<i32>> {
+        // Return the shared algorithm's Future directly, as the manual bridge
+        // does. An additional async { compute(...).await } would measure a new
+        // application state machine rather than just generated bindings.
+        workflow::compute(a, b, add)
+    }
+}
 #[cfg(not(feature = "async-workload"))]
 impl Guest for App {
     fn run(a: i32, b: i32) -> i32 {

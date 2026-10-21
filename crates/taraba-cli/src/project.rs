@@ -90,6 +90,9 @@ codegen-units = 1
             include_str!("templates/app.rs")
         },
     )?;
+    if !jspi && !component {
+        fs::write(path.join("build.rs"), include_str!("templates/build.rs"))?;
+    }
     fs::write(
         path.join("wit/app.wit"),
         if component {

@@ -94,7 +94,7 @@ The reference implementation formats panic information and copies a JS Error sta
 
 Run `just panic-check` for the same baseline/hook algorithm across std/no_std, JSPI/Future and release/debug/optimized diagnostic builds on V8. It checks normal computation/formatting, panic during Future polling, first-fatal identity, native traps and payload formatting before the hook. Sizes are recorded in `.cache/panic-reporting/check.json`; Safari browser execution remains unverified.
 
-### 最適化後の比較 / Optimized comparison
+### 2026-10-19 の最適化後の比較 / Optimized snapshot (2026-10-19)
 
 | 構成 / Profile | release Wasm B | `panic-details` Wasm B | 差 / Difference B |
 |---|---:|---:|---:|
@@ -103,8 +103,8 @@ Run `just panic-check` for the same baseline/hook algorithm across std/no_std, J
 | Future no_std | 4,144 | 7,209 | −3,065 |
 | Future std | 8,189 | 9,061 | −872 |
 
-両列とも同じ Rust release 最適化と Binaryen 133 を使い、違いは `panic-details` の有無です。通常の数値計算・format、意図的な panic/trap、hook 差し替え、整形回数の計測用 export を含む検証 fixture 全体のサイズで、最小 runtime 単体のサイズではありません。hook を付ける前より小さくなるという意味でもありません。JS は別で、release の共有 runtime は JSPI 975 B / Future 3,470 B です。
+両列とも同じ Rust release 最適化と Binaryen 133 を使い、違いは `panic-details` の有無です。通常の数値計算・format、意図的な panic/trap、hook 差し替え、整形回数の計測用 export を含む検証 fixture 全体のサイズで、最小 runtime 単体のサイズではありません。hook を付ける前より小さくなるという意味でもありません。JS は別計上です。現在の共有 runtime のサイズは [ESM の実測表](esm-cache.ja.md#実測と再現)を参照してください。
 
-Both columns use the same Rust release optimization and Binaryen 133; only `panic-details` differs. These are complete verification fixtures, including computation/formatting, deliberate panic/trap and hook/counter probe exports, **not** minimal runtime sizes or a reduction versus having no hook. JS is separate: release shared runtimes are 975 B (JSPI) and 3,470 B (Future).
+Both columns use the same Rust release optimization and Binaryen 133; only `panic-details` differs. These are complete verification fixtures, including computation/formatting, deliberate panic/trap and hook/counter probe exports, **not** minimal runtime sizes or a reduction versus having no hook. JS is counted separately; see the [ESM measurement table](esm-cache.md#measurement-and-reproduction) for current shared-runtime sizes.
 
 2026-10-19、Node.js 24 / V8 で測定。[全構成・入力ハッシュ / Full results and input hashes](panic-size.json)。

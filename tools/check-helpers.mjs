@@ -375,16 +375,23 @@ try {
       source,
       readFileSync(source, "utf8")
         .replace(
+          "#[global_allocator]",
+          "extern crate alloc;\n#[global_allocator]",
+        )
+        .replace(
           "let first =",
           `let re = taraba_helpers::regexp::RegExp::new("^(?:蟹|🦀)+$").unwrap();
         let text = taraba_helpers::string::JsString::from("蟹🦀");
         let mut parts = taraba_helpers::segmenter::Segmenter::new("ja", taraba_helpers::segmenter::Granularity::Grapheme).unwrap().segment(&text);
         let part = parts.next().unwrap();
+        // Keep the aggregate behind one pointer within the fixed 128-byte task slot.
+        // All four roots must still stay live across await and drop on cancellation.
+        let mut held = alloc::boxed::Box::new((re, text, parts, part));
         let first =`,
         )
         .replace(
-          profile === "future" ? "call(first, 1).await" : "add(first, 1)",
-          `if !re.is_match_js(&text) || part.text() != taraba_helpers::string::JsString::from("蟹") || parts.next().unwrap().text() != taraba_helpers::string::JsString::from("🦀") { ${error} }\n        ${profile === "future" ? "call(first, 1).await" : "add(first, 1)"}`,
+          profile === "future" ? "add(first, 1).await" : "add(first, 1)",
+          `if !held.0.is_match_js(&held.1) || held.3.text() != taraba_helpers::string::JsString::from("蟹") || held.2.next().unwrap().text() != taraba_helpers::string::JsString::from("🦀") { ${error} }\n        ${profile === "future" ? "add(first, 1).await" : "add(first, 1)"}`,
         ),
     );
     for (const std of [false, true]) {

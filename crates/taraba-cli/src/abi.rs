@@ -1,13 +1,16 @@
 //! Private Core ABI lowering. Standard Components bypass this module.
 use walrus::{ExportItem, FunctionBuilder, FunctionKind, ImportKind, Module, RefType, ValType};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Abi {
     I32,
     U32,
     F64,
     Borrow,
     Own,
+    FutureI32,
+    FutureVoid,
+    FutureValue,
 }
 use Abi::*;
 impl Abi {
@@ -19,21 +22,43 @@ impl Abi {
     }
     fn external(self) -> ValType {
         match self {
-            Borrow | Own => ValType::Ref(RefType::EXTERNREF),
+            Borrow | Own | FutureI32 | FutureVoid | FutureValue => ValType::Ref(RefType::EXTERNREF),
             U32 => ValType::F64,
             _ => self.raw(),
         }
     }
     fn reference(self) -> bool {
-        matches!(self, Borrow | Own)
+        matches!(self, Borrow | Own | FutureI32 | FutureVoid | FutureValue)
     }
 }
 pub(crate) type Signature = (Vec<Abi>, Option<Abi>);
-#[derive(Default)]
+#[derive(Clone, PartialEq, Eq)]
+pub(crate) struct PublicParameter {
+    pub ty: String,
+    pub optional: bool,
+}
+#[derive(Clone, PartialEq, Eq)]
+pub(crate) struct PublicSignature {
+    pub args: Vec<PublicParameter>,
+    pub result: String,
+    pub asynchronous: bool,
+}
+#[derive(Default, PartialEq, Eq)]
 pub(crate) struct Bindings {
     pub(crate) imports: std::collections::BTreeMap<(String, String), Signature>,
     pub(crate) exports: std::collections::BTreeMap<String, Signature>,
     pub(crate) drops: Vec<(String, String)>,
+    pub(crate) public_imports: std::collections::BTreeMap<String, PublicSignature>,
+    pub(crate) public_exports: std::collections::BTreeMap<String, PublicSignature>,
+    pub(crate) type_declarations: String,
+    pub(crate) core_contract: Option<String>,
+    pub(crate) resource_types: bool,
+    pub(crate) host_marshalling:
+        std::collections::BTreeMap<String, (Vec<String>, Option<String>, bool)>,
+    pub(crate) live_imports: Option<std::collections::BTreeSet<String>>,
+    pub(crate) interface_members: std::collections::BTreeMap<String, crate::interfaces::Member>,
+    pub(crate) wire_names: std::collections::BTreeMap<String, String>,
+    pub(crate) codecs: std::collections::BTreeMap<String, String>,
 }
 impl Bindings {
     pub(crate) fn uses_resource_handles(&self) -> bool {
@@ -69,6 +94,32 @@ pub(crate) fn lower_with_abi(
     bytes: &[u8],
     abi: &Bindings,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let mut found_contract = false;
+    for payload in wasmparser::Parser::new(0).parse_all(bytes) {
+        if let wasmparser::Payload::CustomSection(section) = payload? {
+            if section.name() == "taraba:core-wit" {
+                if found_contract {
+                    return Err("duplicate Core WIT contract".into());
+                }
+                found_contract = true;
+                let actual = crate::wit::parse_contract(std::str::from_utf8(section.data())?)?;
+                if &actual != abi {
+                    return Err(
+                        "Core WIT contract mismatch; regenerate bindings and rebuild the guest"
+                            .into(),
+                    );
+                }
+            }
+        }
+    }
+    let typed = abi
+        .imports
+        .values()
+        .chain(abi.exports.values())
+        .any(|(_, result)| matches!(result, Some(FutureI32 | FutureVoid | FutureValue)));
+    if (typed || !abi.codecs.is_empty()) && !found_contract {
+        return Err("missing Core WIT contract; generate bindings with taraba bindgen (standard Component future handles are incompatible)".into());
+    }
     let mut m = Module::from_buffer(bytes)?;
     if m.memories.iter().any(|memory| memory.shared) {
         return Err("Core profile does not support shared memory".into());
@@ -79,7 +130,13 @@ pub(crate) fn lower_with_abi(
     let sections: Vec<_> = m
         .customs
         .iter()
-        .filter(|(_, s)| s.name().starts_with("component-type"))
+        .filter(|(_, s)| {
+            s.name().starts_with("component-type")
+                || matches!(
+                    s.name(),
+                    "taraba:core-wit" | "taraba:task-slots" | "taraba:runtime-abi"
+                )
+        })
         .map(|(id, _)| id)
         .collect();
     if !sections.is_empty() {
@@ -214,7 +271,7 @@ pub(crate) fn lower_with_abi(
                 Borrow => {
                     body.table_get(table);
                 }
-                Own => {
+                Own | FutureI32 | FutureVoid | FutureValue => {
                     body.call(take);
                 }
                 _ => {}
@@ -275,6 +332,42 @@ pub(crate) fn lower_with_abi(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn typed_core_checks_embedded_wit_before_stripping_metadata() {
+        let source = "package test:contract; world app {export run:func()->future<s32>;}";
+        let expected = crate::wit::parse_text(source).unwrap();
+        // A Canonical future handle is also i32, but is not a Core JS root.
+        let unmarked =
+            wat::parse_str(r#"(module (func (export "run") (result i32) i32.const 0))"#).unwrap();
+        assert!(
+            lower_with_abi(&unmarked, &expected)
+                .unwrap_err()
+                .to_string()
+                .contains("missing Core WIT contract")
+        );
+
+        for (declaration, valid) in [
+            ("func()->future<s32>", true),
+            ("async func()->s32", true),
+            ("func()->future", false),
+        ] {
+            let contract =
+                format!("package test:contract; world app {{export run:{declaration};}}");
+            let raw=wat::parse_str(format!(r#"(module (@custom "taraba:core-wit" "{contract}") (func (export "run") (result i32) i32.const 0))"#)).unwrap();
+            let lowered = lower_with_abi(&raw, &expected);
+            if valid {
+                let bytes = lowered.unwrap();
+                assert!(!wasmparser::Parser::new(0).parse_all(&bytes).any(|p|matches!(p.unwrap(),wasmparser::Payload::CustomSection(s) if s.name()=="taraba:core-wit")));
+            } else {
+                assert!(
+                    lowered
+                        .unwrap_err()
+                        .to_string()
+                        .contains("Core WIT contract mismatch")
+                );
+            }
+        }
+    }
     #[test]
     fn panic_report_has_one_synchronous_borrowed_slice_signature() {
         for (signature, allowed) in [

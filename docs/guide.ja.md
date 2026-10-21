@@ -6,27 +6,31 @@
 
 ## 用途ごとの選び方
 
-| 用途 | 実行方式 | 配布形式 | 書くもの・得られるもの |
-|---|---|---|---|
-| async 対応 Component host 向けのライブラリ | `--component` | npm 指定なし | WIT `async func` と Rust `async fn`。Canonical ABI の `app.component.wasm` |
-| async・ドメインモデルに型のある npm ライブラリ | `--component` | `--npm-name @scope/library` | 公式 wit-bindgen と jco による JS/TS。record / string / list / result と型付き async 戻り値 |
-| 数値 API を持つ省サイズな JS ライブラリ | 既定 / `--jspi` | 既定で npm 形式 | Rust は同期形。Promise 待機は JSPI が担当。WIT から `Promise<number>` などの TS 型を生成 |
-| Rust Future の並行タスク・spawn_local・明示的キャンセル | `--future` | 既定で npm 形式 | 既存の Core Promise/resource ランタイム。opaque resource の中身は TS では `unknown` |
+| 用途                                                    | 実行方式        | 配布形式                    | 書くもの・得られるもの                                                                      |
+| ------------------------------------------------------- | --------------- | --------------------------- | ------------------------------------------------------------------------------------------- |
+| async 対応 Component host 向けのライブラリ              | `--component`   | npm 指定なし                | WIT `async func` と Rust `async fn`。Canonical ABI の `app.component.wasm`                  |
+| 標準 Component の async・ドメイン型を持つ npm ライブラリ | `--component`   | `--npm-name @scope/library` | 公式 wit-bindgen と jco による JS/TS。record / string / list / result と型付き async 戻り値 |
+| 複合型と Rust async を使う型付き JS/TS ライブラリ       | `--future`      | 既定で npm 形式             | WIT 由来の安全な Rust/TS binding。使う値型の変換だけを生成 |
+| 数値 API を持つ省サイズな JS ライブラリ                 | 既定 / `--jspi` | 既定で npm 形式             | Rust は同期形。Promise 待機は JSPI が担当。WIT から `Promise<number>` などの TS 型を生成    |
+| Rust Future の並行タスク・spawn_local・明示的キャンセル | `--future`      | 既定で npm 形式             | WIT `future<T>` / async func、安全な Rust async import/Guest、型付き TS 戻り値              |
 
-**WIT から async を含むアプリ用ライブラリを作る場合は Component を選びます。** サイズを優先し、s32 / u32 / f64 の境界で足りるなら Core/JSPI を選びます。`taraba new` の既定は JSPI 用の雛形です。`taraba build` は生成 Wasm の jsrt/pool import・rt_poll/rt_drop/rt_settle export と WIT resource から Core の JSPI/Future を自動選択します。必要に応じて WIT の resource drop import も確認します。Rust ソースのキーワードでは判定しません。`--jspi` / `--future` で強制指定でき、Component 出力は `--component` を明示します。
+**標準 async ABI の相互運用には Component を選びます。** JS 向けの数値・文字列・record・list などの async API には WIT から型を生成する Core Future も使えます。 サイズを優先し、s32 / u32 / f64 の境界で足りるなら Core/JSPI を選びます。`taraba new` の既定は JSPI 用の雛形です。`taraba build` は生成 Wasm の jsrt/pool import・rt_poll/rt_drop/rt_settle export と WIT resource から Core の JSPI/Future を自動選択します。必要に応じて WIT の resource drop import も確認します。Rust ソースのキーワードでは判定しません。`--jspi` / `--future` で強制指定でき、Component 出力は `--component` を明示します。
 
 `--component` は標準の Component Model / Canonical ABI を使います。二つの Core 構成は JS 向けの独自 ABI で、成果物の契約は異なります。npm 化は実行方式とは別の選択肢です。
 
+型付き Core async API と新しいランタイム機能は未リリースです。CLI と対応する Rust runtime を同じ checkout から使ってください。[インストール手順](#インストール)と、実装済み・未対応・未検証を分けた[対応状況](status.ja.md)を参照してください。
+
 ## 生成するファイルと編集サイクル
 
-| 場所 | 役割 |
-|---|---|
-| `wit/app.wit` | 公開 API。型・import/export・async の契約を変更する |
-| `src/lib.rs` | 生成された Guest を実装する。業務ロジックは通常の Rust module へ分離できる |
-| `Cargo.toml` | std/no_std、allocator、依存、release 設定 |
-| `.cargo/config.toml` | 雛形の stack 64 KiB / memory 上限 1 MiB。アプリに合わせて調整する |
-| `justfile` | 任意で使える、選んだ実行方式の build / npm タスク |
-| `pkg/` | 生成物。API の変更は WIT と Rust に加え、ここは再生成する |
+| 場所                      | 役割                                                                       |
+| ------------------------- | -------------------------------------------------------------------------- |
+| `wit/app.wit`             | 公開 API。型・import/export・async の契約を変更する                        |
+| `src/lib.rs`              | 生成された Guest を実装する。業務ロジックは通常の Rust module へ分離できる |
+| `build.rs`（Core Future） | インストールした CLI で WIT から OUT_DIR に Rust binding を生成する        |
+| `Cargo.toml`              | std/no_std、allocator、依存、release 設定                                  |
+| `.cargo/config.toml`      | 雛形の stack 64 KiB / memory 上限 1 MiB。アプリに合わせて調整する          |
+| `justfile`                | 任意で使える、選んだ実行方式の build / npm タスク                          |
+| `pkg/`                    | 生成物。API の変更は WIT と Rust に加え、ここは再生成する                  |
 
 WIT を変更 → Rust の型エラーに従って Guest/import を更新 → taraba build → 利用側の tsc と実行テスト、の順に確認します。std と no_std で契約は同じでも、panic/allocator を含む配布サイズは変わります。
 
@@ -38,24 +42,24 @@ Cargo プロジェクト内で `taraba build` を実行します。CLI が Cargo
 
 Core の `taraba build` は、既定で次のファイルを `pkg/` に揃えます。`--npm-name` は不要です。
 
-| ファイル | 役割 |
-|---|---|
-| `index.js` | アプリ固有の `createHost` と型付きメソッドの入口 |
-| `index.d.ts` | WIT 由来の `AppBindings` / `AppExports` / `AppHost` |
-| `app.wasm` | 最適化した Wasm。`package-name/app.wasm` から参照可能 |
-| `runtime.mjs` / `runtime.d.mts` | JS ランタイムと型定義 |
-| `package.json` | `type: module`、`main` / `module`、`types`、`exports`、配布する `files` |
-| `wit/` | 公開 WIT と解決した WIT 依存 |
-| `helpers-*.mjs` | ヘルパーを使う時だけ生成 |
-| `LICENSE.taraba` / `build.json` | taraba のライセンスとビルド・サイズの記録 |
+| ファイル                        | 役割                                                                    |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| `index.js`                      | アプリ固有の `createHost` と型付きメソッドの入口                        |
+| `index.d.ts`                    | WIT 由来の `AppBindings` / `AppExports` / `AppHost`                     |
+| `app.wasm`                      | 最適化した Wasm。`package-name/app.wasm` から参照可能                   |
+| `runtime.mjs` / `runtime.d.mts` | JS ランタイムと型定義                                                   |
+| `package.json`                  | `type: module`、`main` / `module`、`types`、`exports`、配布する `files` |
+| `wit/`                          | 公開 WIT と解決した WIT 依存                                            |
+| `helpers-*.mjs`                 | ヘルパーを使う時だけ生成                                                |
+| `LICENSE.taraba` / `build.json` | taraba のライセンスとビルド・サイズの記録                               |
 
 package.json の `main` / `module` は `./index.js`、`types` と exports の types 条件は `./index.d.ts` を指します。以前の `taraba.mjs` への別名エントリーは生成しません。
 
-| npm の項目 | Cargo プロジェクトでの既定値 | 上書き |
-|---|---|---|
-| `name` | 選んだ package の名前を小文字化 | `--npm-name @scope/library` |
-| `version` | package の version | `--npm-version 1.2.3` |
-| `license` | package の license。未指定なら `UNLICENSED` | `--license MIT` |
+| npm の項目 | Cargo プロジェクトでの既定値                | 上書き                      |
+| ---------- | ------------------------------------------- | --------------------------- |
+| `name`     | 選んだ package の名前を小文字化             | `--npm-name @scope/library` |
+| `version`  | package の version                          | `--npm-version 1.2.3`       |
+| `license`  | package の license。未指定なら `UNLICENSED` | `--license MIT`             |
 
 workspace では `--package` で選んだ package の情報を使い、`[lib].name` は npm 名に影響しません。Cargo の workspace 継承にも対応し、watch では metadata の変更も次の生成に反映します。既存の Wasm を直接指定する場合はファイル名の stem を小文字化し、版は `0.1.0`、ライセンスは `UNLICENSED` を既定値にします。
 
@@ -150,6 +154,21 @@ cargo install taraba-cli --version 0.1.0 --locked
 
 Component ビルドには `wasm-tools 1.245.1`、Component の **npm ビルド**にはさらに Node.js 24+ と `@bytecodealliance/jco@1.39.0` が必要です。jco のパスは `--jco /path/to/jco` で指定します。Core 用 JS は CLI に内包し、Core の生成には Node / jco は不要です。利用者によるこのリポジトリの checkout や esbuild での生成は必要ありません。
 
+このガイドの未リリース Core API を使う場合は、代わりに checkout から導入します。
+
+```sh
+cargo install --path /path/to/taraba/crates/taraba-cli --locked --force
+```
+
+`taraba new hello --future` の後、生成したアプリの `Cargo.toml` に次を加え、Rust runtime も同じ checkout に揃えます。現在の自動 Box 化と task pool 設定には更新した runtime が必要です。CLI のインストールだけでは Rust の依存は更新されません。
+
+```toml
+[patch.crates-io]
+taraba = { path = "/path/to/taraba/crates/taraba" }
+```
+
+allocator や helpers も開発する場合は、対応する checkout 内のディレクトリに依存を向けます。これは未リリース版でライブラリを作る際の設定で、生成 npm の利用者に checkout は不要です。
+
 ## WIT から async Component を作る
 
 ```sh
@@ -197,11 +216,11 @@ taraba build --component --out-dir pkg
 生成する Cargo.toml は Wasm の小ささを優先し、taraba-allocator を
 `default-features = false` で指定します。用途に応じて、その依存の features に追加します。
 
-| 用途 | features |
-|---|---|
-| コードサイズを最小にする | なし |
-| 小さな領域の確保が多い | `size_classes`。main free list と実測で比較する |
-| 25→28→25 Bなど、同じ4 B単位の丸め結果に収まる拡縮が多い | `realloc_in_place` |
+| 用途                                                    | features                                        |
+| ------------------------------------------------------- | ----------------------------------------------- |
+| コードサイズを最小にする                                | なし                                            |
+| 小さな領域の確保が多い                                  | `size_classes`。main free list と実測で比較する |
+| 25→28→25 Bなど、同じ4 B単位の丸め結果に収まる拡縮が多い | `realloc_in_place`                              |
 
 両 feature は併用できます。`realloc_in_place` は既定で無効で、丸めたワード数が変わる
 拡縮では通常の allocate/copy/free に戻ります。専用の拡縮ベンチと、一般的な Vec の
@@ -226,12 +245,12 @@ ESM exports、`types` 条件、配布ファイルの明示的な `files` 一覧�
 Node の利用側では tarball（公開後はパッケージ）をインストールし、import と core module loader を渡します。
 
 ```js
-import { readFile } from 'node:fs/promises';
-import { instantiate } from '@example/orders';
+import { readFile } from "node:fs/promises";
+import { instantiate } from "@example/orders";
 
-const base = new URL(import.meta.resolve('@example/orders/package.json'));
+const base = new URL(import.meta.resolve("@example/orders/package.json"));
 const api = await instantiate(
-  async name => WebAssembly.compile(await readFile(new URL(name, base))),
+  async (name) => WebAssembly.compile(await readFile(new URL(name, base))),
   { add: { default: async (a, b) => (a + b) | 0 } },
 );
 console.log(await api.run(20, 21)); // 42。型は Promise<number>
@@ -273,17 +292,17 @@ export!(App);
 npm 化した出力の型を使う利用側の TypeScript です。load は直前の Node の core module loader と同じものを渡します。
 
 ```ts
-import { instantiate, type ImportObject } from '@example/orders';
+import { instantiate, type ImportObject } from "@example/orders";
 
 const imports: ImportObject = {
-  'example:orders/domain@0.1.0': {
-    evaluate: async order => ({ ...order, label: order.label + ' ✓' }),
+  "example:orders/domain@0.1.0": {
+    evaluate: async (order) => ({ ...order, label: order.label + " ✓" }),
   },
 };
 const api = await instantiate(load, imports);
 const order = await api.process({
   id: 4294967295,
-  label: '注文 🍣',
+  label: "注文 🍣",
   amounts: new Uint32Array([1, 2]),
 });
 const label: string = order.label;
@@ -303,12 +322,12 @@ taraba build \
 ```
 
 ```js
-import { readFile } from 'node:fs/promises';
-import { createHost } from '@example/tiny';
+import { readFile } from "node:fs/promises";
+import { createHost } from "@example/tiny";
 
 const host = createHost({ bindings: { add: async (a, b) => (a + b) | 0 } });
 const { instance } = await WebAssembly.instantiate(
-  await readFile(new URL(import.meta.resolve('@example/tiny/app.wasm'))),
+  await readFile(new URL(import.meta.resolve("@example/tiny/app.wasm"))),
   host.imports,
 );
 host.attach(instance.exports);
@@ -319,7 +338,7 @@ Core の JSPI/Future は `createHost` → 標準の Wasm instantiation → `atta
 
 Core では WIT から `AppBindings`、`AppExports`、`AppHost` を生成し、関数名と引数を TypeScript で検査します。既定の `pkg/index.js` / `index.d.ts` と package.json の exports から同じ型付き API を利用できます。メソッドを静的に生成するため、文字列による呼び出しなしで `host.run(a, b)` を補完できます。共有ランタイムは `runtime.mjs` / `runtime.d.mts` に分離します。どちらも `--debug` で説明付きエラーを選べ、release ではコードと[説明ページ](error-codes.md)へのリンクを出力し、説明辞書は同梱しません。
 
-Core/JSPI は I/O 待ちも含めて instance ごとに直列化します。host reject / trap は instance を閉じ、キャンセルやその経路での Rust Drop は保証しません。任意の Rust Future や native WIT async を駆動する executor ではありません。既存 executor の独立タスク進行・キャンセルが必要なら `--future` を選びます。こちらの WIT Promise resource には中身の型がないため、TS も正確に `Promise<unknown>` とします。WIT から async 戻り値まで型を付ける場合は Component を使います。[Core ランタイムの詳細](core-runtime.ja.md)に所有権・task 上限・エラー契約を分離しています。
+Core/JSPI は I/O 待ちも含めて instance ごとに直列化します。host reject / trap は instance を閉じ、呼び出し単位のキャンセルやその経路での Rust Drop は保証しません。任意の Rust Future や native WIT async を駆動する executor ではありません。独立した task の進行・キャンセルが必要なら `--future` を選びます。world・interface の WIT `future<T>` / `future` または同等の `async func` から、安全な Rust import と型付き Promise の export を生成します。数値・string・list・record などの値型と imported opaque resource の own/borrow に対応し、使う変換処理だけを生成します。標準 Canonical async ABI は Component を使います。従来の opaque Promise の payload は `unknown` のままです。両 Core 構成とも `host.dispose()` を持ち、停止中の task の扱いは異なります。[Core の契約](core-runtime.ja.md)と[型付き resource・終了処理の例](typescript.ja.md)を参照してください。
 
 ## JS の標準機能を使うヘルパー
 

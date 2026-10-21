@@ -15,14 +15,16 @@ jobs:
       - run: just msrv-check
   check:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.11.2
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: corepack enable
-      - run: corepack prepare pnpm@12.11.2 --activate
+          cache: pnpm
       - uses: extractions/setup-just@v4
       - run: just setup
       - run: just check
@@ -52,6 +54,9 @@ jobs:
             .cache/package-check-error.log
             .cache/library-check.json
             .cache/library-check-error.log
+            .cache/runtime-abi-check.json
+            .cache/runtime-abi-error.log
+            .cache/resources-error.log
             .cache/watch-check.json
             .cache/watch-check.log
             .cache/async-size/check.json
@@ -60,4 +65,49 @@ jobs:
             .cache/allocator/failure.log
             .cache/workers.json
             .cache/workers/log.txt
+          include-hidden-files: true
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.11.2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: extractions/setup-just@v4
+      - run: just setup
+      - run: pnpm exec playwright install --with-deps chrome webkit
+      - run: just browser-check
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: browser-verification
+          path: .cache/browser/results*
+          include-hidden-files: true
+  rich-async:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.11.2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: extractions/setup-just@v4
+      - run: just setup
+      - run: just check-rich-async
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: rich-async-verification
+          path: |
+            .cache/rich-async/report.json
+            .cache/rich-async/failure.log
           include-hidden-files: true

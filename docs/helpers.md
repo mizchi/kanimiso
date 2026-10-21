@@ -65,10 +65,10 @@ This measures size, not a performance ranking.
 <!-- helpers-regex:begin -->
 | Variant | Wasm B | JS B | Total B |
 |---|---:|---:|---:|
-| regex 1.13.1 default / std | 771150 | 1232 | 772382 |
-| regex 1.13.1 std only / std | 234711 | 1232 | 235943 |
-| taraba-helpers / std | 818 | 2057 | 2875 |
-| taraba-helpers / no_std | 818 | 2057 | 2875 |
+| regex 1.13.1 default / std | 771150 | 1338 | 772488 |
+| regex 1.13.1 std only / std | 234711 | 1338 | 236049 |
+| taraba-helpers / std | 818 | 2590 | 3408 |
+| taraba-helpers / no_std | 818 | 2590 | 3408 |
 <!-- helpers-regex:end -->
 
 JS counts include the shared runtime, generated application bindings and helper.

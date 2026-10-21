@@ -25,6 +25,10 @@ pub use value::{HostError, JsValue};
 /// Macro implementation detail, not a supported application API.
 #[doc(hidden)]
 pub mod __private {
+    // Revision 1: single-agent Promise/root ABI, 128-byte / 64-aligned task slots
+    // and automatic boxed task fallback. Bump on incompatible private ABI changes.
+    pub const RUNTIME_ABI_REVISION: u32 = 1;
+    pub const TASK_SLOTS: usize = crate::storage::TASK_SLOTS;
     #[cfg(feature = "test-api")]
     pub use crate::storage::{release, reserve, used};
     /// # Safety
@@ -51,6 +55,15 @@ pub mod __private {
 #[macro_export]
 macro_rules! export_runtime {
     () => {
+        const _: () = {
+            #[used]
+            #[unsafe(link_section = "taraba:runtime-abi")]
+            // Reuse the existing four-byte pool marker: revision in the upper
+            // 16 bits, capacity minus one in the lower 16. No extra static data.
+            static ABI: [u8; 4] = (($crate::__private::RUNTIME_ABI_REVISION << 16)
+                | ($crate::__private::TASK_SLOTS as u32 - 1))
+                .to_le_bytes();
+        };
         /// # Safety
         /// Called only by the matching host with a live, exclusively polled task.
         #[unsafe(no_mangle)]

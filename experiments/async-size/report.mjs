@@ -8,36 +8,66 @@ const noStdBackends = backends
   .map((b) => b.id);
 const n = (v) => v.toLocaleString("en-US");
 const signed = (v) => `${v > 0 ? "+" : ""}${n(v)}`;
+export function readmeEntries(r) {
+  return ["jspi", "future-typed", "bindgen", "embassy", "wit-bindgen"].flatMap(
+    (backend) =>
+      ["std", "no_std"]
+        .filter((mode) =>
+          backends.find((b) => b.id === backend).modes.includes(mode),
+        )
+        .map((mode) =>
+          r.entries.find(
+            (e) =>
+              e.backend === backend &&
+              e.mode === mode &&
+              e.allocator === "taraba" &&
+              e.workload === "async",
+          ),
+        ),
+  );
+}
 export function summary(r, lang) {
   const ja = lang === "ja";
+  const kb = (v) => (v / 1000).toFixed(3);
   const lines = [
-    ja ? "## ビルドサイズ比較" : "## Build size comparison",
+    ja
+      ? "同じ二段の Promise 待機・加算を行う共通の Rust 実装で比較しています。各構成は同じ3,507ケースを通過。taraba-allocator（size classes 無効）を共通で使い、wasm-opt -Oz と JS minify を適用した非圧縮サイズです。1 kB = 1,000 bytes。"
+      : "Each configuration compiles the same Rust implementation with two Promise waits and additions, and passes the same 3,507 cases. All use taraba-allocator with size classes disabled. Uncompressed sizes after wasm-opt -Oz and JS minification; 1 kB = 1,000 bytes.",
     "",
     ja
-      ? `同じ二段 await の Rust 実装、std、taraba-allocator（size classes 無効）。JS は minify、全 Wasm は wasm-opt -Oz 適用後の非圧縮 bytes。全${r.entries.length}成果物が同じ3,507ケースを通過。`
-      : `The same two-await Rust implementation, std and taraba-allocator (size classes disabled). Uncompressed bytes after JS minification and wasm-opt -Oz on every Wasm. All ${r.entries.length} artifacts pass the same 3,507 cases.`,
+      ? "![std・no_std 別のサイズ比較。オレンジが Wasm、青が JS。同じ縮尺で taraba・wasm-bindgen-futures・Embassy・wit-bindgen async を比較。](docs/assets/async-size.svg)"
+      : "![Size comparison by std and no_std. Orange is Wasm, blue is JS; taraba, wasm-bindgen-futures, Embassy and wit-bindgen async use the same scale.](docs/assets/async-size.svg)",
+    "",
+    "<details>",
+    ja
+      ? "<summary>数値を表で見る</summary>"
+      : "<summary>View the numbers as a table</summary>",
     "",
     ja
-      ? "| 構成 | async Wasm B | async JS B | 合計 B | 同期版からの増分 B |"
-      : "| Backend | Async Wasm B | Async JS B | Total B | Growth from sync B |",
-    "|---|---:|---:|---:|---:|",
+      ? "| 構成 | Rust | Wasm kB | JS kB | 合計 kB |"
+      : "| Configuration | Rust | Wasm kB | JS kB | Total kB |",
+    "|---|---|---:|---:|---:|",
   ];
-  for (const backend of stdBackends) {
-    const rows = r.entries.filter(
-      (e) =>
-        e.backend === backend && e.mode === "std" && e.allocator === "taraba",
-    );
-    const a = rows.find((e) => e.workload === "async");
-    const s = rows.find((e) => e.workload === "sync");
+  for (const a of readmeEntries(r)) {
     lines.push(
-      `| ${names[backend]} | ${n(a.wasm_bytes)} | ${n(a.js_bytes)} | ${n(a.runtime.raw)} | ${signed(a.runtime.raw - s.runtime.raw)} |`,
+      `| ${names[a.backend]} | ${a.mode} | ${kb(a.wasm_bytes)} | ${kb(a.js_bytes)} | **${kb(a.runtime.raw)}** |`,
     );
   }
   lines.push(
     "",
+    "</details>",
+    "",
     ja
-      ? "JSPI は instance を直列実行し、Component は型付き WIT async / Canonical ABI を含むため、API 契約は異なります。FuturesUnordered はタスク集合の参考値です。Component container は実行用 core Wasm と二重計上していません。[追加ランタイムの構成・no_std・圧縮・wee_alloc 対照・測定条件](docs/async-size.ja.md)。"
-      : "Contracts differ: JSPI serializes an instance; Component includes typed WIT async and Canonical ABI. FuturesUnordered is a task-collection reference. The Component container is not counted again alongside its runtime cores. See [added scheduler configurations, no_std, compression, wee_alloc controls and methodology](docs/async-size.md).",
+      ? "taraba の JSPI はエンジンによる Promise 待機、Future は Rust の `async` / `.await` を使う構成です。`taraba build` が生成 Wasm から自動選択します。上のサンプルは Future 構成です。std が既定で、no_std の雛形は `taraba new hello --future --no-std` で作れます。"
+      : "taraba JSPI uses engine-managed Promise waits; taraba Future runs Rust `async` / `.await`. `taraba build` detects the configuration from the compiled Wasm. The example above uses Future. std is the default; create a no_std scaffold with `taraba new hello --future --no-std`.",
+    "",
+    ja
+      ? "wit-bindgen async は WIT の `async func` から Rust の `async fn` / Future を生成する標準 Component 構成です。不要な `async-spawn` は無効にし、JS 側で実行するための jco の接続コードも計上しています。"
+      : "wit-bindgen async is the standard Component configuration: WIT `async func` generates Rust `async fn` / Futures. Unused `async-spawn` is disabled; totals include the jco bridge required to execute it in JavaScript.",
+    "",
+    ja
+      ? "Embassy は公式の WASM event-loop integration と wasm-bindgen-futures の JsFuture を使用します。この構成は std をリンクするため、no_std の値は載せていません。表はアプリ全体のサイズです。JSPI は instance を直列実行し、各 executor の並行実行・エラー・タスク容量の契約は異なります。[全ランタイムの測定結果・圧縮・wee_alloc 対照・測定条件](docs/async-size.ja.md)。"
+      : "Embassy uses its official WASM event-loop integration and wasm-bindgen-futures JsFuture. This configuration links std, so no no_std value is listed. These are whole application sizes. JSPI serializes an instance; executors differ in concurrency, errors and task capacity. See [all runtime measurements, compression, wee_alloc controls and methodology](docs/async-size.md).",
   );
   return lines.join("\n");
 }
@@ -69,8 +99,8 @@ export function render(r, lang) {
     r.created_at,
     "",
     ja
-      ? "taraba・Embassy・wasm-bindgen-futures・Tokio・async-executor・async-std・FuturesUnordered をビルドし直した。同じ二段 await の Rust ソース、3,507 入力、全 I/O 引数、外から解決する二回の待機を検査した。以下は測定時点のスナップショットであり、固定されたライブラリ overhead や全用途での順位ではない。"
-      : "Fresh builds of taraba, Embassy, wasm-bindgen-futures, Tokio, async-executor, async-std and FuturesUnordered. Every async build compiles the same two-await Rust source and passes 3,507 inputs, all I/O arguments and two externally controlled waits. These are dated application snapshots, not fixed library overhead or rankings for every workload.",
+      ? "taraba・Embassy・wasm-bindgen-futures・wit-bindgen・Tokio・async-executor・async-std・FuturesUnordered をビルドし直した。同じ二段 await の Rust ソース、3,507 入力、全 I/O 引数、外から解決する二回の待機を検査した。以下は測定時点のスナップショットであり、固定されたライブラリ overhead や全用途での順位ではない。"
+      : "Fresh builds of taraba, Embassy, wasm-bindgen-futures, wit-bindgen, Tokio, async-executor, async-std and FuturesUnordered. Every async build compiles the same two-await Rust source and passes 3,507 inputs, all I/O arguments and two externally controlled waits. These are dated application snapshots, not fixed library overhead or rankings for every workload.",
     "",
     ja
       ? "## std・同じ allocator で比べる"
@@ -91,6 +121,56 @@ export function render(r, lang) {
     return `| ${names[backend]} | ${n(s.runtime.raw)} | ${n(a.wasm_bytes)} | ${n(a.js_bytes)} | ${n(a.runtime.raw)} | ${signed(a.runtime.raw - s.runtime.raw)} | ${n(a.runtime.brotli)} |`;
   };
   for (const b of stdBackends) lines.push(row(b, "std"));
+  lines.push(
+    "",
+    ja
+      ? "## Rust Future: taraba と wit-bindgen"
+      : "## Rust Futures: taraba and wit-bindgen",
+    "",
+    ja
+      ? "両方とも同じ Rust の Future を駆動する。wit-bindgen は WIT `async func` と標準 Canonical ABI、taraba Future は WIT future<s32> から生成した型付き API を使い、内部では JS Promise と private resource ABI に変換する。wit-bindgen は必要な macros/async のみを有効にする。async-spawn を有効にした対照も別行に残し、その内部の FuturesUnordered の費用を最小構成と混ぜない。wit-bindgen 側は async func の処理であり、明示的な future<T> の受け渡しや spawn 操作は測っていない。"
+      : "Both drive the same Rust Future. wit-bindgen uses WIT async func and the standard Canonical ABI; taraba Future uses typed bindings generated from WIT future<s32>, internally mapped to JS Promises and a private resource ABI. The minimal wit-bindgen configuration enables only macros/async. A separate async-spawn control retains its internal FuturesUnordered support. The wit-bindgen workload uses async func rather than explicit future<T> value transfers or spawn operations.",
+    "",
+    ja
+      ? "| Rust | wit-bindgen Wasm B | taraba Future Wasm B | Wasm 削減率 | wit-bindgen Wasm + JS B | taraba Future Wasm + JS B |"
+      : "| Rust | wit-bindgen Wasm B | taraba Future Wasm B | Wasm reduction | wit-bindgen Wasm + JS B | taraba Future Wasm + JS B |",
+    "|---|---:|---:|---:|---:|---:|",
+  );
+  for (const mode of ["std", "no_std"]) {
+    const base = async("wit-bindgen", mode),
+      small = async("future-typed", mode);
+    lines.push(
+      `| ${mode} | ${n(base.wasm_bytes)} | ${n(small.wasm_bytes)} | ${(100 * (1 - small.wasm_bytes / base.wasm_bytes)).toFixed(1)}% | ${n(base.runtime.raw)} | ${n(small.runtime.raw)} |`,
+    );
+  }
+  lines.push(
+    "",
+    ja
+      ? "合計には、wit-bindgen の Component を JavaScript から実行する jco の JS と全 core Wasm を含む。Component container は二重計上しない。標準 Canonical async ABI と Core の private Promise ABI の機能差も含む比較であり、差分全体を Rust executor の削減量とは扱わない。"
+      : "Totals include the jco JavaScript and every core Wasm required to execute the wit-bindgen Component in JavaScript, without counting the Component container twice. Standard Canonical async ABI and the private Core Promise ABI have different capabilities; the full difference is not solely Rust executor savings.",
+  );
+  lines.push(
+    "",
+    ja
+      ? "## 型付き Core async の追加サイズ"
+      : "## Cost of typed Core async bindings",
+    "",
+    ja
+      ? "同じ compute Future を同じ allocator・最適化条件で駆動する。手動で Promise handle を変換する従来版と、WIT から安全な import/Guest を生成する版を比較した。公開 WIT のカスタムセクションはビルド時に照合して削除する。標準 Component の future ABI を実装した値ではない。"
+      : "Both versions drive the same compute Future with the same allocator and optimization settings. The control manually converts Promise handles; the typed version generates safe imports/Guest from WIT. Public WIT metadata is validated and stripped during the build. This is not an implementation of standard Component future ABI.",
+    "",
+    ja
+      ? "| Rust | 手動 Wasm B | 型付き Wasm B | Wasm 増分 B | 手動 JS B | 型付き JS B | JS 増分 B |"
+      : "| Rust | Manual Wasm B | Typed Wasm B | Wasm growth B | Manual JS B | Typed JS B | JS growth B |",
+    "|---|---:|---:|---:|---:|---:|---:|---:|",
+  );
+  for (const mode of ["std", "no_std"]) {
+    const manual = async("future", mode),
+      typed = async("future-typed", mode);
+    lines.push(
+      `| ${mode} | ${n(manual.wasm_bytes)} | ${n(typed.wasm_bytes)} | ${signed(typed.wasm_bytes - manual.wasm_bytes)} | ${n(manual.js_bytes)} | ${n(typed.js_bytes)} | ${signed(typed.js_bytes - manual.js_bytes)} |`,
+    );
+  }
   lines.push(
     "",
     ja
@@ -235,12 +315,12 @@ export function render(r, lang) {
   lines.push(
     "",
     ja
-      ? "taraba の実用ガイドは [使い方](guide.ja.md)。Component は WIT から型付き async 戻り値を得られ、Core Future の opaque Promise は unknown のまま。wasm-bindgen の公式生成型も保存しており、この比較の Rust→JS Promise 戻り値には any が含まれる。型情報と API 契約も含めて選ぶ。"
-      : "See the [usage guide](guide.md). Component provides WIT-typed async results; Core Future opaque Promise payloads remain unknown. The official wasm-bindgen declarations are retained and include any for this Rust-to-JS Promise result. Account for type information and API contracts when choosing.",
+      ? "taraba の実用ガイドは [使い方](guide.ja.md)。型付き Core Future は WIT future<s32> から Promise<number> を生成する。従来の opaque resource は unknown のまま。Component は標準の型付き async ABI を使う。wasm-bindgen の公式生成型も保存しており、この比較の Rust→JS Promise 戻り値には any が含まれる。"
+      : "See the [usage guide](guide.md). Typed Core Future generates Promise<number> from WIT future<s32>; legacy opaque resources remain unknown. Component uses the standard typed async ABI. The official wasm-bindgen declarations are retained and include any for this Rust-to-JS Promise result.",
     "",
     ja ? "## 検証・条件・再実行" : "## Verification and reproduction",
     "",
-    `${r.engine}; ${r.versions.rust}; Binaryen ${r.versions.binaryen}; wasm-bindgen ${r.versions.wasm_bindgen}; wasm-bindgen-futures ${r.versions.wasm_bindgen_futures}; js-sys ${r.versions.js_sys}; Embassy ${r.versions.embassy_executor}; Tokio ${r.versions.tokio}; async-executor ${r.versions.async_executor}; async-std ${r.versions.async_std}; futures-util ${r.versions.futures_util}; jco ${r.versions.jco}.`,
+    `${r.engine}; ${r.versions.rust}; Binaryen ${r.versions.binaryen}; wasm-bindgen ${r.versions.wasm_bindgen}; wasm-bindgen-futures ${r.versions.wasm_bindgen_futures}; js-sys ${r.versions.js_sys}; wit-bindgen ${r.versions.wit_bindgen}; Embassy ${r.versions.embassy_executor}; Tokio ${r.versions.tokio}; async-executor ${r.versions.async_executor}; async-std ${r.versions.async_std}; futures-util ${r.versions.futures_util}; jco ${r.versions.jco}; Rolldown ${r.versions.rolldown}.`,
     "",
     ja
       ? `npm pack から展開した全${r.entries.length}成果物で同じ3,507ケースと strict TS を通した。async ${r.entries.filter((e) => e.workload === "async").length}成果物では二回の外部制御待機も確認。Core JSPI の直列実行とその他の独立タスク進行を別々に検査した。追加ランタイムと Embassy の開始順は FIFO と仮定していない。Embassy の 1,025 件投入は 1,024 件成功・超過1件だけ reject、その後の pool 再利用も成功した。キャンセル・Drop・fatal・JS オブジェクト同一性が全方式で等しいとの主張はしていない。`

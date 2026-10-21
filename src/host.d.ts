@@ -25,6 +25,7 @@ export interface Host {
   cancel(token: number): boolean;
   activeTasks(): number[];
   stats(): RuntimeStats;
+  dispose(): void;
   attach(exports: WebAssembly.Exports): void;
 }
 export function createHost(options?: HostOptions): Host;

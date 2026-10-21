@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="692" viewBox="0 0 960 692" role="img" aria-labelledby="title desc">
+<title id="title">Async application size: taraba, wasm-bindgen-futures, Embassy and wit-bindgen</title>
+<desc id="desc">Uncompressed Wasm and minified JavaScript in kB. Stacked bars share one zero-based scale across std and no_std. Every configuration passes the same 3,507 cases with two Promise waits. Whole application sizes, using taraba-allocator with size classes disabled. Execution contracts differ.</desc>
+<style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#23313c}.muted{fill:#586672;font-size:12px}.number{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:16px;text-anchor:end;font-variant-numeric:tabular-nums}.wasm{fill:#df6638}.js{fill:#427e9d}</style>
+<rect x="0.5" y="0.5" width="959" height="691" rx="12" fill="#ffffff" stroke="#dce2e6"/>
+<text x="32" y="42" font-size="25" font-weight="700">Async application size</text>
+<text x="32" y="66" font-size="13" class="muted">Two Promise waits · wasm-opt -Oz · minified JS · uncompressed</text>
+<rect class="wasm" x="32" y="84" width="12" height="12" rx="2"/>
+<text x="50" y="94" class="muted">Wasm</text>
+<rect class="js" x="111" y="84" width="12" height="12" rx="2"/>
+<text x="129" y="94" class="muted">JavaScript</text>
+<text x="928" y="94" class="muted" text-anchor="end">2026-10-21 · 1 kB = 1,000 bytes</text>
+<text x="32" y="132" class="muted" font-weight="600">Configuration</text>
+<text x="270" y="132" class="muted" font-weight="600">Wasm + JavaScript</text>
+<text x="700" y="132" class="muted" text-anchor="end" font-weight="600">Wasm kB</text>
+<text x="800" y="132" class="muted" text-anchor="end" font-weight="600">JS kB</text>
+<text x="928" y="132" class="muted" text-anchor="end" font-weight="600">Total kB</text>
+<path d="M32 146H928" stroke="#dce2e6"/>
+<text x="32" y="170" font-size="13" font-weight="700">std</text>
+<g id="jspi-std">
+<title>taraba JSPI / std: Wasm 5.227 kB + JS 1.209 kB = 6.436 kB</title>
+<rect x="20" y="182" width="920" height="38" rx="6" fill="#fff5ef"/>
+<text x="32" y="208" font-size="15" font-weight="600">taraba JSPI</text>
+<rect class="wasm" x="270" y="193" width="17.249" height="20"/>
+<rect class="js" x="287.249" y="193" width="3.990" height="20"/>
+<text x="700" y="208" class="number">5.227</text>
+<text x="800" y="208" class="number">1.209</text>
+<text x="928" y="208" class="number" font-weight="700">6.436</text>
+</g>
+<g id="future-typed-std">
+<title>taraba Future / std: Wasm 6.640 kB + JS 3.695 kB = 10.335 kB</title>
+<rect x="20" y="226" width="920" height="38" rx="6" fill="#fff5ef"/>
+<text x="32" y="252" font-size="15" font-weight="600">taraba Future</text>
+<rect class="wasm" x="270" y="237" width="21.912" height="20"/>
+<rect class="js" x="291.912" y="237" width="12.194" height="20"/>
+<text x="700" y="252" class="number">6.640</text>
+<text x="800" y="252" class="number">3.695</text>
+<text x="928" y="252" class="number" font-weight="700">10.335</text>
+</g>
+<g id="bindgen-std">
+<title>wasm-bindgen-futures / std: Wasm 15.185 kB + JS 4.478 kB = 19.663 kB</title>
+<text x="32" y="296" font-size="15" font-weight="400">wasm-bindgen-futures</text>
+<rect class="wasm" x="270" y="281" width="50.111" height="20"/>
+<rect class="js" x="320.111" y="281" width="14.777" height="20"/>
+<text x="700" y="296" class="number">15.185</text>
+<text x="800" y="296" class="number">4.478</text>
+<text x="928" y="296" class="number" font-weight="700">19.663</text>
+</g>
+<g id="embassy-std">
+<title>Embassy + JsFuture / std: Wasm 13.324 kB + JS 5.242 kB = 18.566 kB</title>
+<text x="32" y="340" font-size="15" font-weight="400">Embassy + JsFuture</text>
+<rect class="wasm" x="270" y="325" width="43.969" height="20"/>
+<rect class="js" x="313.969" y="325" width="17.299" height="20"/>
+<text x="700" y="340" class="number">13.324</text>
+<text x="800" y="340" class="number">5.242</text>
+<text x="928" y="340" class="number" font-weight="700">18.566</text>
+</g>
+<g id="wit-bindgen-std">
+<title>wit-bindgen + jco / std: Wasm 21.871 kB + JS 66.825 kB = 88.696 kB</title>
+<text x="32" y="384" font-size="15" font-weight="400">wit-bindgen + jco</text>
+<rect class="wasm" x="270" y="369" width="72.174" height="20"/>
+<rect class="js" x="342.174" y="369" width="220.523" height="20"/>
+<text x="700" y="384" class="number">21.871</text>
+<text x="800" y="384" class="number">66.825</text>
+<text x="928" y="384" class="number" font-weight="700">88.696</text>
+</g>
+<text x="32" y="426" font-size="13" font-weight="700">no_std</text>
+<g id="jspi-no_std">
+<title>taraba JSPI / no_std: Wasm 0.248 kB + JS 1.209 kB = 1.457 kB</title>
+<rect x="20" y="438" width="920" height="38" rx="6" fill="#fff5ef"/>
+<text x="32" y="464" font-size="15" font-weight="600">taraba JSPI</text>
+<rect class="wasm" x="270" y="449" width="0.818" height="20"/>
+<rect class="js" x="270.818" y="449" width="3.990" height="20"/>
+<text x="700" y="464" class="number">0.248</text>
+<text x="800" y="464" class="number">1.209</text>
+<text x="928" y="464" class="number" font-weight="700">1.457</text>
+</g>
+<g id="future-typed-no_std">
+<title>taraba Future / no_std: Wasm 1.575 kB + JS 3.695 kB = 5.270 kB</title>
+<rect x="20" y="482" width="920" height="38" rx="6" fill="#fff5ef"/>
+<text x="32" y="508" font-size="15" font-weight="600">taraba Future</text>
+<rect class="wasm" x="270" y="493" width="5.197" height="20"/>
+<rect class="js" x="275.197" y="493" width="12.194" height="20"/>
+<text x="700" y="508" class="number">1.575</text>
+<text x="800" y="508" class="number">3.695</text>
+<text x="928" y="508" class="number" font-weight="700">5.270</text>
+</g>
+<g id="bindgen-no_std">
+<title>wasm-bindgen-futures / no_std: Wasm 9.783 kB + JS 4.478 kB = 14.261 kB</title>
+<text x="32" y="552" font-size="15" font-weight="400">wasm-bindgen-futures</text>
+<rect class="wasm" x="270" y="537" width="32.284" height="20"/>
+<rect class="js" x="302.284" y="537" width="14.777" height="20"/>
+<text x="700" y="552" class="number">9.783</text>
+<text x="800" y="552" class="number">4.478</text>
+<text x="928" y="552" class="number" font-weight="700">14.261</text>
+</g>
+<g id="wit-bindgen-no_std">
+<title>wit-bindgen + jco / no_std: Wasm 11.236 kB + JS 66.825 kB = 78.061 kB</title>
+<text x="32" y="596" font-size="15" font-weight="400">wit-bindgen + jco</text>
+<rect class="wasm" x="270" y="581" width="37.079" height="20"/>
+<rect class="js" x="307.079" y="581" width="220.523" height="20"/>
+<text x="700" y="596" class="number">11.236</text>
+<text x="800" y="596" class="number">66.825</text>
+<text x="928" y="596" class="number" font-weight="700">78.061</text>
+</g>
+<path d="M270 623H600" stroke="#bac4cb"/>
+<path d="M270.000 623v5" stroke="#bac4cb"/>
+<text x="270.000" y="643" class="muted" text-anchor="middle">0</text>
+<path d="M352.500 623v5" stroke="#bac4cb"/>
+<text x="352.500" y="643" class="muted" text-anchor="middle">25</text>
+<path d="M435.000 623v5" stroke="#bac4cb"/>
+<text x="435.000" y="643" class="muted" text-anchor="middle">50</text>
+<path d="M517.500 623v5" stroke="#bac4cb"/>
+<text x="517.500" y="643" class="muted" text-anchor="middle">75</text>
+<path d="M600.000 623v5" stroke="#bac4cb"/>
+<text x="600.000" y="643" class="muted" text-anchor="middle">100</text>
+<text x="270" y="663" class="muted">Same scale for both groups · kB</text>
+<text x="32" y="679" class="muted">Whole applications · 3,507 shared cases · Component includes jco · Embassy uses std</text>
+</svg>

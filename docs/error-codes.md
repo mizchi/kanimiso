@@ -84,9 +84,9 @@ A pending Future already has an outcome. This indicates an inconsistent private 
 
 **task cancelled**
 
-Future のタスクが明示的にキャンセルされました。`error.name` は `AbortError` です。Rust の task と subscription を解放しますが、元の JS I/O を自動で abort するわけではありません。
+Future のタスクが明示的にキャンセルされました。`error.name` は `AbortError` です。Rust の task と subscription を解放しますが、既定では元の JS I/O は abort しません。`--abort-signal` ビルドでは呼び出しの context.signal も abort するので、fetch などへその signal を渡してください。外部 AbortSignal からのキャンセルは RT09 に置き換えず、signal.reason をそのまま返します。
 
-A Future task was explicitly cancelled. The error's name is `AbortError`. Cancellation releases Rust task/subscription state but does not automatically abort the original JS I/O.
+A Future task was explicitly cancelled. The error's name is `AbortError`. Cancellation releases Rust task/subscription state. The default build does not abort JS I/O. With `--abort-signal`, the call's context.signal is also aborted; pass it to fetch or another cooperating API. External signal cancellation preserves signal.reason rather than replacing it with RT09.
 
 ## RT10
 
@@ -144,8 +144,33 @@ Links are attached to taraba's own JS runtime errors and the opt-in `PN01` panic
 
 ## Retired codes / 廃止したコード
 
-- `RT13`: shared-memory の runtime 検査。現在は Core ビルド時に拒否します。Shared memory is now rejected at build time.
 - `RT14`: bindings の runtime 型検査。現在は WIT・生成 TS 型の契約に従います。Binding types now follow WIT/generated TS.
 - `RT15`: JSPI の存在検査。現在は対応済みエンジンを前提とします。JSPI-capable engines are assumed.
 
 [Core API reference](core-runtime.md) · [Core API リファレンス](core-runtime.ja.md)
+
+## RT13
+
+**host disposed**
+
+`host.dispose()` によりインスタンスが終了しました。再度の dispose は何もせず、新しい呼び出しや attach は拒否します。Future は poll 終了後に Drop し、subscription と JS root を解放します。`--abort-signal` のホスト I/O には abort を通知します。JSPI の停止スタックは元の I/O が完了するまで残りますが、呼び出し元の Promise は直ちに reject します。
+
+The host was explicitly disposed. Disposal is idempotent; further calls and attachment are refused. Future tasks are dropped after active polling finishes, subscriptions and JS roots are released, and cooperating I/O in abort-enabled builds is aborted. JSPI caller Promises reject immediately; an already suspended stack remains engine-owned until its original I/O settles.
+
+## RS01
+
+**invalid resource lease**
+
+解放済み、または別 instance の resource lease です。The resource lease is disposed or belongs to another instance.
+
+## RS02
+
+**resource ownership conflict**
+
+Rust 所有中または borrow 中の resource を dispose / 移譲しようとしました。The resource is Rust-owned or borrowed and cannot be disposed or transferred now.
+
+## RS03
+
+**resource already owned**
+
+同じホスト実装を重複して own として返しました。The same host implementation was returned as a new owner more than once.

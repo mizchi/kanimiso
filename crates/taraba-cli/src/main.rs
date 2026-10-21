@@ -46,10 +46,26 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
     };
     match args.first().map(String::as_str) {
         Some("--version") => println!("taraba {}", env!("CARGO_PKG_VERSION")),
+        Some("bindgen") => {
+            let mut i = 1;
+            while i < args.len() {
+                match args[i].as_str() {
+                    "--wit" | "--world" | "--out-dir" => i += 2,
+                    other => return Err(format!("unknown bindgen argument: {other}").into()),
+                }
+            }
+            let wit = PathBuf::from(value("--wit")?.unwrap_or_else(|| "wit".into()));
+            let world = value("--world")?;
+            let output = PathBuf::from(
+                value("--out-dir")?
+                    .ok_or("bindgen requires --out-dir (normally called by Cargo build.rs)")?,
+            );
+            taraba_cli::generate_core_bindings(&wit, world.as_deref(), &output)?;
+        }
         Some("insight") => insight_command::run(&args[1..])?,
         Some("update") => rebuild::run(&args[1..])?,
         None | Some("--help") => println!(
-            "taraba update [--out-dir pkg] [--check] (sync with installed CLI; never publishes)\ntaraba insight [pkg | file.wasm] [--top 20] [--filter <substring>] [--retained] [--paths <substring>] [--json]\ntaraba new <directory> [--no-std] [--component | --future | --jspi]\ntaraba build <raw.wasm> --wit <path> [--watch] [--world <name>] [--out-dir pkg] [--binaryen <bin-directory>] [--component | --future | --jspi]\ntaraba build [--watch] [--manifest-path Cargo.toml] [--package <name>] [--wit wit] [--features <list>] [--no-default-features]\n  Without a Wasm input: compile the Cargo cdylib in release mode for wasm32-unknown-unknown; defaults: Cargo.toml, package wit/, pkg/ output\n  Core runtime: auto-detect JSPI/Future from compiled runtime imports/exports and WIT resources; explicit flags override\n  --watch: rebuild on Rust/WIT/local dependency changes; Cargo release wasm32 builds without a Wasm input, otherwise watch the supplied Wasm/WIT; failed builds retain previous output\n  --component: standard Component Model / Canonical ABI, native WIT async and rich types; requires wasm-tools\n  --jspi: force the scalar WIT/Core JSPI, serialized per instance; rejection/traps are fatal, no cancellation\n  --future: force the Rust Future / spawn_local / cancel runtime; opaque resource payloads\n  Core builds always generate pkg/index.js, index.d.ts and package.json; publish the pkg directory with npm/pnpm\n  --npm-name <name> / --npm-version <version> / --license <SPDX>: override Cargo package identity; raw Wasm defaults to its filename, 0.1.0, UNLICENSED; never publishes\n  --component --npm-name additionally requires jco (use --jco <executable>); generates standard jco bindings\n  --wasm-tools <executable>: component tool path\n  --debug / --probes: Core profiles only\n  --insight: retain optimized Core analysis under pkg/.taraba; excluded from npm packages\n  --no-size-warnings: suppress advisory formatting and dependency-size warnings (enabled by default)\nBinaryen 133. JavaScript async baseline: Safari 27+ / JSPI-capable V8. No automatic fallback between execution contracts."
+            "taraba update [--out-dir pkg] [--check] (sync with installed CLI; never publishes)\ntaraba bindgen [--wit wit] [--world <name>] --out-dir <OUT_DIR> (Core Rust bindings; called by build.rs)\ntaraba insight [pkg | file.wasm] [--top 20] [--filter <substring>] [--retained] [--paths <substring>] [--json]\ntaraba new <directory> [--no-std] [--component | --future | --jspi]\ntaraba build <raw.wasm> --wit <path> [--watch] [--world <name>] [--out-dir pkg] [--binaryen <bin-directory>] [--component | --future | --jspi]\ntaraba build [--watch] [--manifest-path Cargo.toml] [--package <name>] [--wit wit] [--features <list>] [--no-default-features]\n  Without a Wasm input: compile the Cargo cdylib in release mode for wasm32-unknown-unknown; defaults: Cargo.toml, package wit/, pkg/ output\n  Core runtime: auto-detect JSPI/Future from compiled runtime imports/exports and WIT resources; explicit flags override\n  --watch: rebuild on Rust/WIT/local dependency changes; Cargo release wasm32 builds without a Wasm input, otherwise watch the supplied Wasm/WIT; failed builds retain previous output\n  --component: standard Component Model / Canonical ABI, native WIT async and rich types; requires wasm-tools\n  --jspi: force the scalar WIT/Core JSPI, serialized per instance; rejection/traps are fatal, no cancellation\n  --future: force the Rust Future / spawn_local / cancel runtime; typed world/interface values, future<T> and opaque own/borrow resources\n  Core builds always generate pkg/index.js, index.d.ts and package.json; publish the pkg directory with npm/pnpm\n  --npm-name <name> / --npm-version <version> / --license <SPDX>: override Cargo package identity; raw Wasm defaults to its filename, 0.1.0, UNLICENSED; never publishes\n  --component --npm-name additionally requires jco (use --jco <executable>); generates standard jco bindings\n  --wasm-tools <executable>: component tool path\n  --debug / --probes: Core profiles only\n  --task-slots <1..65536>: compile-time Core Future pool capacity (default 1024)\n  --abort-signal: opt-in per-call AbortSignal and host callback context (Core Future only)\n  --insight: retain optimized Core analysis under pkg/.taraba; excluded from npm packages\n  --no-size-warnings: suppress advisory formatting and dependency-size warnings (enabled by default)\nBinaryen 133. JavaScript async baseline: Safari 27+ / JSPI-capable V8. No automatic fallback between execution contracts."
         ),
         Some("new") => {
             let profile = profile(args.get(2..).unwrap_or_default())?;
@@ -83,7 +99,7 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
                 match args[i].as_str() {
                     "--wit" | "--world" | "--out-dir" | "--binaryen" | "--wasm-tools" | "--jco"
                     | "--npm-name" | "--npm-version" | "--license" | "--manifest-path"
-                    | "--package" | "--features" => i += 2,
+                    | "--package" | "--features" | "--task-slots" => i += 2,
                     "--debug"
                     | "--probes"
                     | "--jspi"
@@ -91,7 +107,7 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
                     | "--component"
                     | "--watch"
                     | "--no-default-features" => i += 1,
-                    "--insight" | "--no-size-warnings" => i += 1,
+                    "--insight" | "--no-size-warnings" | "--abort-signal" => i += 1,
                     other => return Err(format!("unknown argument: {other}").into()),
                 }
             }
@@ -123,11 +139,16 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
                 return Err("Component npm output requires --npm-name".into());
             }
             if component
-                && args
-                    .iter()
-                    .any(|a| matches!(a.as_str(), "--debug" | "--probes" | "--insight"))
+                && args.iter().any(|a| {
+                    matches!(
+                        a.as_str(),
+                        "--debug" | "--probes" | "--insight" | "--abort-signal" | "--task-slots"
+                    )
+                })
             {
-                return Err("--debug / --probes / --insight are Core-only options".into());
+                return Err(
+                    "--debug / --probes / --insight / --abort-signal are Core-only options".into(),
+                );
             }
             if !component && (value("--wasm-tools")?.is_some() || value("--jco")?.is_some()) {
                 return Err("--wasm-tools / --jco require --component".into());
@@ -139,6 +160,12 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
             if wit.is_none() && input.is_some() {
                 return Err("--wit is required".into());
             }
+            let task_slots = value("--task-slots")?
+                .map(|s| s.parse::<u32>())
+                .transpose()?;
+            if task_slots.is_some_and(|s| !(1..=65536).contains(&s)) {
+                return Err("--task-slots must be 1..=65536".into());
+            }
             let o = BuildOptions {
                 input: input.clone().unwrap_or_default(),
                 wit: wit.clone().unwrap_or_default(),
@@ -147,6 +174,8 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
                 binaryen: value("--binaryen")?.map(PathBuf::from),
                 debug: args.contains(&"--debug".into()),
                 probes: args.contains(&"--probes".into()),
+                abort_signal: args.iter().any(|a| a == "--abort-signal"),
+                task_slots,
                 insight: args.iter().any(|a| a == "--insight"),
                 profile,
             };
@@ -155,6 +184,8 @@ fn main_impl() -> Result<(), Box<dyn std::error::Error>> {
             let jco = PathBuf::from(value("--jco")?.unwrap_or_else(|| "jco".into()));
             if watching || input.is_none() {
                 let project = project_build::Options {
+                    world: o.world.clone(),
+                    task_slots,
                     input,
                     wit,
                     output: o.output.clone(),

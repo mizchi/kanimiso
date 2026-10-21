@@ -17,7 +17,10 @@ for (const debug of [false, true])
       format: "esm",
       platform: "neutral",
       write: false,
-      define: { __JSRT_DEBUG_ERRORS__: String(debug) },
+      define: {
+        __JSRT_DEBUG_ERRORS__: String(debug),
+        __TARABA_ABORT__: "false",
+      },
     });
     const code = b.outputFiles[0].text;
     const { runtimeError } = await import(
@@ -46,7 +49,10 @@ for (const debug of [false, true])
       format: "esm",
       platform: "neutral",
       write: false,
-      define: { __JSRT_DEBUG_ERRORS__: String(debug) },
+      define: {
+        __JSRT_DEBUG_ERRORS__: String(debug),
+        __TARABA_ABORT__: "false",
+      },
     });
     const { createHost } = await import(
       `data:text/javascript;base64,${Buffer.from(b.outputFiles[0].text).toString("base64")}`

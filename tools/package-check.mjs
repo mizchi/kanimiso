@@ -89,6 +89,7 @@ try {
   const install = join(temp, "installed");
   const env = {
     ...rustEnv,
+    TARABA_BINDGEN: join(install, "bin/taraba"),
     // Cargo archives normalize source mtimes. A shared target can incorrectly
     // reuse an older binary with the same package version. Key it by archive bytes.
     CARGO_TARGET_DIR: resolve(

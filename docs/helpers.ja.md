@@ -53,10 +53,10 @@ RegExp は一度生成して繰り返し使えます。Rust Future の `.await` 
 <!-- helpers-regex:begin -->
 | 構成 | Wasm B | JS B | 合計 B |
 |---|---:|---:|---:|
-| regex 1.13.1 default / std | 771150 | 1232 | 772382 |
-| regex 1.13.1 std only / std | 234711 | 1232 | 235943 |
-| taraba-helpers / std | 818 | 2057 | 2875 |
-| taraba-helpers / no_std | 818 | 2057 | 2875 |
+| regex 1.13.1 default / std | 771150 | 1338 | 772488 |
+| regex 1.13.1 std only / std | 234711 | 1338 | 236049 |
+| taraba-helpers / std | 818 | 2590 | 3408 |
+| taraba-helpers / no_std | 818 | 2590 | 3408 |
 <!-- helpers-regex:end -->
 
 JS には共有 runtime・アプリの生成コード・ヘルパーをすべて含めます。RegExp ヘルパー単体は 611 B です。使わないアプリではこのファイルも接続コードも生成せず、既存の runtime.mjs は同じ内容です。同じ URL の ESM を使う場合の共有については [ESM キャッシュ](esm-cache.ja.md)を参照してください。

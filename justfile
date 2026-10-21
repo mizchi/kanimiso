@@ -48,6 +48,50 @@ library-check: build-host
     cargo build --locked --release -p taraba-cli
     node tools/check-library.mjs
 
+# Verify generated Core codecs, ownership, TS and zero-cost unused type declarations.
+core-types-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-core-types.mjs
+
+# Oversized Futures, per-call cancellation, real fetch, strict TS, and size controls.
+task-features-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-task-features.mjs
+
+# Same rich WIT workload and Rust algorithm, with independent memory instrumentation.
+compare-rich-async: build-host
+    cargo build --locked --release -p taraba-cli
+    cargo fmt --manifest-path experiments/rich-async/Cargo.toml -- --check
+    pnpm exec prettier --check experiments/rich-async/*.mjs
+    node --no-liftoff tools/compare-rich-async.mjs --snapshot
+
+# Real Chrome and Playwright WebKit (not a claim of Safari.app verification).
+browser-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/build-browser-fixtures.mjs
+    pnpm exec playwright test
+
+interfaces-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-interfaces.mjs
+
+resources-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-resources.mjs
+
+pool-check: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-pool.mjs
+
+check-rich-async: build-host
+    cargo build --locked --release -p taraba-cli
+    cargo fmt --manifest-path experiments/rich-async/Cargo.toml -- --check
+    node --no-liftoff tools/compare-rich-async.mjs --check
+
+compare-core-types: build-host
+    cargo build --locked --release -p taraba-cli
+    node tools/check-core-types.mjs --snapshot
+
 panic-check: build-host
     cargo build --locked --release -p taraba-cli
     node tools/check-panic.mjs
@@ -115,6 +159,8 @@ fmt:
     cargo fmt --manifest-path verification/kani/models/Cargo.toml
     rustfmt --edition 2021 --config skip_children=true verification/kani/harnesses/*.rs
     cargo fmt --manifest-path experiments/async-size/Cargo.toml --all
+    cargo fmt --manifest-path experiments/rich-async/Cargo.toml
+    pnpm exec prettier --write experiments/rich-async/*.mjs
     pnpm exec prettier --write experiments/async-size/*.mjs experiments/async-size/bindgen/io.mjs
     node tools/prepare-allocator.mjs
     cargo fmt --manifest-path experiments/allocator/Cargo.toml

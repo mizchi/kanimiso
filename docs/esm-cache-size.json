@@ -1,0 +1,68 @@
+{
+  "recorded_at": "2026-10-21",
+  "source": "just library-check: .cache/library-check.json#esm_cache",
+  "bundler": {
+    "name": "rolldown",
+    "version": "1.2.14"
+  },
+  "same_realm": true,
+  "safari_browser_verified": false,
+  "cases": [
+    {
+      "profile": "jspi",
+      "packages": [
+        "@taraba-tests/jspi-no-std",
+        "@taraba-tests/jspi-std"
+      ],
+      "runtime_sha256": "daba57afced3edbd5e6e580913a511ff10c6455ecfc318c46a0cc705e10ef20e",
+      "runtime_source_bytes": 1128,
+      "direct_import_shared": false,
+      "same_url_cached": true,
+      "bundled_function_identity_shared": true,
+      "suspension_bindings_stats_and_fatal_state_isolated": true,
+      "externref_tables_isolated": false,
+      "bundles": [
+        {
+          "shared": false,
+          "runtime_copies": 2,
+          "common_cases_per_library": 3507,
+          "probe_bundle_js_bytes": 2794
+        },
+        {
+          "shared": true,
+          "runtime_copies": 1,
+          "common_cases_per_library": 3507,
+          "probe_bundle_js_bytes": 1638
+        }
+      ]
+    },
+    {
+      "profile": "future",
+      "packages": [
+        "@taraba-tests/future-no-std",
+        "@taraba-tests/future-std"
+      ],
+      "runtime_sha256": "b84754cfe6a1f5a06af21e88f7c4ee7cb8f9b3a106890ab2efb27b12537b60f8",
+      "runtime_source_bytes": 3585,
+      "direct_import_shared": false,
+      "same_url_cached": true,
+      "bundled_function_identity_shared": true,
+      "suspension_bindings_stats_and_fatal_state_isolated": true,
+      "externref_tables_isolated": true,
+      "bundles": [
+        {
+          "shared": false,
+          "runtime_copies": 2,
+          "common_cases_per_library": 3507,
+          "probe_bundle_js_bytes": 7766
+        },
+        {
+          "shared": true,
+          "runtime_copies": 1,
+          "common_cases_per_library": 3507,
+          "probe_bundle_js_bytes": 4121
+        }
+      ]
+    }
+  ]
+}

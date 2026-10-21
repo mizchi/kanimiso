@@ -87,6 +87,8 @@ mod tests {
                 binaryen: None,
                 debug: false,
                 probes: false,
+                abort_signal: false,
+                task_slots: None,
                 insight: false,
                 profile: ExecutionProfile::Jspi,
             };

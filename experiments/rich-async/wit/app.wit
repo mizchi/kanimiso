@@ -1,0 +1,13 @@
+package bench:rich;
+world app {
+  record packet { id: u32, label: string, payload: list<u8> }
+  import transform: async func(value: packet) -> result<packet, string>;
+  export process: async func(value: packet) -> result<packet, string>;
+}
+world measured {
+  include app;
+  export heap-live: func() -> u32;
+  export heap-peak: func() -> u32;
+  export heap-reset: func();
+  export linear-bytes: func() -> u32;
+}

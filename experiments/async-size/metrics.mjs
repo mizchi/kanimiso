@@ -32,3 +32,34 @@ export function growth(sync, async) {
     runtime_bytes: async.runtime.raw - sync.runtime.raw,
   };
 }
+export function verifyTypedSizeBudget(entries) {
+  return ["std", "no_std"].map((mode) => {
+    const find = (backend) =>
+      entries.find(
+        (e) =>
+          e.backend === backend &&
+          e.mode === mode &&
+          e.workload === "async" &&
+          e.allocator === "taraba",
+      );
+    const manual = find("future"),
+      typed = find("future-typed");
+    assert.ok(
+      manual && typed,
+      `missing typed/manual Core size control: ${mode}`,
+    );
+    assert.ok(
+      typed.wasm_bytes <= manual.wasm_bytes,
+      `${mode}: typed bindings increased Wasm size`,
+    );
+    assert.ok(
+      typed.js_bytes <= manual.js_bytes,
+      `${mode}: typed bindings increased JavaScript size`,
+    );
+    return {
+      mode,
+      wasm_bytes: typed.wasm_bytes - manual.wasm_bytes,
+      js_bytes: typed.js_bytes - manual.js_bytes,
+    };
+  });
+}

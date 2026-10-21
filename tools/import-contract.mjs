@@ -18,7 +18,7 @@ export const importNames = [
   "subscribe",
   "unsubscribe",
 ];
-export const mangleProps = `^(${[...importNames, "state", "ptr", "queued", "value", "rejected"].join("|")})$`;
+export const mangleProps = `^(${[...importNames, "state", "ptr", "queued", "value", "rejected", "scope", "controller", "context", "close", "tasks"].join("|")})$`;
 
 // This operates on our hashed, comment-free expression bodies, before WAT
 // assembly. Match a whole expression so trailing function/module ')' survive.

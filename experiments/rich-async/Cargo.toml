@@ -1,0 +1,24 @@
+[package]
+name = "rich-async"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[workspace]
+[lib]
+crate-type = ["cdylib"]
+[features]
+default = []
+core-runtime = ["dep:taraba"]
+component = []
+std = ["taraba?/std"]
+measured = []
+[dependencies]
+taraba = {path = "../../crates/taraba", default-features = false, optional = true}
+taraba-allocator = {path = "../../crates/taraba-allocator", default-features = false}
+wit-bindgen = {version = "=0.58.0", default-features = false, features = ["macros", "async"]}
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = false
