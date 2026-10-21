@@ -204,7 +204,12 @@ try {
       const pkg = join(project, "pkg");
       const name = JSON.parse(readFileSync(join(pkg, "package.json"))).name;
       run("pnpm", ["pack", "--pack-destination", packs], pkg);
-      run("pnpm", ["init"], consumer);
+      // Do not let pnpm init select a different packageManager version before
+      // the offline install; use the runner's already-installed pnpm.
+      writeFileSync(
+        join(consumer, "package.json"),
+        JSON.stringify({ private: true, type: "module" }),
+      );
       run(
         "pnpm",
         [
