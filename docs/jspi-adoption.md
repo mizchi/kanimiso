@@ -50,7 +50,7 @@ Core Future の既定 pool は 1,024 × 128 B。`--task-slots` でコンパイ�
 
 ## 既存バックエンドを削除する条件
 
-並行性については [実験](../experiments/jspi-concurrent/README.md)を追加した。直接 JSPI と bounded Future アダプターで stack snapshot を Wasm 内から同期的に復元し、同一 instance の別 root を進める。V8 / local workerd の probes と[測定](jspi-concurrent.md)で検証する。前掲の表は製品と従来アダプターの契約を示しており、この並行版を既定へ採用したことは意味しない。Safari 実機・root cancel・公開 API の移行条件は引き続き未達。
+並行性については [実験](../experiments/jspi-concurrent/README.md)を追加した。直接 JSPI と bounded Future アダプターで stack snapshot を Wasm 内から同期的に復元し、同一 instance の別 root を進める。V8 / local workerd の probes と[測定](jspi-concurrent.md)で検証する。前掲の表は製品と従来アダプターの契約を示しており、この並行版を既定へ採用したことは意味しない。root cancel・公開 API の移行条件は引き続き未達。Safari 向け検証には Playwright WebKit を使い、実機での追加実行は要求しない。
 
 この実験の no_std / V8 測定では、直接並行 JSPI は合計2,756 Bだが、512件投入の即時 Promise は4.15 μs/task、同じペアの既存 Future は1.18 μs/taskだった。二段5 msの I/O を16件投入した batch は両者とも約12 msまで進められる一方、1,024件を停止した追加 RSS の中央値は約20 MiBと4.9 MiBで差がある。RSS は task の厳密な stack サイズではないが、この構成で大量並行のコストを無視できる結果ではない。
 
@@ -61,7 +61,7 @@ Core Future の既定 pool は 1,024 × 128 B。`--task-slots` でコンパイ�
 1. **同一 instance の独立した処理を進める。** A の I/O が停止していても B が開始・完了する。LLVM の stack 分離・保存復元だけでなく、共有状態の借用と再入のルールを定義する。Rust の実 spill を保持した複数呼び出しで、逆順・非 LIFO・同時完了・trap を検証する。
 2. **キャンセルとエラーの契約を決める。** root の中断、Drop の回数、子 Future の解放、遅れた完了通知、I/O abort の責任を明示する。recoverable な失敗と instance-fatal を区別し、expected error まで全 instance を閉じる設計にしない。
 3. **同時実行時も計測する。** 同じアルゴリズム・同じ成功ケースと I/O 契約を維持し、即時 Promise、制御された遅延、長短混在の I/O で throughput・待ち時間・停止 task 当たりのメモリを比較する。Wasm/JS の配信サイズと実行時メモリは別々に記録する。
-4. **対象エンジンで確認する。** JSPI 対応 V8 と Safari 27 以降の実ブラウザーで検証する。現状 Safari 27 実ブラウザーは未検証。Kani/Miri の部品検証をエンジン全体の証明と扱わない。
+4. **対象エンジンで確認する。** JSPI 対応 V8 と Playwright WebKit で検証する。Safari 向け検証は WebKit を正式な代替とし、製品 E2E は通過済み。未採用の実験固有の probes は製品 E2E とは別に検証する。Kani/Miri の部品検証をエンジン全体の証明と扱わない。
 5. **既存 API の利用範囲を扱う。** resource own/borrow、spawn_local、キャンセルを使う consumer の移行方法を用意する。scalar の共通成功ケースだけを根拠に、機能が同等だとは判断しない。
 
 ## 回帰検証

@@ -30,6 +30,7 @@ struct Node {
 pub(crate) struct Types {
     nodes: Vec<Node>,
     codecs: BTreeSet<usize>,
+    pub guests: BTreeMap<TypeId, crate::core_resources::GuestResource>,
 }
 pub(crate) struct Generated {
     pub wire: String,
@@ -51,6 +52,46 @@ fn rust_ident(s: &str) -> Result<String> {
     super::core_async::rust_name(s)
 }
 impl Types {
+    pub fn guest(&self, id: usize) -> Option<&crate::core_resources::GuestResource> {
+        match self.nodes[id].kind {
+            Kind::Resource => {
+                if let Type::Id(source) = self.nodes[id].source {
+                    self.guests.get(&source)
+                } else {
+                    None
+                }
+            }
+            Kind::Alias(t) | Kind::Own(t) | Kind::Borrow(t) => self.guest(t),
+            _ => None,
+        }
+    }
+    pub fn guest_resources(&self) -> Vec<(usize, &crate::core_resources::GuestResource)> {
+        self.nodes
+            .iter()
+            .enumerate()
+            .filter(|(_, n)| matches!(n.kind, Kind::Resource))
+            .filter_map(|(id, _)| self.guest(id).map(|g| (id, g)))
+            .collect()
+    }
+    pub fn contains_guest(&self, id: usize) -> bool {
+        if self.guest(id).is_some() {
+            return true;
+        }
+        match &self.nodes[id].kind {
+            Kind::List(t) | Kind::Option(t) | Kind::Alias(t) => self.contains_guest(*t),
+            Kind::Tuple(ts) => ts.iter().any(|t| self.contains_guest(*t)),
+            Kind::Record(fs) => fs.iter().any(|(_, t)| self.contains_guest(*t)),
+            Kind::Variant(cs) => cs
+                .iter()
+                .filter_map(|(_, t)| *t)
+                .any(|t| self.contains_guest(t)),
+            Kind::Result(a, b) => a.iter().chain(b).any(|t| self.contains_guest(*t)),
+            _ => false,
+        }
+    }
+    pub fn has_guests(&self) -> bool {
+        !self.guest_resources().is_empty()
+    }
     pub fn wit_names(&self) -> Vec<String> {
         self.nodes
             .iter()
@@ -388,11 +429,11 @@ export type WitInput<T> =
             out = String::from("/// <reference lib=\"esnext.disposable\" />\n") + &out;
             out.push_str("declare const resourceBrand:unique symbol;\nexport interface Resource<K extends string=string> extends Disposable {readonly [resourceBrand]:K}\nexport interface ResourceTypes {\n");
             for (id, n) in self.nodes.iter().enumerate() {
-                if matches!(n.kind, Kind::Resource) {
+                if matches!(n.kind, Kind::Resource) && self.guest(id).is_none() {
                     out.push_str(&format!("{}:Disposable;\n", json(&self.rust_type(id))))
                 }
             }
-            out.push_str("}\nexport type HostValue<T,R extends ResourceTypes> = T extends Resource<infer K> ? K extends keyof R ? R[K] : never : T extends (...args:never[])=>unknown ? T : T extends readonly unknown[] ? { [K in keyof T]:HostValue<T[K],R> } : T extends object ? { [K in keyof T]:HostValue<T[K],R> }:T;\n");
+            out.push_str("}\nexport type HostValue<T,R extends ResourceTypes> = T extends Resource<infer K> ? K extends keyof R ? R[K] : T : T extends (...args:never[])=>unknown ? T : T extends readonly unknown[] ? { [K in keyof T]:HostValue<T[K],R> } : T extends object ? { [K in keyof T]:HostValue<T[K],R> }:T;\n");
         }
         for id in 0..self.nodes.len() {
             if let Some(name) = self.public_name(id) {
@@ -586,6 +627,12 @@ export type WitInput<T> =
             if let Some(name) = &n.name {
                 let name = pascal(name);
                 let declaration = match &n.kind {
+                    Kind::Resource if self.guest(id).is_some() => {
+                        let associated = self.guest(id).unwrap().associated();
+                        format!(
+                            "pub struct {name}{{__taraba_value:Option<::taraba::Resource<{associated}>>,__taraba_lease:Option<__taraba_wire::Value>}} impl {name}{{pub fn new(value:{associated})->Self{{Self{{__taraba_value:Some(::taraba::Resource::new(value)),__taraba_lease:None}}}}}} impl ::core::ops::Deref for {name}{{type Target={associated};fn deref(&self)->&Self::Target{{self.__taraba_value.as_ref().unwrap()}}}} impl ::core::ops::Drop for {name}{{fn drop(&mut self){{if let Some(lease)=self.__taraba_lease.take(){{__taraba_types::finish_{id}(&lease)}}}}}} impl ::core::fmt::Debug for {name}{{fn fmt(&self,f:&mut ::core::fmt::Formatter<'_>)->::core::fmt::Result{{f.write_str(\"{name}\")}}}}"
+                        )
+                    }
                     Kind::Resource => format!(
                         "pub struct {name} {{value:Option<__taraba_wire::Value>, borrowed:bool}} impl ::core::ops::Drop for {name} {{fn drop(&mut self){{if let Some(v)=self.value.take(){{__taraba_types::finish_{id}(&v,self.borrowed)}}}}}} impl ::core::fmt::Debug for {name}{{fn fmt(&self,f:&mut ::core::fmt::Formatter<'_>)->::core::fmt::Result{{f.write_str(\"{name}\")}}}}"
                     ),
@@ -654,6 +701,32 @@ export type WitInput<T> =
                 .map(|t| format!("&{}", self.rust_type(t)))
                 .unwrap_or_else(|| ty.clone());
             let (encode, decode) = match &n.kind {
+                Kind::Resource if self.guest(id).is_some() => {
+                    let associated = self.guest(id).unwrap().associated();
+                    let key = json(&ty);
+                    let create = op(
+                        "create",
+                        "key:u32",
+                        "->value",
+                        &format!("key=>guestResources.create({key},key)"),
+                    );
+                    let take = op(
+                        "own",
+                        "v:borrow<value>",
+                        "->u32",
+                        &format!("v=>guestResources.take(v,{key})"),
+                    );
+                    let end = op("end", "v:borrow<value>", "", "v=>guestResources.end(v)");
+                    code.push_str(&format!("pub static STORE_{id}: ::taraba::__private::ResourceStore<{associated}>=::taraba::__private::ResourceStore::new(); pub fn finish_{id}(v:&wire::Value){{wire::{end}(v)}}\n"));
+                    (
+                        format!(
+                            "wire::{create}(STORE_{id}.insert(v.__taraba_value.take().unwrap()))"
+                        ),
+                        format!(
+                            "{ty}{{__taraba_value:Some(STORE_{id}.take(wire::{take}(v))),__taraba_lease:None}}"
+                        ),
+                    )
+                }
                 Kind::Resource => {
                     let finish = op(
                         "finish",
@@ -670,6 +743,23 @@ export type WitInput<T> =
                     )
                 }
                 Kind::Own(t) => (format!("encode_{t}(v)"), format!("decode_{t}(v)")),
+                Kind::Borrow(t) if self.guest(*t).is_some() => {
+                    let child = self.rust_type(*t);
+                    let key = json(&child);
+                    let begin = op(
+                        "guest-begin",
+                        "v:borrow<value>",
+                        "->u32",
+                        &format!("v=>guestResources.begin(v,{key})"),
+                    );
+                    let hold = op("hold", "v:borrow<value>", "->value", "v=>v");
+                    (
+                        "invalid()".into(),
+                        format!(
+                            "let key=wire::{begin}(v);Borrowed{{resource:{child}{{__taraba_value:Some(STORE_{t}.borrow(key)),__taraba_lease:Some(wire::{hold}(v))}}}}"
+                        ),
+                    )
+                }
                 Kind::Borrow(t) => {
                     let encode = op("borrow", "v:borrow<value>", "->value", "v=>v");
                     let begin = op(
@@ -904,6 +994,11 @@ export type WitInput<T> =
         }
         code.push_str("}\n");
         g.rust = definitions + &code;
+        for (id, _) in self.guest_resources() {
+            g.wire.push_str(&format!(
+                "export taraba-resource-drop-{id}:func(key:u32);\n"
+            ));
+        }
         Ok(g)
     }
     /// Keep small constructors flat; above Canonical ABI's 16-argument limit,

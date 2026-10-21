@@ -43,6 +43,13 @@ pub(crate) struct PublicSignature {
     pub result: String,
     pub asynchronous: bool,
 }
+#[derive(PartialEq, Eq)]
+pub(crate) struct GuestResourceBinding {
+    pub namespace: String,
+    pub name: String,
+    pub drop_export: String,
+    pub methods: std::collections::BTreeMap<String, String>,
+}
 #[derive(Default, PartialEq, Eq)]
 pub(crate) struct Bindings {
     pub(crate) imports: std::collections::BTreeMap<(String, String), Signature>,
@@ -53,6 +60,9 @@ pub(crate) struct Bindings {
     pub(crate) type_declarations: String,
     pub(crate) core_contract: Option<String>,
     pub(crate) resource_types: bool,
+    pub(crate) guest_resources: std::collections::BTreeMap<String, GuestResourceBinding>,
+    pub(crate) resource_methods:
+        std::collections::BTreeMap<String, std::collections::BTreeMap<String, PublicSignature>>,
     pub(crate) host_marshalling:
         std::collections::BTreeMap<String, (Vec<String>, Option<String>, bool)>,
     pub(crate) live_imports: Option<std::collections::BTreeSet<String>>,

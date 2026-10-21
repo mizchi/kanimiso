@@ -15,8 +15,9 @@ setup installs dependencies, the Wasm Rust target, Binaryen 133 and wasm-tools 1
 
 | Task | Verifies / produces |
 |---|---|
-| `just browser-check` | Chrome and Playwright WebKit E2E: rich values, memory growth, JSPI, fetch cancellation, resources and disposal; not Safari.app |
-| `just interfaces-check` / `just resources-check` | Namespaced bindings and opaque own/borrow resources, async lifetimes, cancellation, strict TS and cross-instance rejection |
+| `just browser-check` | Chrome and Playwright WebKit E2E: rich values, memory growth, JSPI, fetch cancellation, resources and disposal; accepted Safari validation substitute |
+| `just webkit-latest-check [version]` | [Latest WebKit E2E](browser-testing.md); isolated @next or a specified version, engine metadata, HTML and traces |
+| `just interfaces-check` / `just resources-check` | Namespaced bindings, imported methods and Rust-defined resources, own/borrow/Drop and reentrant shutdown; npm pack/install, strict TS and type/instance identity |
 | `just pool-check` | Compiled task-pool capacity, raw-Wasm metadata agreement, exhaustion, memory and watch/update preservation |
 | `just check-rich-async` | Same 216 rich-async workload cases and deployed-size ceilings; writes only .cache |
 | `just core-types-check` / `just compare-core-types` | Core value-codec round trips, ownership, strict TS, unused types +0 B; per-type size snapshots |
@@ -84,4 +85,6 @@ The CI workflow is configured for product, comparison, package, modern-feature, 
 
 `just strings-check` verifies normalization, segmentation, decoding and typed iterators. `just compare-strings` updates the [size table](strings.md). Miri/Kani include shared Root/Iterator ownership.
 
-`just browser-check` runs rich values, memory.grow, JSPI, real fetch cancellation, resource ownership and disposal. Local Chrome 156 and Playwright WebKit 27.2 checks passed. This is not Safari.app verification; Safari 27 remains unverified. Independent browser and rich-async jobs are configured in CI for these engines and the same 216 workload cases with deployed-size ceilings. Timing is reported without a CI threshold. See the [verification boundary](status.md#verification-boundary).
+`just browser-check` runs rich values, memory.grow, JSPI, real fetch cancellation, resource ownership and disposal. Local Chrome 156 and Playwright WebKit 27.2 checks passed. WebKit E2E completes Safari-target validation; an additional Safari.app run is not required. Independent browser and rich-async jobs are configured in CI for these engines and the same 216 workload cases with deployed-size ceilings. Timing is reported without a CI threshold. See the [verification boundary](status.md#verification-boundary).
+
+[Latest WebKit commands, coverage and results](browser-testing.md).

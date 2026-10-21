@@ -6,7 +6,7 @@ Provides `spawn_local`, `future_to_promise`, `JsPromise`, and `JsValue` for Java
 Requires Rust 1.85 or later. Add the crate from crates.io:
 
 ```sh
-cargo add taraba@0.2.0
+cargo add taraba@0.2.1
 rustup target add wasm32-unknown-unknown
 ```
 
@@ -32,7 +32,7 @@ explicit cancellation drops a task. Fatal errors close the instance and preserve
 
 The CLI targets Safari 27+ / JSPI-capable V8. Start with `taraba new app --future`; `taraba build` automatically selects this executor from compiled runtime imports/exports and WIT resources. `--jspi` / `--future` can override detection. The default profile calls synchronous guest functions through JSPI and does not depend on this Future executor. See the repository documentation for its serialized-entry and fatal-error contract.
 
-The Core typed facade generates safe async Rust/TS bindings for records, lists, strings and other WIT value types in world and interface functions. Imported opaque resources support freestanding own/borrow functions, including typed async. Use matching CLI and Rust crates 0.2.0 or later. Core does not support resource methods, Rust-defined exported resources, returned/nested borrows, streams, nested futures or fixed-length lists. For standard Component interoperability and resource bindings, use `taraba new --component` and the wit-bindgen Component API; proposal support follows that toolchain. That path uses the Component toolchain executor and does not depend on this Core runtime crate. `taraba build --npm-name ...` packages either execution contract for npm; the Component path includes jco-generated TypeScript. See the root README for use cases.
+The Core typed facade generates safe async Rust/TS bindings for records, lists, strings and other WIT value types in world and interface functions. Imported opaque resources support freestanding own/borrow functions, including typed async. Use matching CLI and Rust crates 0.2.0 or later. Core supports imported resource methods and Rust-defined exported resources in the typed Future profile. Returned/nested borrows, resource static methods, guest resources crossing host imports, streams, nested futures and fixed-length lists remain unsupported. For standard Component interoperability and resource bindings, use `taraba new --component` and the wit-bindgen Component API; proposal support follows that toolchain. That path uses the Component toolchain executor and does not depend on this Core runtime crate. `taraba build --npm-name ...` packages either execution contract for npm; the Component path includes jco-generated TypeScript. See the root README for use cases.
 
 `export_runtime!()` emits the private host ABI once per cdylib. Its hidden
 `__private` bridge and the `test-api` fixture feature are implementation details,
@@ -41,3 +41,5 @@ not supported application APIs. Task storage is private.
 `host.dispose()` cancels tasks, clears subscriptions and releases runtime-owned JS references. See [lifecycle and limits](https://github.com/mizchi/taraba/blob/main/docs/status.md).
 
 The CLI option `taraba build --abort-signal` adds typed per-call cancellation and a host callback signal for I/O. It is opt-in and adds no Wasm code. See the [TypeScript guide](https://github.com/mizchi/taraba/blob/main/docs/typescript.md#per-call-cancellation).
+
+Core resource instance methods and Rust-defined exported resources are available in 0.2.1. Update both the CLI and Rust runtime to 0.2.1 or later. See [the resource guide](https://github.com/mizchi/taraba/blob/main/docs/resources.md).

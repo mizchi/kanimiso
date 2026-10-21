@@ -98,13 +98,13 @@ A WIT result err is a domain value: its Promise resolves with a discriminated un
 
 Host async imports can return a synchronous value, Promise or PromiseLike. Check callbacks with `satisfies AppBindings`. Catch variables remain ordinary TypeScript unknown; thrown exceptions are separate from the result's E type.
 
-JSON does not represent bigint or TypedArray values as ordinary JSON numbers and arrays. Convert IDs to strings and typed arrays to ordinary arrays explicitly at a JSON boundary. Represent URL, Date and HTTP objects with WIT strings, numbers and records. Use [Component output](guide.md) for standard Component interoperability, resource methods or streams.
+JSON does not represent bigint or TypedArray values as ordinary JSON numbers and arrays. Convert IDs to strings and typed arrays to ordinary arrays explicitly at a JSON boundary. Represent URL, Date and HTTP objects with WIT strings, numbers and records. Use [Component output](guide.md) for standard Component interoperability or streams.
 
 ## Deployment size and verification
 
 Named types and WitInput exist only in `.d.ts`. The shared JS runtime gains no type-specific code; application `index.js` contains only codec imports retained by optimized Wasm. Unused types and imports add zero deployed Wasm / JS bytes. See the [per-type size table](core-runtime.md#value-types-and-selective-code-generation).
 
-`just core-types-check` covers std / no_std, strict / exactOptionalPropertyTypes / noUncheckedIndexedAccess / verbatimModuleSyntax, numeric boundaries, NaN and negative zero, subarray and memory.grow, readonly data and PromiseLike, rejection and cancellation. It also builds and runs the matching English/Japanese examples on this page, then verifies npm pack/install with NodeNext and bundler type resolution. Real Safari execution remains unverified.
+`just core-types-check` covers std / no_std, strict / exactOptionalPropertyTypes / noUncheckedIndexedAccess / verbatimModuleSyntax, numeric boundaries, NaN and negative zero, subarray and memory.grow, readonly data and PromiseLike, rejection and cancellation. It also builds and runs the matching English/Japanese examples on this page, then verifies npm pack/install with NodeNext and bundler type resolution. Safari-target validation follows the [accepted WebKit E2E policy](browser-testing.md).
 
 ## Per-call cancellation
 
@@ -170,7 +170,9 @@ These names correspond to `interface handles { resource value { constructor(text
 
 Pass ownership with `own` or dispose the lease explicitly. Disposal during a live borrow and use through another instance are rejected. Cancelled borrows end after the active poll; Rust-owned resources are released on host shutdown. JS-owned leases remain the caller's responsibility. Do not access a borrowed host object after its cancellation signal fires.
 
-Resource methods, Rust-defined exported resources, returned borrows and nested borrow handles are outside the Core profile. Use Component for those standard resource contracts. `just interfaces-check` and `just resources-check` exercise std/no_std, strict TS, constructors, cancellation, foreign-instance handles and Drop. An unused constructor adds 0 B to deployed Wasm/JS.
+Imported instance methods generate Rust calls such as `value.read().await`, and call the actual JS object method with its receiver preserved. They are part of the resource implementation type, not separate `AppBindings` callbacks.
+
+Core Future also supports [Rust-defined exported resources](resources.md), including constructors, synchronous/asynchronous methods and own/borrow. Returned/nested borrows, static methods and Rust resources passed to host imports remain outside Core. Standard resource ABI interoperability requires Component. `just resources-check` covers std/no_std, strict TS, npm pack/install, cancellation, type/instance identity, shutdown and Drop. Unused imported methods and exported resource type declarations add 0 B to deployed Wasm/JS.
 
 ## Host shutdown and task capacity
 

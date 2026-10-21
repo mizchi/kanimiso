@@ -1,9 +1,9 @@
 {
-  "version": "0.2.0",
+  "version": "0.2.1",
   "rolldown": "1.2.14",
   "inputs": {
     "tools/npm-notice.txt": "309eb351418364dc2778003b98545e3613bfa5e433f41be0146ea50242bf7061",
-    "crates/taraba-allocator/Cargo.toml": "3effa08801e0a1706b9e91ffc5d6f2e305871d736e98b6d56efdbb8ca90bb95b",
+    "crates/taraba-allocator/Cargo.toml": "c85c41347aff3c9f05ce400e5a4a04dac37f0d1d5956993ad4ee35e4731d9d6f",
     "crates/taraba-allocator/LICENSE": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
     "crates/taraba-allocator/UPSTREAM.json": "5081b5bbda90142f2510345af6f9f63cfe950df6f0a48a3ae3e6be3e2c79f6eb",
     "src/host.mjs": "03ef18025cd66e50333702fec42b44dab701865da0e514d7be6546b818c1a5a4",
@@ -25,13 +25,13 @@
     "tools/build-host.mjs": "4fda83707149982d22fef5041b88fffc499055641e72a71ad3c30d3ed48170b0",
     "tools/helper-assets.mjs": "e1f975d7b61574b3f07eedb4c12f7f54a1f69918f93a844fb377737eb0feb5a6",
     "tools/import-contract.mjs": "1d9cfdbcc99980c9e699e024b7c43436f8a519e2196c843d743d8216772fb1b1",
-    "package.json": "a851c3637c791b61d74b73a0ad89c890cfb6cf072a89bbf26c424bf323572bf8",
+    "package.json": "931aaa451bf38e3ccfdfd79a1276658a937b9bcd1edaf188021e2879ae2f8da4",
     "pnpm-lock.yaml": "d9bc41ad5eecb519c5e086ad26beae77dae3bb5356f3f2078b15b108cb804e1b"
   },
   "assets": {
     "LICENSE.taraba-allocator": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
     "UPSTREAM.taraba-allocator.json": "5081b5bbda90142f2510345af6f9f63cfe950df6f0a48a3ae3e6be3e2c79f6eb",
-    "NOTICE.taraba": "ecae97fcebad849b970395aa57e4ce9a662fb97aede9be84dba3d49419f42ed1",
+    "NOTICE.taraba": "0f7b1cc3d268f65157eaef928a44804bd78c464a051d4dcb1dce8995ca2c0a19",
     "helper-operations.json": "f7d6b364186eec3bfdcffc0ade7c5884900e386a8f1b1b3cf8a4c4c06f512656",
     "regexp.wit": "699c2e02b7535baa3f21dd0bd852b86d6ade1a589115289d18bc73a6d978f285",
     "text.wit": "58c40c36251788e0d8a46ba688c019492bf411bf4ed2d45c2d2ce0d8b78d186e",

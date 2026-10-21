@@ -1,4 +1,5 @@
 fn main() {
+    println!("cargo:rustc-check-cfg=cfg(kani)");
     println!("cargo:rerun-if-env-changed=TARABA_TASK_SLOTS");
     let slots: usize = std::env::var("TARABA_TASK_SLOTS")
         .map(|s| s.parse().expect("TARABA_TASK_SLOTS must be an integer"))

@@ -161,7 +161,7 @@ Requires Rust 1.85 or later. Install the CLI from crates.io and add the Rust Was
 
 ```sh
 rustup target add wasm32-unknown-unknown
-cargo install taraba-cli --version 0.2.0 --locked
+cargo install taraba-cli --version 0.2.1 --locked
 # Install Binaryen 133 and put its tools on PATH.
 # --binaryen /path/to/bin or TARABA_BINARYEN can select another location.
 ```
@@ -174,7 +174,7 @@ For development of taraba itself, you can install from a checkout instead:
 cargo install --path /path/to/taraba/crates/taraba-cli --locked --force
 ```
 
-For that development setup, after `taraba new hello --future`, add this override to the application's `Cargo.toml` to use the matching runtime. Registry users of 0.2.0 do not need this override.
+For that development setup, after `taraba new hello --future`, add this override to the application's `Cargo.toml` to use the matching runtime. Registry users of 0.2.1 do not need this override.
 
 ```toml
 [patch.crates-io]
@@ -376,7 +376,7 @@ WASI hosts.
 
 Multiple Core libraries can share their JS runtime when imports resolve to the same ESM URL. Default npm output carries a copy per package, so sharing requires a common chunk. See [ESM cache checks and the build example](esm-cache.md) for measured sizes and instance-isolation checks.
 
-The JavaScript async baseline is Safari 27+ / JSPI-capable V8. Real Safari 27 browser execution remains unverified. Component async/jco is experimental upstream. Its scheduler/ownership/cancellation contract comes from the Component toolchain and is not the Core Future contract.
+The JavaScript async baseline is Safari 27+ / JSPI-capable V8. Safari-target validation is complete through Playwright WebKit E2E. Component async/jco is experimental upstream. Its scheduler/ownership/cancellation contract comes from the Component toolchain and is not the Core Future contract.
 
 Current scalar async comparison: [taraba / Embassy / wasm-bindgen](async-size.md). Earlier snapshots: [WIT/Core/Component](wit-comparison.md), [parallel JSPI](jspi-concurrent.md). These dated measurements are not the sizes of every generated npm package. npm `build.json` separately records JS, declarations and packaged Wasm bytes, including the optional Component container. A tarball includes declarations and the container; runtime download size depends on which entry is used.
 

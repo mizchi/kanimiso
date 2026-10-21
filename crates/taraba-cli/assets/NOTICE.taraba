@@ -9,9 +9,9 @@ including modifications derived from wee_alloc_bw / wee_alloc. The MPL source
 rights are independent of the application's license. See LICENSE.taraba-allocator
 and UPSTREAM.taraba-allocator.json for the license and upstream provenance.
 
-The source of unmodified taraba-allocator 0.2.0 is available as
+The source of unmodified taraba-allocator 0.2.1 is available as
 a Cargo source archive, including its license, provenance and build files:
-https://crates.io/api/v1/crates/taraba-allocator/0.2.0/download
+https://crates.io/api/v1/crates/taraba-allocator/0.2.1/download
 Project: https://github.com/mizchi/taraba
 
 The allocator uses memory_units 0.4.0 (MPL-2.0), by Nick Fitzgerald and Sergey

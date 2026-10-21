@@ -161,7 +161,7 @@ The host was explicitly disposed. Disposal is idempotent; further calls and atta
 
 **invalid resource lease**
 
-解放済み、または別 instance の resource lease です。The resource lease is disposed or belongs to another instance.
+解放済み、別型、または別 instance の resource lease です。The resource lease is disposed, has the wrong WIT resource type, or belongs to another instance.
 
 ## RS02
 

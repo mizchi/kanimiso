@@ -714,10 +714,11 @@ host.bytes([1n]);
     "",
     "record ignored {text:string, ids:list<u64>} import unused: async func(v:ignored)->ignored;",
     "resource",
+    "guest",
   ]) {
     writeFileSync(
       join(project, "wit/app.wit"),
-      `package taraba:app@0.1.0; ${extra === "resource" ? "interface ignored {resource value; make:async func()->own<value>;}" : ""} world app {${extra === "resource" ? "import unused:ignored;" : extra} import add:func(a:s32,b:s32)->future<s32>; export run:func(a:s32,b:s32)->future<s32>;}`,
+      `package taraba:app@0.1.0; ${extra === "resource" ? "interface ignored {resource value {read:async func()->string;} make:async func()->own<value>;}" : extra === "guest" ? "interface guest-unused {resource value;}" : ""} world app {${extra === "resource" ? "import unused:ignored;" : extra === "guest" ? "export unused:guest-unused;" : extra} import add:func(a:s32,b:s32)->future<s32>; export run:func(a:s32,b:s32)->future<s32>;}`,
     );
     run(cli, ["build"], project);
     const pkg = join(project, "pkg");
@@ -751,6 +752,11 @@ host.bytes([1n]);
     snapshots[2],
     snapshots[0],
     "unused resources/interfaces must add zero Wasm/JS bytes",
+  );
+  assert.deepEqual(
+    snapshots[3],
+    snapshots[0],
+    "unused Rust resource declarations add zero Wasm/JS bytes",
   );
   console.log(
     `Unused rich types: +0 B Wasm / +0 B JS; shared runtime unchanged`,

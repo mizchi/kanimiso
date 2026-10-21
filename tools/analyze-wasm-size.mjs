@@ -490,7 +490,7 @@ writeFileSync(
 
 ${report.created_at} / ${report.engine}
 
-同じ二段 await の共通3,507ケースで、JSPI/Future × std/no_std を比較した。全 runnable variant で実際の二回の host I/O、待機の順序、reject の同一性と再利用/first-fatal の契約を検証済み。Safari 実ブラウザーは未検証。製品の最適化ポリシーは変更していない。
+同じ二段 await の共通3,507ケースで、JSPI/Future × std/no_std を比較した。全 runnable variant で実際の二回の host I/O、待機の順序、reject の同一性と再利用/first-fatal の契約を検証済み。Safari 向け検証は[WebKit E2E の方針](browser-testing.ja.md)に従う。製品の最適化ポリシーは変更していない。
 
 \`just analyze-wasm-size\` は通常のサイズ比較を再ビルドしてから、twiggy 0.8.0 / wasm-snip 0.4.0 / Binaryen 133 / wasm-tools 1.245.1 で再現する。入力と成果物の SHA-256、全 variant、twiggy の top/retained/paths は [JSON](wasm-size-analysis.json) に記録する。
 

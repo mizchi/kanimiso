@@ -17,7 +17,7 @@ test("runtime, allocator, helpers, and native CLI are distributable crates", () 
     const pkg = metadata.packages.find((p) => p.name === name);
     assert.ok(pkg, `missing ${name}`);
     assert.notDeepEqual(pkg.publish, [], `${name} must be publishable`);
-    assert.equal(pkg.version, "0.2.0");
+    assert.equal(pkg.version, "0.2.1");
     assert.ok(pkg.license, `${name} must declare a license`);
     assert.equal(pkg.repository, "https://github.com/mizchi/taraba");
   }

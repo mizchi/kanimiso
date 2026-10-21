@@ -152,11 +152,13 @@ pub(crate) fn needed(r: &Resolve, world: WorldId) -> bool {
 }
 impl Contract {
     fn new(r: &Resolve, world: WorldId) -> Result<Self> {
+        let guests = crate::core_resources::collect(r, world)?;
         let flat = crate::interfaces::flatten(r, world)?;
         let r = &flat.resolve;
         let w = &r.worlds[world];
         let mut functions = Vec::new();
         let mut types = crate::core_types::Types::default();
+        types.guests = guests;
         let mut rust_names = std::collections::BTreeSet::new();
         for (export, items) in [(false, &w.imports), (true, &w.exports)] {
             for item in items.values() {
@@ -202,6 +204,18 @@ impl Contract {
                     .collect::<Result<Vec<_>>>()?;
                 if args.iter().any(|(_, ty)| matches!(ty, ValueType::Value(id) if types.contains_borrow(*id) && types.borrowed(*id).is_none())) {
                     return Err("Core borrow resources must be direct parameters; nested borrow handles are unsupported".into());
+                }
+                if !export
+                    && (args.iter().any(
+                        |(_, t)| matches!(t,ValueType::Value(id) if types.contains_guest(*id)),
+                    ) || result.is_some_and(
+                        |t| matches!(t,ValueType::Value(id) if types.contains_guest(id)),
+                    ))
+                {
+                    return Err(
+                        "Core Rust-owned resources cannot cross host imports yet; use --component"
+                            .into(),
+                    );
                 }
                 let public_args = f
                     .params
@@ -360,6 +374,34 @@ impl Contract {
         bindings.type_declarations = contract.types.typescript();
         bindings.interface_members = contract.members.clone();
         bindings.resource_types = contract.types.has_resources();
+        for (id, info) in contract.types.guest_resources() {
+            bindings.guest_resources.insert(
+                contract.types.rust_type(id),
+                crate::abi::GuestResourceBinding {
+                    namespace: info.namespace.clone(),
+                    name: info.name.clone(),
+                    drop_export: format!("taraba-resource-drop-{id}"),
+                    methods: std::collections::BTreeMap::new(),
+                },
+            );
+        }
+        for f in contract.functions.iter().filter(|f| f.export) {
+            if let Some(m) = contract.members.get(&f.name).filter(|m| m.receiver) {
+                let ValueType::Value(id) = f.args[0].1 else {
+                    unreachable!()
+                };
+                let resource = contract
+                    .types
+                    .rust_type(contract.types.borrowed(id).unwrap());
+                bindings
+                    .guest_resources
+                    .get_mut(&resource)
+                    .ok_or("resource methods require a Rust-defined exported resource")?
+                    .methods
+                    .insert(m.method.clone(), f.name.clone());
+            }
+        }
+
         for f in contract.functions.iter().filter(|f| !f.export) {
             let args = f
                 .args
@@ -401,6 +443,28 @@ impl Contract {
                 result: f.public_result.clone(),
                 asynchronous: f.asynchronous,
             };
+            if !f.export {
+                if let Some(m) = contract.members.get(&f.name).filter(|m| m.receiver) {
+                    let ValueType::Value(t) = f.args[0].1 else {
+                        unreachable!()
+                    };
+                    let resource = contract
+                        .types
+                        .rust_type(contract.types.borrowed(t).unwrap());
+                    bindings
+                        .resource_methods
+                        .entry(resource)
+                        .or_default()
+                        .insert(
+                            m.method.clone(),
+                            crate::abi::PublicSignature {
+                                args: signature.args[1..].to_vec(),
+                                result: signature.result.clone(),
+                                asynchronous: signature.asynchronous,
+                            },
+                        );
+                }
+            }
             if f.export {
                 bindings.public_exports.insert(f.name.clone(), signature);
             } else {
@@ -415,6 +479,9 @@ impl Contract {
             "// Generated from WIT. Do not edit. Private Core ABI, not Canonical ABI.\nmacro_rules! bindings {{ () => {{\n#[allow(dead_code, unsafe_code)]\nmod __taraba_wire {{ ::wit_bindgen::generate!({{ path: [], inline: {:?}, world: {:?}, export_macro_name: \"__taraba_export\" }}); }}\n#[allow(dead_code, unsafe_code)]\nmod __taraba_future {{ {helper} }}\npub type HostResult<T> = ::core::result::Result<T, ::taraba::JsValue>;\n#[allow(async_fn_in_trait)]\npub trait Guest {{\n",
             self.wire, self.world
         );
+        if self.types.has_guests() {
+            rust = rust.replacen("bindings { () => {", "bindings { ($guest:ty) => {", 1);
+        }
         for f in self
             .functions
             .iter()
@@ -431,22 +498,97 @@ impl Contract {
         rust.push_str("}\n");
         rust.push_str(&self.types.generate()?.rust);
         let mut export_modules = std::collections::BTreeMap::<String, String>::new();
+        let mut resource_traits =
+            std::collections::BTreeMap::<String, std::collections::BTreeMap<String, String>>::new();
+        for (_, info) in self.types.guest_resources() {
+            export_modules
+                .entry(info.namespace.clone())
+                .or_default()
+                .push_str(&format!(
+                    "type {}:{}+'static;",
+                    crate::core_resources::pascal(&info.name),
+                    info.trait_name()
+                ));
+            resource_traits
+                .entry(info.namespace.clone())
+                .or_default()
+                .entry(info.name.clone())
+                .or_default();
+        }
         for f in self.functions.iter().filter(|f| f.export) {
             if let Some(m) = self.members.get(&f.name) {
-                let module = export_modules.entry(m.namespace.clone()).or_default();
-                module.push_str(&format!(
-                    "{}fn {}({})->{};\n",
-                    if f.asynchronous { "async " } else { "" },
-                    rust_name(&m.method)?,
-                    f.rust_args(&self.types)?,
-                    f.rust_result(&self.types)
-                ));
+                let line = if m.receiver || m.constructor {
+                    let id = if m.receiver {
+                        let ValueType::Value(id) = f.args[0].1 else {
+                            unreachable!()
+                        };
+                        id
+                    } else {
+                        let Some(ValueType::Value(id)) = f.result else {
+                            unreachable!()
+                        };
+                        id
+                    };
+                    let info = self
+                        .types
+                        .guest(id)
+                        .ok_or("exported resource method requires Rust-owned type")?;
+                    let args = f.rust_args(&self.types)?;
+                    let args = if m.receiver {
+                        format!(
+                            "&self{}",
+                            args.split_once(',')
+                                .map(|(_, tail)| format!(",{tail}"))
+                                .unwrap_or_default()
+                        )
+                    } else {
+                        args
+                    };
+                    let result = if m.constructor {
+                        "Self".into()
+                    } else {
+                        f.rust_result(&self.types)
+                    };
+                    resource_traits
+                        .get_mut(&info.namespace)
+                        .unwrap()
+                        .get_mut(&info.name)
+                        .unwrap()
+                        .push_str(&format!(
+                            "{}fn {}({args})->{result};",
+                            if f.asynchronous { "async " } else { "" },
+                            if m.constructor {
+                                "new".into()
+                            } else {
+                                rust_name(&m.method)?
+                            }
+                        ));
+                    continue;
+                } else {
+                    format!(
+                        "{}fn {}({})->{};",
+                        if f.asynchronous { "async " } else { "" },
+                        rust_name(&m.method)?,
+                        f.rust_args(&self.types)?,
+                        f.rust_result(&self.types)
+                    )
+                };
+                export_modules
+                    .entry(m.namespace.clone())
+                    .or_default()
+                    .push_str(&line);
             }
         }
         if !export_modules.is_empty() {
             rust.push_str("pub mod exports {\n");
             for (namespace, body) in export_modules {
-                rust.push_str(&format!("pub mod {} {{use super::super::*; #[allow(async_fn_in_trait)] pub trait Guest {{{body}}} }}\n",crate::interfaces::rust_namespace(&namespace)?));
+                rust.push_str(&format!("pub mod {} {{use super::super::*; #[allow(async_fn_in_trait)] pub trait Guest {{{body}}}\n",crate::interfaces::rust_namespace(&namespace)?));
+                if let Some(traits) = resource_traits.get(&namespace) {
+                    for (name, body) in traits {
+                        rust.push_str(&format!("#[allow(async_fn_in_trait)] pub trait Guest{}:Sized+'static {{{body}}}\n",crate::core_resources::pascal(name)));
+                    }
+                }
+                rust.push_str("}\n");
             }
             rust.push_str("}\n");
         }
@@ -480,7 +622,14 @@ impl Contract {
             if let Some(m) = self.members.get(&f.name) {
                 let body = rust.split_off(start).replacen(
                     &format!("fn {name}("),
-                    &format!("fn {}(", rust_name(&m.method)?),
+                    &format!(
+                        "fn {}(",
+                        rust_name(&if m.receiver {
+                            format!("{}_{}", m.resource.as_ref().unwrap(), m.method)
+                        } else {
+                            m.method.clone()
+                        })?
+                    ),
                     1,
                 );
                 import_modules
@@ -498,6 +647,31 @@ impl Contract {
                 ));
             }
             rust.push_str("}\n");
+        }
+        let mut methods = std::collections::BTreeSet::new();
+        for f in self.functions.iter().filter(|f| !f.export) {
+            if let Some(m) = self.members.get(&f.name).filter(|m| m.receiver) {
+                let ValueType::Value(t) = f.args[0].1 else {
+                    unreachable!()
+                };
+                let resource = self.types.rust_type(self.types.borrowed(t).unwrap());
+                if !methods.insert((resource.clone(), m.method.clone())) {
+                    continue;
+                }
+                let args = f.rust_args(&self.types)?;
+                let tail = args
+                    .split_once(',')
+                    .map(|(_, tail)| format!(",{tail}"))
+                    .unwrap_or_default();
+                let values = f
+                    .args
+                    .iter()
+                    .skip(1)
+                    .map(|(n, _)| rust_name(n))
+                    .collect::<Result<Vec<_>>>()?
+                    .join(",");
+                rust.push_str(&format!("impl {resource} {{pub {}fn {}(&self{tail})->{} {{imports::{}::{}(self{}{}){} }} }}\n",if f.asynchronous {"async "}else{""},rust_name(&m.method)?,f.rust_result(&self.types),crate::interfaces::rust_namespace(&m.namespace)?,rust_name(&format!("{}_{}",m.resource.as_ref().unwrap(),m.method))?,if values.is_empty(){""}else{","},values,if f.asynchronous{".await"}else{""}));
+            }
         }
         // Expand at the application's call site, like wit-bindgen. Besides
         // useful diagnostics, this avoids embedding OUT_DIR's long absolute
@@ -529,6 +703,63 @@ impl Contract {
                 f.result.map(ValueType::wire_rust).unwrap_or("()")
             };
             rust.push_str(&format!("fn {name}({args}) -> {result} {{\n"));
+            let member = self.members.get(&f.name);
+            let resource_member = member.filter(|m| m.constructor || m.receiver);
+            let mut invocation = format!("<$component as {guest}>::{method}({values})");
+            if let Some(m) = resource_member {
+                let id = if m.receiver {
+                    let ValueType::Value(id) = f.args[0].1 else {
+                        unreachable!()
+                    };
+                    id
+                } else {
+                    let Some(ValueType::Value(id)) = f.result else {
+                        unreachable!()
+                    };
+                    id
+                };
+                let info = self.types.guest(id).unwrap();
+                let provider = format!(
+                    "<$component as exports::{}::Guest>::{}",
+                    crate::interfaces::rust_namespace(&info.namespace)?,
+                    crate::core_resources::pascal(&info.name)
+                );
+                let resource_trait = format!(
+                    "exports::{}::{}",
+                    crate::interfaces::rust_namespace(&info.namespace)?,
+                    info.trait_name()
+                );
+                if m.constructor {
+                    invocation = format!(
+                        "{}::new(<{provider} as {resource_trait}>::new({values}))",
+                        self.types.rust_type(id)
+                    );
+                } else {
+                    for (arg, ty) in &f.args {
+                        let arg = rust_name(arg)?;
+                        let decoded = match ty {
+                            ValueType::Value(t) => format!("__taraba_types::decode_{t}(&{arg})"),
+                            _ => arg.clone(),
+                        };
+                        rust.push_str(&format!("let {arg}={decoded};"));
+                    }
+                    let receiver = rust_name(&f.args[0].0)?;
+                    let rest = f
+                        .args
+                        .iter()
+                        .skip(1)
+                        .map(|(n, _)| rust_name(n))
+                        .collect::<Result<Vec<_>>>()?
+                        .join(",");
+                    invocation = format!(
+                        "<{provider} as {resource_trait}>::{method}(&**{receiver}{}{rest})",
+                        if rest.is_empty() { "" } else { "," }
+                    );
+                    if f.asynchronous {
+                        invocation = format!("async move {{{invocation}.await}}");
+                    }
+                }
+            }
             if f.asynchronous {
                 let encode = match f.result {
                     Some(ValueType::I32) => "::taraba::JsValue::from_i32".into(),
@@ -538,16 +769,19 @@ impl Contract {
                     None => "|()| ::taraba::JsValue::undefined()".into(),
                     _ => unreachable!(),
                 };
-                rust.push_str(&format!("let future = <$component as {guest}>::{method}({values});\nlet p = ::taraba::future_to_promise(__taraba_future::map_future(future, |result| result.map({encode})));\n// One live root moves into the generated resource and then to JavaScript.\nunsafe {{ __taraba_wire::Promise::from_handle(p.into_abi()) }}\n"));
+                rust.push_str(&format!("let future = {invocation};\nlet p = ::taraba::future_to_promise(__taraba_future::map_future(future, |result| result.map({encode})));\n// One live root moves into the generated resource and then to JavaScript.\nunsafe {{ __taraba_wire::Promise::from_handle(p.into_abi()) }}\n"));
             } else {
                 match f.result {
-                    Some(ValueType::Value(t)) => rust.push_str(&format!(
-                        "__taraba_types::encode_{t}(<$component as {guest}>::{method}({values}))\n"
-                    )),
-                    _ => rust.push_str(&format!("<$component as {guest}>::{method}({values})\n")),
+                    Some(ValueType::Value(t)) => {
+                        rust.push_str(&format!("__taraba_types::encode_{t}({invocation})\n"))
+                    }
+                    _ => rust.push_str(&format!("{invocation}\n")),
                 }
             }
             rust.push_str("}\n");
+        }
+        for (id, _) in self.types.guest_resources() {
+            rust.push_str(&format!("fn taraba_resource_drop_{id}(key:u32){{drop(__taraba_types::STORE_{id}.take(key));}}\n"));
         }
         rust.push_str("}\n__taraba_wire::__taraba_export!(__TarabaAdapter with_types_in self::__taraba_wire);\n}; }; }\n#[allow(unused_imports)]\npub(crate) use export;\n");
         Ok(rust)
@@ -579,7 +813,18 @@ fn public_interfaces(
         // the resource twice. The original public WIT is packaged unchanged.
         let name = member
             .map(|m| {
-                if m.constructor {
+                if m.receiver {
+                    format!(
+                        "taraba-method-{}-{}",
+                        m.resource
+                            .as_ref()
+                            .unwrap()
+                            .bytes()
+                            .map(|b| format!("{b:02x}"))
+                            .collect::<String>(),
+                        m.method
+                    )
+                } else if m.constructor {
                     format!("taraba-constructor-{}", m.method)
                 } else {
                     m.method.clone()
@@ -630,6 +875,19 @@ fn public_interfaces(
     }
     for (name, body) in definitions {
         output.push_str(&format!("interface %{name} {{{uses}{body}}}\n"));
+    }
+    if types.has_guests() {
+        output.push_str(&format!("interface taraba-guest-resources {{{uses}"));
+        for (id, info) in types.guest_resources() {
+            output.push_str(&format!(
+                "guest-{}-{}:func(value:borrow<{}>);",
+                crate::core_resources::hex(&info.namespace),
+                crate::core_resources::hex(&info.name),
+                types.wit(id)
+            ));
+        }
+        output.push_str("}\n");
+        items.push_str("export taraba-guest-resources;\n");
     }
     output.push_str(&format!(
         "world %{world} {{{resource_import}{uses}{items}}}\n",
@@ -730,6 +988,46 @@ pub fn generate_core_bindings(path: &Path, world: Option<&str>, output: &Path) -
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rust_resource_metadata_and_receiver_methods_round_trip() {
+        let b = crate::wit::parse_text("package test:guest; interface counters {resource counter {constructor(start:u32);read:func()->u32;wait:async func()->u32;} consume:func(v:own<counter>)->u32;} world app {export api:counters;}").unwrap();
+        let round_trip = crate::wit::parse_contract(b.core_contract.as_ref().unwrap()).unwrap();
+        assert!(b == round_trip);
+        assert_eq!(b.guest_resources.len(), 1);
+        assert_eq!(b.guest_resources.values().next().unwrap().methods.len(), 2);
+        let (_, ts) =
+            crate::bindings::generate(&b, false, crate::helpers::Features::default()).unwrap();
+        assert!(ts.contains("Promise<CountersCounter>"));
+        assert!(ts.contains("\"read\"("));
+    }
+    #[test]
+    fn unsupported_resource_contracts_fail_before_rust_compilation() {
+        for (text, diagnostic) in [
+            (
+                "package test:resource-static; interface counters {resource counter {make:static func()->own<counter>;}} world app {export api:counters;}",
+                "static methods",
+            ),
+            (
+                "package test:aliases; interface counters {resource counter {constructor();}} world app {export a:counters;export b:counters;}",
+                "one export alias",
+            ),
+            (
+                "package test:thenable; interface counters {resource counter {then:func();}} world app {export api:counters;}",
+                "thenable",
+            ),
+            (
+                "package test:crossing; interface counters {resource counter {constructor();}} world app {use counters.{counter};import take:func(v:own<counter>);export api:counters;}",
+                "cannot cross host imports",
+            ),
+        ] {
+            let error = crate::wit::parse_text(text)
+                .err()
+                .expect("unsupported resource must fail")
+                .to_string();
+            assert!(error.contains(diagnostic), "{error}");
+        }
+    }
 
     #[test]
     fn string_decoder_relies_on_the_generated_text_encoder() {

@@ -41,7 +41,7 @@ world app {
 }
 ```
 
-`async func(a: s32, b: s32) -> s32` is equivalent in this Core profile. World-level and interface synchronous and asynchronous functions support numeric types, bool, char, string, list, option, result, tuple, record, variant, enum, flags and type aliases. Imported opaque own/borrow resources also support typed async. Resource methods, Rust-defined exported resources, returned/nested borrows, streams, nested futures and fixed-size lists are outside Core. Use `--component` for standard resource bindings; other type/proposal support follows the upstream toolchain and is not established by Core tests.
+`async func(a: s32, b: s32) -> s32` is equivalent in this Core profile. World-level and interface synchronous and asynchronous functions support numeric types, bool, char, string, list, option, result, tuple, record, variant, enum, flags and type aliases. Imported opaque own/borrow resources also support typed async. Core Future also supports imported methods and Rust-defined exported resource constructors and methods. Returned/nested borrows, resource static methods, guest resources crossing host imports, streams, nested futures and fixed-size lists are outside Core. Use `--component` for standard resource bindings; other type/proposal support follows the upstream toolchain and is not established by Core tests.
 
 The generated `build.rs` runs `taraba bindgen` into Cargo's OUT_DIR. Include `bindings.rs`, invoke `bindings!()`, implement the generated `Guest` trait with `async fn` returning `HostResult<T>`, and invoke `export!(App)`. Imports are safe async functions; `?` propagates host Promise rejections without changing the JS error identity. See the [complete example](../README.md#minimal-example).
 
@@ -158,10 +158,12 @@ Opt into `taraba::panic::set_hook()` with std, or call `taraba::panic::handler(i
 
 `--debug` gives descriptive Core JS errors; release messages contain a code and a link to the [error reference](error-codes.md), without an embedded description table or a dictionary sidecar. First-fatal handling preserves the first reason and clears JS roots. Cancel does not abort arbitrary host network I/O; late subscriptions are retired safely. A Rust trap during Drop closes the instance and Drop is not retried.
 
-The JavaScript baseline is Safari 27+ / JSPI-capable V8. The runtime calls JSPI builtins directly without feature detection. Safari hardware remains unverified. Optional GC/js-string/exnref/funcref capability tests do not imply every runtime uses those features.
+The JavaScript baseline is Safari 27+ / JSPI-capable V8. The runtime calls JSPI builtins directly without feature detection. Safari-target validation is complete through Playwright WebKit E2E. Optional GC/js-string/exnref/funcref capability tests do not imply every runtime uses those features.
 
 [Verification commands](development.md), [current size comparison](async-size.md), [adoption gates](jspi-adoption.md). Kani verifies selected native64 models/components; it is not a proof of JS engines, emitted Wasm or the whole ABI.
 
 [Interfaces, resources, disposal and configurable task capacity](typescript.md#interfaces-and-resource-lifetimes).
 
 Strings use UTF-8 produced by the generated TextEncoder import, avoiding a second Rust UTF-8 validation. Replacing generated private codecs is outside the contract. Copying uses non-shared memory and a fresh zero-initialized Vec; ill-formed UTF-16 follows TextEncoder replacement rules. [Before/after sizes](bundle-tuning.md).
+
+[Core resource examples and limits](resources.md). Instance methods and Rust-defined resources require CLI and Rust runtime 0.2.1 or later.

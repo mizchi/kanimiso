@@ -12,11 +12,13 @@ extern crate std;
 mod ffi;
 pub mod panic;
 mod promise;
+mod resource;
 mod storage;
 mod task;
 mod value;
 mod waker;
 pub use promise::{JsFuture, JsPromise};
+pub use resource::Resource;
 pub use task::{JoinHandle, future_to_promise, spawn_local};
 pub use value::{HostError, JsValue};
 
@@ -25,6 +27,7 @@ pub use value::{HostError, JsValue};
 /// Macro implementation detail, not a supported application API.
 #[doc(hidden)]
 pub mod __private {
+    pub use crate::resource::Store as ResourceStore;
     // Revision 1: single-agent Promise/root ABI, 128-byte / 64-aligned task slots
     // and automatic boxed task fallback. Bump on incompatible private ABI changes.
     pub const RUNTIME_ABI_REVISION: u32 = 1;

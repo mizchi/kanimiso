@@ -38,9 +38,16 @@
 | [JSPI Future 測定](jspi-future-measurements.md) | 未採用の Future adapter と採用条件 |
 | [並行 JSPI](jspi-concurrent.md) | 未採用の stack snapshot、並行性・メモリ・時間 |
 | [JSPI 採用方針](jspi-adoption.md) | 既存 Future を残す理由と削除条件 |
-| [実行環境の前提](engine-baseline.md) | 対象のエンジン機能と Safari 未検証の範囲 |
+| [実行環境の前提](engine-baseline.md) | 対象のエンジン機能と Safari 向け WebKit 検証の方針 |
 | [抽出時の検証](verification.md) / [来歴](../provenance.json) | 過去の切り出し時点の証跡 |
 
 [JSPI Future の実装](../experiments/jspi-future/README.md)と[並行 JSPI の実装](../experiments/jspi-concurrent/README.md)は通常のライブラリビルドには含めません。
 
 [バンドルのチューニング前後](bundle-tuning.ja.md)：同じ処理の Wasm / JS / gzip / Brotli。
+
+- [注文ミドルウェアの実用例と計測](order-middleware.ja.md)
+- [ロードマップ](roadmap.ja.md)
+
+[WIT から状態付き Rust resource を公開する](resources.ja.md)
+
+[安定版・最新 nightly のブラウザー E2E](browser-testing.ja.md)

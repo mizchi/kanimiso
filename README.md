@@ -19,7 +19,7 @@ Write Rust `async` / `.await` code that calls JavaScript async functions, then e
 Requires Rust 1.85 or later and Binaryen 133 on PATH. Install the CLI from crates.io; generated projects use matching Rust crates. See [installation](docs/guide.md#installation).
 
 ```sh
-cargo install taraba-cli --version 0.2.0 --locked
+cargo install taraba-cli --version 0.2.1 --locked
 rustup target add wasm32-unknown-unknown
 
 taraba new hello --future
@@ -153,7 +153,7 @@ Builds warn about formatting macros such as `format!` / `write!`. Run `taraba bu
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.2.0", features = ["strings"] }
+taraba-helpers = { version = "0.2.1", features = ["strings"] }
 ```
 
 ```rust
@@ -176,6 +176,8 @@ Run `taraba build` as usual. Cargo features enable Rust APIs. The build selects 
 Using host strings also includes shared root infrastructure. This is a common cost for the first string feature, rather than a separate charge for every API. Supports std/no_std and Core JSPI/Future. Application WIT and `host.method(...)` stay the same; no manual JS bindings are needed.
 
 The [string/Iterator guide and size table](docs/strings.md) separate Wasm, generated JS and Rolldown output. These helpers target Core with a JS host; Component and JS-free WASI hosts are not supported.
+A complete [order middleware example](docs/order-middleware.md) keeps URL/JSON in JS and validation/transformation in Rust, with async authorization and typed npm distribution. It compares the same Rust implementation under taraba and standard wit-bindgen, alongside a JS baseline. [Next steps](docs/roadmap.md).
+
 
 ## Why
 
@@ -206,7 +208,7 @@ Core/JSPI accepts numeric APIs (s32/u32/f64). Core Future also generates typed b
 - [Documentation index](docs/README.md): earlier measurements and experiments.
 - [Development and verification](docs/development.md): tests, package checks and reproduction commands.
 
-JavaScript async targets Safari 27+ / JSPI-capable V8. Real Safari and native Component-host execution are unverified here. See [execution contracts and limits](docs/core-runtime.md).
+JavaScript async targets Safari 27+ / JSPI-capable V8. Safari-target validation is complete through Playwright WebKit E2E. Native Component-host execution remains unverified. See [execution contracts and limits](docs/core-runtime.md).
 
 CLI/runtime/JS: MIT. Optional allocator: MPL-2.0. [Third-party sources and licenses](THIRD_PARTY.md).
 

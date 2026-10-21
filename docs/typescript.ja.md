@@ -98,13 +98,13 @@ WIT の result の err はドメインの値で、Promise は成功して union 
 
 ホストの async import は同期の値、Promise、PromiseLike を返せます。`satisfies AppBindings` で引数と結果を検査します。catch で受け取る値は TS の通常の unknown です。throw の型を Result の E と同一視しません。
 
-JSON を扱う場合、bigint と TypedArray は JSON の配列・数値と同じ表現にはなりません。JSON 境界では文字列の ID や通常の配列へ明示的に変換してください。URL / Date / HTTP オブジェクトも WIT の文字列・数値・record へ分解します。標準 Component の相互運用や resource の method / stream が必要な場合は [Component 構成](guide.ja.md)を使います。
+JSON を扱う場合、bigint と TypedArray は JSON の配列・数値と同じ表現にはなりません。JSON 境界では文字列の ID や通常の配列へ明示的に変換してください。URL / Date / HTTP オブジェクトも WIT の文字列・数値・record へ分解します。標準 Component の相互運用や stream が必要な場合は [Component 構成](guide.ja.md)を使います。
 
 ## 配布サイズと検証
 
 名前付き型と WitInput は `.d.ts` にだけ存在します。型別の共有 JS ランタイムは追加せず、最適化済み Wasm に残った変換 import だけをアプリの `index.js` に含めます。未使用型・import の追加による Wasm / JS の増分 0 B を検証しています。[型ごとのサイズ表](core-runtime.ja.md#型と必要な変換処理)。
 
-`just core-types-check` は std / no_std、strict・exactOptionalPropertyTypes・noUncheckedIndexedAccess・verbatimModuleSyntax、数値配列の端の値・NaN・負のゼロ、subarray・memory.grow、readonly・PromiseLike、拒否・キャンセルを検証します。このページの日英サンプルも実ビルド・実行し、npm pack / install 後に NodeNext と bundler の型解決を確認します。Safari 実ブラウザーは未検証です。
+`just core-types-check` は std / no_std、strict・exactOptionalPropertyTypes・noUncheckedIndexedAccess・verbatimModuleSyntax、数値配列の端の値・NaN・負のゼロ、subarray・memory.grow、readonly・PromiseLike、拒否・キャンセルを検証します。このページの日英サンプルも実ビルド・実行し、npm pack / install 後に NodeNext と bundler の型解決を確認します。Safari 向け検証には[WebKit E2E の方針](browser-testing.ja.md)を採用しています。
 
 ## 呼び出し単位のキャンセル
 
@@ -170,7 +170,9 @@ host.dispose();
 
 lease は own で移譲するか明示的に dispose します。borrow 中の dispose と他 instance の lease の使用は拒否します。キャンセルした borrow は実行中の poll が戻ってから終了し、host 終了時には Rust 所有のリソースを解放します。JS が所有する lease は呼び出し元が解放してください。ホスト処理はキャンセル通知後に借用オブジェクトへアクセスしないでください。
 
-resource の method、Rust が実装する exported resource、戻り値や入れ子の borrow は Core の対象外です。標準の resource 契約には Component を使います。`just interfaces-check` / `just resources-check` は std / no_std、strict TS、constructor、キャンセル、他 instance の handle、Drop を確認します。未使用 constructor の配布 Wasm/JS の増分は 0 B です。
+imported resource の instance method は Rust の `value.read().await` を生成し、JS の実装オブジェクトの method を receiver を保って呼びます。method は resource 実装の型に含まれ、`AppBindings` の独立した callback は不要です。
+
+Core Future は [Rust が実装する exported resource](resources.ja.md) の constructor・同期/非同期 method・own/borrow にも対応します。戻り値や入れ子の borrow、static method、Rust resource を host import に渡す構成は対象外です。標準 resource ABI の相互運用には Component を使います。`just resources-check` は std/no_std、strict TS、npm pack/install、キャンセル、型・instance の一致、終了処理、Drop を確認します。未使用の imported method と exported resource 型宣言の配布 Wasm/JS 増分は 0 B です。
 
 ## Host の終了とタスク容量
 

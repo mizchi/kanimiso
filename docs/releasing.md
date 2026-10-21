@@ -17,7 +17,7 @@ For unsafe/ownership changes also run `just miri`, `just kani` and `just stress 
 Commit the release candidate, push it and confirm CI succeeds for that exact SHA.
 Run `just package-check --require-clean` again on the clean commit: the archives' `.cargo_vcs_info.json`
 must name that commit without `dirty: true`. Miri/Kani cover selected native models;
-real Safari and native Component-host execution remain unverified.
+native Component-host execution remains unverified. Safari validation is completed through WebKit E2E (`just browser-check` / `just webkit-latest-check`); an additional Safari.app run is not required.
 
 Publish the guest libraries before the CLI, so newly scaffolded projects can
 resolve every dependency. Each guest requires the Wasm target during Cargo's
@@ -35,14 +35,14 @@ After the libraries are available on crates.io, install the CLI from the
 registry in a fresh directory outside the checkout:
 
 ```sh
-cargo install taraba-cli --version 0.2.0 --locked --root ./cli
+cargo install taraba-cli --version 0.2.1 --locked --root ./cli
 ./cli/bin/taraba new hello --no-std
 cd hello
 ../cli/bin/taraba build
 pnpm --dir pkg pack
 ```
 
-Repeat with std and `new --future`, and add `taraba-helpers = { version = "0.2.0", features = ["strings"] }`.
+Repeat with std and `new --future`, and add `taraba-helpers = { version = "0.2.1", features = ["strings"] }`.
 Install the resulting npm tarball into another application, typecheck its
 `AppBindings`/`AppHost`, instantiate Wasm and run a generated method. Exercise
 the Component path separately with wasm-tools/jco. Binaryen 133 must be available;

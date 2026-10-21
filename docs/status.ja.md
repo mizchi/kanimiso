@@ -2,7 +2,7 @@
 
 [English](status.md) | 日本語
 
-このページは 0.2.0 の対応状況です。0.1.0 から更新する場合は CLI と Rust crate の依存を両方更新し、`pkg/` を再生成してください。[インストール手順](guide.ja.md#インストール)を参照してください。
+このページは 0.2.1 の対応状況です。resource の instance method と Rust 実装の exported resource を含みます。0.1.0 から更新する場合は CLI と Rust crate の依存を両方更新し、`pkg/` を再生成してください。[インストール手順](guide.ja.md#インストール)を参照してください。
 
 ## 実行方式を選ぶ
 
@@ -13,7 +13,7 @@
 | Rust の `.await`・独立した task・`spawn_local` | Future executor なし。同期形の guest 呼び出しを JSPI が停止 | 対応 | Component toolchain の async 実装 |
 | 非同期関数での imported opaque resource の own/borrow | 未対応 | freestanding 関数に対応 | 標準 resource binding |
 | imported resource の constructor | 未対応 | interface alias ごとの型付き factory | 標準 resource binding |
-| resource の method・Rust 実装の exported resource | 未対応 | 未対応 | Component を使う |
+| resource の instance method・Rust 実装の exported resource | 未対応 | 型付き constructor・同期/非同期 method・own/borrow | 標準 resource binding |
 | 呼び出し単位のキャンセル | 未対応 | JoinHandle / host.cancel、任意の `--abort-signal` | upstream の契約。Core とは異なる |
 | host の終了処理 | `host.dispose()` | `host.dispose()` | upstream の寿命管理。Core host API は対象外 |
 | 標準 Canonical ABI・native WIT async | 未対応 | 未対応。独自の JS ABI | `--component` |
@@ -29,7 +29,7 @@ Future は I/O 待機中も別の呼び出しを進められます。終了時�
 
 Core Future は各幅の数値（64-bit 整数は bigint）、bool、char、string、list、tuple、record、option、result、variant、enum、flags、型エイリアスに対応します。WIT の名前付き型を TS に export し、readonly な入力を受け付け、数値 list は TypedArray にします。戻り値を含めて文字列・list はコピーで受け渡し、Wasm memory の view は貸し出しません。WIT Result のエラーと、外部 Promise の reject は区別します。
 
-Core は resource の method、Rust 実装の exported resource、戻り値や入れ子の borrow、stream、入れ子の future、固定長 list に未対応です。Component は upstream の binding を使い、Core のテストで Component のすべての提案への対応を確認したとは扱いません。[TS との疎通](typescript.ja.md)に詳細があります。
+Core Future は imported resource の method と Rust 実装の exported resource の constructor・method に対応します。戻り値や入れ子の borrow、resource の static method、Rust resource を host import に渡す構成、stream、入れ子の future、固定長 list は未対応です。Component は upstream の binding を使い、Core のテストで Component のすべての提案への対応を確認したとは扱いません。[TS との疎通](typescript.ja.md)に詳細があります。
 
 `taraba-helpers` は JS の RegExp（コンパイル・判定）、文字列・Unicode 操作、Intl.Segmenter、非ストリーミングの TextDecoder を借用します。Iterator の接続は同期 JS Iterator → Rust Iterator で、途中 Drop 時に close します。AsyncIterator、Rust Iterator → JS、URLPattern、汎用 Map・Date・HTTP wrapper は未実装です。Core の追加 JS は使う操作と共通基盤だけです。[ヘルパー](helpers.ja.md)と[文字列](strings.ja.md)を参照してください。
 
@@ -48,10 +48,14 @@ Core は単一の JS agent 向けで、共有 memory は拒否します。`tarab
 | 対象 | 根拠と限界 |
 |---|---|
 | Node/V8・ブラウザー動作 | ローカルの Rust/JS、pack/install、strict TS に加え、Chrome 156・Playwright WebKit 27.2 の E2E を通過 |
-| Safari 27+ | 対象環境。Safari.app 27 での実行は未検証。Playwright WebKit の結果とは区別 |
+| Safari 27+ | 完了。Playwright WebKit を Safari 向け検証の代替として採用。Safari.app の追加実行は不要 |
 | Cloudflare Workers | 既存 fixture を local workerd で実行。本番へのデプロイは未検証 |
 | Component | jco 実行と component validate。native Component host での実行は未検証 |
 | メモリ・所有権 | Miri・native64 の限定した Kani モデル・stress。JS エンジン・生成 Wasm・ABI 全体の証明ではない |
 | GitHub Actions | workflow にジョブを設定。ローカルの成功だけで、そのコミットの Actions 通過とは扱わない |
 
 再現コマンドは[開発・検証手順](development.ja.md)、公開前の確認は[リリース手順](releasing.ja.md)にあります。
+
+[Core resource の実装例と制約](resources.ja.md)。method / Rust resource は CLI と Rust runtime の両方で 0.2.1 以降が必要です。
+
+ブラウザー E2E は [安定版26ケース・最新 nightly WebKit13ケース](browser-testing.ja.md)を通過しました。nightly の実際の版・build・テスト結果は実行ごとに記録します。

@@ -1,0 +1,24 @@
+[package]
+name = "taraba-order-middleware"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+[workspace]
+[lib]
+crate-type = ["cdylib"]
+[features]
+default = ["core-runtime"]
+core-runtime = ["dep:taraba"]
+component = []
+std = ["taraba?/std"]
+measured = []
+[dependencies]
+taraba = {version = "0.2.1", path = "../../crates/taraba", default-features = false, optional = true}
+taraba-allocator = {version = "0.2.1", path = "../../crates/taraba-allocator", default-features = false}
+wit-bindgen = {version = "=0.58.0", default-features = false, features = ["macros", "async"]}
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"

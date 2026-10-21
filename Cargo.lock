@@ -507,18 +507,18 @@ dependencies = [
 
 [[package]]
 name = "taraba"
-version = "0.2.0"
+version = "0.2.1"
 
 [[package]]
 name = "taraba-allocator"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "memory_units",
 ]
 
 [[package]]
 name = "taraba-cli"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "ctrlc",
  "notify",
@@ -536,7 +536,7 @@ dependencies = [
 
 [[package]]
 name = "taraba-helpers"
-version = "0.2.0"
+version = "0.2.1"
 
 [[package]]
 name = "taraba-jspi-promise"

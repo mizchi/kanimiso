@@ -2,7 +2,7 @@
 
 English | [日本語](status.ja.md)
 
-This page describes 0.2.0. When upgrading from 0.1.0, update both the CLI and Rust crate dependencies, then regenerate `pkg/`. See the [installation guide](guide.md#installation).
+This page describes 0.2.1, including resource instance methods and Rust-defined exported resources. When upgrading from 0.1.0, update both the CLI and Rust crate dependencies, then regenerate `pkg/`. See the [installation guide](guide.md#installation).
 
 ## Choosing an execution contract
 
@@ -13,7 +13,7 @@ This page describes 0.2.0. When upgrading from 0.1.0, update both the CLI and Ru
 | Rust `.await`, independent tasks, `spawn_local` | No Future executor; JSPI suspends synchronous guest calls | Supported | Component toolchain's async implementation |
 | Imported opaque resource own/borrow in async functions | Unsupported | Freestanding functions supported | Standard resource bindings |
 | Imported resource constructors | Unsupported | Typed factory per interface alias | Standard resource bindings |
-| Resource methods or Rust-defined exported resources | Unsupported | Unsupported | Use Component |
+| Resource instance methods / Rust-defined exported resources | Unsupported | Typed constructors and sync/async methods; own/borrow | Standard resource bindings |
 | Per-call cancellation | Unsupported | JoinHandle / host.cancel; optional `--abort-signal` | Upstream contract; differs from Core |
 | Host shutdown | `host.dispose()` | `host.dispose()` | Upstream lifecycle; no Core host API |
 | Standard Canonical ABI / native WIT async | Unsupported | Unsupported; private JS ABI | `--component` |
@@ -29,7 +29,7 @@ Future calls can progress independently while awaiting I/O. Shutdown cancels tas
 
 Core Future covers numeric widths (64-bit integers use bigint), bool, char, string, list, tuple, record, option, result, variant, enum, flags and aliases. Named WIT types are exported to TS. Readonly inputs are accepted; numeric lists become TypedArrays. Strings and lists are copied, including returned arrays: these APIs do not lend Wasm memory views. WIT Result errors and foreign Promise rejections remain distinct.
 
-Core does not support resource methods, Rust-defined exported resources, returned or nested borrows, streams, nested futures or fixed-length lists. Component uses upstream bindings; Core tests do not establish support for every Component proposal. See [TypeScript interop](typescript.md).
+Core Future supports imported methods and Rust-defined exported resource constructors and methods. Returned or nested borrows, resource static methods, guest resources crossing host imports, streams, nested futures and fixed-length lists remain unsupported. Component uses upstream bindings; Core tests do not establish support for every Component proposal. See [TypeScript interop](typescript.md).
 
 `taraba-helpers` borrows JS RegExp (compile/test), strings and Unicode operations, Intl.Segmenter and non-streaming TextDecoder. Its iterator bridge consumes synchronous JS Iterators as Rust Iterators and closes them on early Drop. AsyncIterator, Rust Iterator → JS, URLPattern and general Map/Date/HTTP wrappers are not implemented. Only used operations and their shared foundation enter Core JS output. See [helpers](helpers.md) and [strings](strings.md).
 
@@ -48,10 +48,14 @@ Core targets a single JS agent and rejects shared memory. `taraba-allocator` is 
 | Area | Evidence and limit |
 |---|---|
 | Node/V8 and browser behavior | Local Rust/JS, pack/install and strict TS checks; Chrome 156 and Playwright WebKit 27.2 E2E passed |
-| Safari 27+ | Target baseline; Safari.app 27 execution remains unverified. Playwright WebKit is separate evidence |
+| Safari 27+ | Complete: Playwright WebKit is the accepted Safari validation substitute; no additional Safari.app run is required |
 | Cloudflare Workers | Existing fixtures run on local workerd; no production deployment verification |
 | Component | jco execution and component validation; native Component-host execution remains unverified |
 | Memory and ownership | Miri, bounded native64 Kani models and stress tests; not a proof of JS engines, generated Wasm or the complete ABI |
 | GitHub Actions | Workflow jobs are configured; local results alone do not establish that a commit passed Actions |
 
 See [development and reproduction](development.md) for commands and [release checks](releasing.md) for publication requirements.
+
+[Core resource examples and limits](resources.md). Instance methods and Rust-defined resources require CLI and Rust runtime 0.2.1 or later.
+
+Browser E2E passed [26 stable browser cases and 13 latest canary WebKit cases](browser-testing.md). Each canary run records its actual version, build and test results.

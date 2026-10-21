@@ -12,7 +12,7 @@ Enable the crate's `std` feature and install before running application code. JS
 
 ```toml
 [dependencies]
-taraba = { version = "0.2.0", features = ["std"] }
+taraba = { version = "0.2.1", features = ["std"] }
 ```
 
 ```rust
@@ -90,9 +90,9 @@ Release sends an empty slice without formatting/copying details in the hook/hand
 
 The reference implementation formats panic information and copies a JS Error stack into a Rust string. taraba's release path omits both; Rust diagnostic formatting is compiled separately. Unlike blanket panic/fmt snipping, it preserves reporting and normal formatting.
 
-`just panic-check` で、同じ処理の hook 有無を比較し、std/no_std × JSPI/Future × release/debug/最適化付き詳細出力を実際の V8 で確認します。通常の計算・format、Future の poll 内の panic、最初の fatal の保持、通常 trap の識別を検証します。サイズは `.cache/panic-reporting/check.json` に保存します。Safari 実ブラウザーは未検証です。
+`just panic-check` で、同じ処理の hook 有無を比較し、std/no_std × JSPI/Future × release/debug/最適化付き詳細出力を実際の V8 で確認します。通常の計算・format、Future の poll 内の panic、最初の fatal の保持、通常 trap の識別を検証します。サイズは `.cache/panic-reporting/check.json` に保存します。Safari 向け検証には[WebKit E2E の方針](browser-testing.ja.md)を採用しています。
 
-Run `just panic-check` for the same baseline/hook algorithm across std/no_std, JSPI/Future and release/debug/optimized diagnostic builds on V8. It checks normal computation/formatting, panic during Future polling, first-fatal identity, native traps and payload formatting before the hook. Sizes are recorded in `.cache/panic-reporting/check.json`; Safari browser execution remains unverified.
+Run `just panic-check` for the same baseline/hook algorithm across std/no_std, JSPI/Future and release/debug/optimized diagnostic builds on V8. It checks normal computation/formatting, panic during Future polling, first-fatal identity, native traps and payload formatting before the hook. Sizes are recorded in `.cache/panic-reporting/check.json`; Safari-target validation follows the [accepted WebKit E2E policy](browser-testing.md).
 
 ### 2026-10-19 の最適化後の比較 / Optimized snapshot (2026-10-19)
 

@@ -1,0 +1,981 @@
+{
+  "created_at": "2026-10-21T10:34:48.565Z",
+  "engine": "Node v24.21.0 / V8 13.6.233.17-node.53",
+  "engine_flags": [
+    "--no-liftoff"
+  ],
+  "machine": {
+    "cpu": "Apple M5",
+    "arch": "arm64",
+    "os": "25.6.0"
+  },
+  "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "git": {
+    "commit": "ab8f0e174043dd1c89469bd2ff20b7cb29a82dfa",
+    "dirty": true
+  },
+  "all_passed": true,
+  "methodology": {
+    "algorithm": "Identical Rust workflow for taraba Core Future and wit-bindgen Component. Independent JS baseline, shared URL/JSON/HTTP adapter and authorization callback, common literal expectations.",
+    "size": "All deployed core Wasm and one Rolldown-minified ESM including HTTP adapter; -Oz/LTO; same allocator without size classes. No measured exports in size/timing artifacts. Component container not counted twice.",
+    "performance": "10 warmup batches, 7 samples x 10 batches; latency includes Request/body parsing/Response JSON for HTTP, domain-only for guest. Parallel values are batch throughput per call.",
+    "startup": "Five fresh ESM module identities/instances on a warm process; engine caches NOT flushed. Includes JS import, Wasm compilation and instantiation; not engine-cold startup.",
+    "memory": "Separate counting allocator reused from rich-async; requested Rust heap only, excludes JS heap, allocator overhead/fragmentation and static task pool. Linear memory reported separately. Quiesce four timer/immediate turns.",
+    "limits": "Core private ABI and standard Component have different exception/cancellation contracts. This corpus covers common successful/domain-error requests. No network authorization latency, actual copy counts, Safari.app or production Workers measured."
+  },
+  "entries": [
+    {
+      "backend": "javascript",
+      "mode": "host",
+      "wasm_bytes": 0,
+      "js_bytes": 3014,
+      "total_bytes": 3014,
+      "verified": {
+        "cases": 196,
+        "authorization_calls": 177,
+        "concurrency": 32
+      },
+      "artifacts": [
+        {
+          "path": "bundle.mjs",
+          "sha256": "3a74c377ed0696b876243df20ed9c555981daf82d239dd37d7983e2d4ad44d56",
+          "raw": 3014,
+          "gzip": 1388,
+          "brotli": 1221
+        }
+      ],
+      "startup": {
+        "fresh_module_and_instance_ms": {
+          "min": 0.08358299999999019,
+          "median": 0.09429199999999582,
+          "p95": 0.22937500000000455,
+          "max": 0.22937500000000455,
+          "n": 5
+        },
+        "first_domain_call_ms": {
+          "min": 0.03133300000000361,
+          "median": 0.03379200000000537,
+          "p95": 0.07404200000000571,
+          "max": 0.07404200000000571,
+          "n": 5
+        },
+        "engine_cache_flushed": false
+      },
+      "performance": [
+        {
+          "boundary": "guest",
+          "items": 1,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 1.0292000000006851,
+            "median": 1.1624999999995111,
+            "p95": 1.608299999999474,
+            "max": 1.608299999999474,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 1,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 17.320799999998826,
+            "median": 20.629100000000733,
+            "p95": 54.49169999999981,
+            "max": 54.49169999999981,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 1,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 0.6966124999999934,
+            "median": 0.7398437500000021,
+            "p95": 0.9880250000000146,
+            "max": 0.9880250000000146,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 1,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 8.30416249999999,
+            "median": 9.32213750000006,
+            "p95": 14.415887499999958,
+            "max": 14.415887499999958,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 32,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 5.066599999999255,
+            "median": 5.108300000000554,
+            "p95": 5.770799999999099,
+            "max": 5.770799999999099,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 32,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 29.950000000000898,
+            "median": 31.337500000000773,
+            "p95": 36.60419999999931,
+            "max": 36.60419999999931,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 32,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 4.72526249999996,
+            "median": 4.816406249999972,
+            "p95": 5.384631249999927,
+            "max": 5.384631249999927,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 32,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 26.14062499999985,
+            "median": 26.74218750000001,
+            "p95": 28.209118750000073,
+            "max": 28.209118750000073,
+            "n": 7
+          }
+        }
+      ]
+    },
+    {
+      "backend": "taraba",
+      "mode": "no_std",
+      "wasm_bytes": 6942,
+      "js_bytes": 6593,
+      "total_bytes": 13535,
+      "verified": {
+        "cases": 196,
+        "authorization_calls": 177,
+        "concurrency": 32
+      },
+      "artifacts": [
+        {
+          "path": "bundle.mjs",
+          "sha256": "46f55214c778caedfcd60f5436e21fcafd92ef18c660671639c90e14b8c11e74",
+          "raw": 6593,
+          "gzip": 3136,
+          "brotli": 2855
+        },
+        {
+          "path": "app.wasm",
+          "sha256": "aa78dbf3504e2519d09ab3a15639df935bf56cd32f8f76af1f86c19658f9acda",
+          "raw": 6942,
+          "gzip": 3813,
+          "brotli": 3551
+        }
+      ],
+      "startup": {
+        "fresh_module_and_instance_ms": {
+          "min": 0.3509159999999838,
+          "median": 0.5203749999999445,
+          "p95": 0.6928749999999582,
+          "max": 0.6928749999999582,
+          "n": 5
+        },
+        "first_domain_call_ms": {
+          "min": 0.1875,
+          "median": 0.24887499999999818,
+          "p95": 0.2745830000000069,
+          "max": 0.2745830000000069,
+          "n": 5
+        },
+        "engine_cache_flushed": false
+      },
+      "performance": [
+        {
+          "boundary": "guest",
+          "items": 1,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 7.083299999999326,
+            "median": 8.841700000004948,
+            "p95": 12.191700000005312,
+            "max": 12.191700000005312,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 1,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 17.55830000000742,
+            "median": 18.087500000001455,
+            "p95": 20.266700000001947,
+            "max": 20.266700000001947,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 1,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 3.885156249999966,
+            "median": 4.649999999999466,
+            "p95": 7.1276062499997295,
+            "max": 7.1276062499997295,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 1,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 12.038024999999664,
+            "median": 12.833856250000508,
+            "p95": 16.56353750000008,
+            "max": 16.56353750000008,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 32,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 37.09589999999707,
+            "median": 39.70000000000482,
+            "p95": 62.337500000001,
+            "max": 62.337500000001,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 32,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 62.47499999999491,
+            "median": 63.125000000002274,
+            "p95": 63.458300000002055,
+            "max": 63.458300000002055,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 32,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 35.762499999999875,
+            "median": 37.19192499999977,
+            "p95": 39.3664062500001,
+            "max": 39.3664062500001,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 32,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 59.07265625000023,
+            "median": 60.372137499999916,
+            "p95": 62.440099999999894,
+            "max": 62.440099999999894,
+            "n": 7
+          }
+        }
+      ],
+      "memory": {
+        "initial_linear_bytes": 262144,
+        "samples": [
+          {
+            "items": 32,
+            "concurrency": 1,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 1679,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 327680
+          },
+          {
+            "items": 32,
+            "concurrency": 16,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 17159,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 327680
+          },
+          {
+            "items": 32,
+            "concurrency": 32,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 33671,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 327680
+          }
+        ]
+      },
+      "consumer": {
+        "npm_pack_install": true,
+        "strict_typescript": [
+          "NodeNext",
+          "bundler"
+        ],
+        "http_export_executed": true
+      },
+      "foreign_rejection_identity_and_reuse": true
+    },
+    {
+      "backend": "taraba",
+      "mode": "std",
+      "wasm_bytes": 11014,
+      "js_bytes": 6593,
+      "total_bytes": 17607,
+      "verified": {
+        "cases": 196,
+        "authorization_calls": 177,
+        "concurrency": 32
+      },
+      "artifacts": [
+        {
+          "path": "bundle.mjs",
+          "sha256": "46f55214c778caedfcd60f5436e21fcafd92ef18c660671639c90e14b8c11e74",
+          "raw": 6593,
+          "gzip": 3136,
+          "brotli": 2855
+        },
+        {
+          "path": "app.wasm",
+          "sha256": "37ff0e29b01dd2d49dd49203e6e0abcb9abd0a0f5286b022c955e1037e44e57f",
+          "raw": 11014,
+          "gzip": 5885,
+          "brotli": 5397
+        }
+      ],
+      "startup": {
+        "fresh_module_and_instance_ms": {
+          "min": 0.4548330000002352,
+          "median": 0.9187919999999394,
+          "p95": 1.3118329999997513,
+          "max": 1.3118329999997513,
+          "n": 5
+        },
+        "first_domain_call_ms": {
+          "min": 0.209791000000223,
+          "median": 0.23450000000002547,
+          "p95": 0.26929100000006656,
+          "max": 0.26929100000006656,
+          "n": 5
+        },
+        "engine_cache_flushed": false
+      },
+      "performance": [
+        {
+          "boundary": "guest",
+          "items": 1,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 7.7916999999615655,
+            "median": 10.570800000004965,
+            "p95": 20.533300000033705,
+            "max": 20.533300000033705,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 1,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 16.35830000000169,
+            "median": 18.095899999980247,
+            "p95": 28.270900000006804,
+            "max": 28.270900000006804,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 1,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 4.210675000001629,
+            "median": 4.815106250001122,
+            "p95": 7.048437499997817,
+            "max": 7.048437499997817,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 1,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 11.048956249999264,
+            "median": 12.060156250001342,
+            "p95": 13.182556249998356,
+            "max": 13.182556249998356,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 32,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 39.504200000010314,
+            "median": 42.06659999999829,
+            "p95": 47.19170000003032,
+            "max": 47.19170000003032,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 32,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 62.40410000000338,
+            "median": 62.75829999999587,
+            "p95": 74.06670000000304,
+            "max": 74.06670000000304,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 32,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 36.69036875000131,
+            "median": 37.3544250000009,
+            "p95": 38.3304687500015,
+            "max": 38.3304687500015,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 32,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 59.899218749998795,
+            "median": 60.997918750001645,
+            "p95": 67.20208124999942,
+            "max": 67.20208124999942,
+            "n": 7
+          }
+        }
+      ],
+      "memory": {
+        "initial_linear_bytes": 262144,
+        "samples": [
+          {
+            "items": 32,
+            "concurrency": 1,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 1679,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 327680
+          },
+          {
+            "items": 32,
+            "concurrency": 16,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 17159,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 327680
+          },
+          {
+            "items": 32,
+            "concurrency": 32,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 33671,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 327680
+          }
+        ]
+      },
+      "consumer": {
+        "npm_pack_install": true,
+        "strict_typescript": [
+          "NodeNext",
+          "bundler"
+        ],
+        "http_export_executed": true
+      },
+      "foreign_rejection_identity_and_reuse": true
+    },
+    {
+      "backend": "wit-bindgen",
+      "mode": "no_std",
+      "wasm_bytes": 15411,
+      "js_bytes": 85065,
+      "total_bytes": 100476,
+      "verified": {
+        "cases": 196,
+        "authorization_calls": 177,
+        "concurrency": 32
+      },
+      "artifacts": [
+        {
+          "path": "bundle.mjs",
+          "sha256": "75c0dc770d139505ef048da6a9fb8218d175d1cf9d02ee8911cd2c9f57045769",
+          "raw": 85065,
+          "gzip": 22870,
+          "brotli": 20287
+        },
+        {
+          "path": "app.conditional-suspending-1-i32-to-i32.wasm",
+          "sha256": "84e0e4b98fc97c749ba967a311969f7f7c9e6025e1aa3815fd80493ecd5a9918",
+          "raw": 75,
+          "gzip": 91,
+          "brotli": 69
+        },
+        {
+          "path": "app.core.wasm",
+          "sha256": "6490beb8bb26624dd8b0b393b86204102bc1209bb2b3ca119e5bfe7cebf94f6c",
+          "raw": 15032,
+          "gzip": 7564,
+          "brotli": 6835
+        },
+        {
+          "path": "app.core2.wasm",
+          "sha256": "ed77f96f7e637c4b1b7f55706d94a81acfec9a56a06402944785d3810d1124e8",
+          "raw": 176,
+          "gzip": 162,
+          "brotli": 130
+        },
+        {
+          "path": "app.core3.wasm",
+          "sha256": "4c7ba3ebd10e77e2a17f6a1a5c4f223906dac7730abba8279bfdc5d34c38e2c7",
+          "raw": 128,
+          "gzip": 133,
+          "brotli": 101
+        }
+      ],
+      "startup": {
+        "fresh_module_and_instance_ms": {
+          "min": 1.4697909999995318,
+          "median": 1.6255000000001019,
+          "p95": 1.8543330000002243,
+          "max": 1.8543330000002243,
+          "n": 5
+        },
+        "first_domain_call_ms": {
+          "min": 1.4912500000000364,
+          "median": 2.632459000000381,
+          "p95": 2.8190829999994094,
+          "max": 2.8190829999994094,
+          "n": 5
+        },
+        "engine_cache_flushed": false
+      },
+      "performance": [
+        {
+          "boundary": "guest",
+          "items": 1,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 1094.5166999999856,
+            "median": 1174.120799999946,
+            "p95": 1274.9791999999616,
+            "max": 1274.9791999999616,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 1,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 1105.4082999999991,
+            "median": 1252.7125000000524,
+            "p95": 1403.7375000000793,
+            "max": 1403.7375000000793,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 1,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 1148.3908874999997,
+            "median": 1159.7695312500036,
+            "p95": 1177.1260374999997,
+            "max": 1177.1260374999997,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 1,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 1174.3216187499968,
+            "median": 1186.3651000000004,
+            "p95": 1211.8476562500007,
+            "max": 1211.8476562500007,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 32,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 1094.458400000076,
+            "median": 1212.1917000000394,
+            "p95": 1228.1000000000859,
+            "max": 1228.1000000000859,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 32,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 1126.1791999999332,
+            "median": 1250.7042000001093,
+            "p95": 1276.929200000086,
+            "max": 1276.929200000086,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 32,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 1198.267443750001,
+            "median": 1236.3828125000055,
+            "p95": 1288.8234375000025,
+            "max": 1288.8234375000025,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 32,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 1284.2984375000015,
+            "median": 1477.9755249999994,
+            "p95": 1549.8101562499983,
+            "max": 1549.8101562499983,
+            "n": 7
+          }
+        }
+      ],
+      "memory": {
+        "initial_linear_bytes": 131072,
+        "samples": [
+          {
+            "items": 32,
+            "concurrency": 1,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 1923,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 196608
+          },
+          {
+            "items": 32,
+            "concurrency": 16,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 1923,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 196608
+          },
+          {
+            "items": 32,
+            "concurrency": 32,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 1923,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 196608
+          }
+        ]
+      }
+    },
+    {
+      "backend": "wit-bindgen",
+      "mode": "std",
+      "wasm_bytes": 26024,
+      "js_bytes": 85065,
+      "total_bytes": 111089,
+      "verified": {
+        "cases": 196,
+        "authorization_calls": 177,
+        "concurrency": 32
+      },
+      "artifacts": [
+        {
+          "path": "bundle.mjs",
+          "sha256": "75c0dc770d139505ef048da6a9fb8218d175d1cf9d02ee8911cd2c9f57045769",
+          "raw": 85065,
+          "gzip": 22870,
+          "brotli": 20287
+        },
+        {
+          "path": "app.conditional-suspending-1-i32-to-i32.wasm",
+          "sha256": "84e0e4b98fc97c749ba967a311969f7f7c9e6025e1aa3815fd80493ecd5a9918",
+          "raw": 75,
+          "gzip": 91,
+          "brotli": 69
+        },
+        {
+          "path": "app.core.wasm",
+          "sha256": "5187c193fa52f88d11a02f826483959414285a5bfc1256510e30cbc699872996",
+          "raw": 25645,
+          "gzip": 12547,
+          "brotli": 10974
+        },
+        {
+          "path": "app.core2.wasm",
+          "sha256": "ed77f96f7e637c4b1b7f55706d94a81acfec9a56a06402944785d3810d1124e8",
+          "raw": 176,
+          "gzip": 162,
+          "brotli": 130
+        },
+        {
+          "path": "app.core3.wasm",
+          "sha256": "4c7ba3ebd10e77e2a17f6a1a5c4f223906dac7730abba8279bfdc5d34c38e2c7",
+          "raw": 128,
+          "gzip": 133,
+          "brotli": 101
+        }
+      ],
+      "startup": {
+        "fresh_module_and_instance_ms": {
+          "min": 1.4987920000003214,
+          "median": 1.6482080000005226,
+          "p95": 2.5854589999999007,
+          "max": 2.5854589999999007,
+          "n": 5
+        },
+        "first_domain_call_ms": {
+          "min": 1.4419589999997697,
+          "median": 1.6483339999995223,
+          "p95": 2.922042000000147,
+          "max": 2.922042000000147,
+          "n": 5
+        },
+        "engine_cache_flushed": false
+      },
+      "performance": [
+        {
+          "boundary": "guest",
+          "items": 1,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 1126.2124999999287,
+            "median": 1232.8416000000288,
+            "p95": 1252.758300000096,
+            "max": 1252.758300000096,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 1,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 1140.479200000118,
+            "median": 1241.7833999999857,
+            "p95": 1291.095900000073,
+            "max": 1291.095900000073,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 1,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 1195.0317750000067,
+            "median": 1243.00051875,
+            "p95": 1274.9101562500073,
+            "max": 1274.9101562500073,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 1,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 1187.6757812500045,
+            "median": 1236.9609374999982,
+            "p95": 1304.34244999999,
+            "max": 1304.34244999999,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 32,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 1193.525000000227,
+            "median": 1370.9165999996912,
+            "p95": 1453.9249999997992,
+            "max": 1453.9249999997992,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 32,
+          "concurrency": 1,
+          "us_per_call": {
+            "min": 1364.233299999978,
+            "median": 1582.6207999998587,
+            "p95": 1711.4208999999391,
+            "max": 1711.4208999999391,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "guest",
+          "items": 32,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 1340.3174500000205,
+            "median": 1391.156775000013,
+            "p95": 1437.819793750009,
+            "max": 1437.819793750009,
+            "n": 7
+          }
+        },
+        {
+          "boundary": "http",
+          "items": 32,
+          "concurrency": 16,
+          "us_per_call": {
+            "min": 1437.9221375000043,
+            "median": 1515.7567687499977,
+            "p95": 1630.613543749996,
+            "max": 1630.613543749996,
+            "n": 7
+          }
+        }
+      ],
+      "memory": {
+        "initial_linear_bytes": 131072,
+        "samples": [
+          {
+            "items": 32,
+            "concurrency": 1,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 1923,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 196608
+          },
+          {
+            "items": 32,
+            "concurrency": 16,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 1923,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 196608
+          },
+          {
+            "items": 32,
+            "concurrency": 32,
+            "before_requested_heap_bytes": 0,
+            "peak_requested_heap_bytes": 1923,
+            "after_requested_heap_bytes": 0,
+            "linear_bytes": 196608
+          }
+        ]
+      }
+    }
+  ],
+  "inputs": {
+    "examples/order-middleware/Cargo.toml": "e4dd7065251388ad4bcf9e6884b84d8157c5a1215abf4adb71ee7236b0ecc446",
+    "examples/order-middleware/.cargo/config.toml": "46e087bde26b6b7d25cd84291be32bcd04e263f09d665f212c89f72974270640",
+    "examples/order-middleware/Cargo.lock": "ce986ea9a354ab69e42ce3ae6ebcabbabbf367d6f1c3e502bcb1de9eb32c5cb3",
+    "examples/order-middleware/build.rs": "ed2e034b4c01e2784f8b31a5bac155b8e1d781c2cabf52c3841d4d72cf5a2f6d",
+    "examples/order-middleware/wit/app.wit": "840b24d60fdbe06aea540903014ce757778b148b5731a620366cd60ecc9b2223",
+    "examples/order-middleware/src/lib.rs": "a732314390898d286871d30e0f7f9315150c9237b5f078362adf1bdc3795f918",
+    "examples/order-middleware/src/workflow.rs": "0d2c5c7823d2510dfb3a7a017728c61f16ded49e9af778811bee5c4b459bf7a7",
+    "examples/order-middleware/http.mjs": "2679af8a0f43969eab41f0d4559bbcc6f28067b4c357298eb2116413006c6aee",
+    "examples/order-middleware/http.d.mts": "292e255ec482e74ff226a131c3ff0538364808159963bd65df4387fbad6c6b6c",
+    "examples/order-middleware/package.mjs": "36cc67c01705a52b2900795ce93f810aa28259290ff4f7b4c718583b8ccebcee",
+    "examples/order-middleware/reference.mjs": "ed2044d278dda8aa560c3ddb8c6337ed589a5a92ffb8b678f17a236614b68a1d",
+    "examples/order-middleware/contract.mjs": "f048f17dad7d4f2020b049a711649f0ed56a00a687d61679b6ea2d5648895dcc",
+    "examples/order-middleware/report.mjs": "b39a1c3d655d3e2e51057f91620164fcec9ead2464f8bb01253054ca90bcb160",
+    "experiments/rich-async/src/measured.rs": "cc27ee3c5312856b38c09068966e6f556c670982900877c00e1d68dae132f7a1",
+    "tools/compare-order-middleware.mjs": "b8162f3350dce578dbf3b7aed6703a45d676f9e5314e22c2ed0cd4927e97cc6e",
+    "crates/taraba-cli/assets/provenance.json": "b573043077d812d12418228027f5ee22898d2e3c2fb3b7b4c02245b9ceccc5ae",
+    "Cargo.lock": "34d1d5c9cd2a8595efa4b1cbae3f68b3f6ce5764833981e01db7906d57a28227",
+    "pnpm-lock.yaml": "d9bc41ad5eecb519c5e086ad26beae77dae3bb5356f3f2078b15b108cb804e1b",
+    "rust-toolchain.toml": "8af15b24d337d34a26b257ce39a67ed05d31f5e504d2a6cd9f2b9621a2afdb84",
+    "crates/taraba/src/ffi.rs": "ef9cbf04f504ed01cd0375360c78678f6c72d6dfd559dbdeb38402af5ed569b7",
+    "crates/taraba/src/lib.rs": "629f22068063ad93d2726815e1bb03d377efaf3f227c59fdc487fb97cb5142bc",
+    "crates/taraba/src/panic.rs": "e8af3a21a74e66928695df9615eaf1462b5db8f6db3edcadab0fb38d44af9a9b",
+    "crates/taraba/src/promise.rs": "dad473b9a3c84f464c274af30efc792e23b9aa7bb4a3f2dc2e110e59abc9acce",
+    "crates/taraba/src/promise_tests.rs": "8a45e06a05d3663ccf6b700d978226feaaaecddd653a2657ef417e32b333fa6b",
+    "crates/taraba/src/storage.rs": "c92bfd9a9ffb0638aea00073777cdd2c45fb890ab519f0117755ac748ba55e68",
+    "crates/taraba/src/task.rs": "f9faa7d801e07be531809404a06056b9ff4128b0ee4027c0dc67da51c5ec03ee",
+    "crates/taraba/src/value.rs": "cd89f28ad8b19990648a1f9bd12ad896a553ba2ebc8c0adf9c6ecb091b9d27cc",
+    "crates/taraba/src/waker.rs": "eac9c2b2f5a538918ac1cb0bfbad0934898c4c78b1b1fb84c893666029dc61b9",
+    "crates/taraba-allocator/src/const_init.rs": "3990e2658a30f8674ad948ce6ca1a50a86c714417005df895d5e4892f863b867",
+    "crates/taraba-allocator/src/extra_assert.rs": "69119bed3138136b5a62d6f0604c984bda753d834931941680a33038f892a6fc",
+    "crates/taraba-allocator/src/imp_test.rs": "60e3ec7ccac4925e5aa33f4abeddb47d9e4210690c2689d97dd06028c2872910",
+    "crates/taraba-allocator/src/imp_wasm32.rs": "da90a938821d1d2c838027815398082675b2ac42d70fe5752991e711e103912e",
+    "crates/taraba-allocator/src/lib.rs": "e44929b796ad5f932543e8fc4aebaa6be3ef16b27cb55745cb63f9db395467df",
+    "crates/taraba-allocator/src/neighbors.rs": "603c99ca0f8117b79a8f1c9ec53cdba73260b84032f239f6a9f00f7da94834f5",
+    "crates/taraba-allocator/src/regression.rs": "858094103541fb1b56a8941e080356e43151e973b8365f30517f187c9972db9e",
+    "crates/taraba-allocator/src/size_classes.rs": "3365942c7dd5a256b9d558dd856ca0eea8ae060ad726956535da3e8f06032ebe",
+    "crates/taraba-cli/src/abi.rs": "40a502d4785bd2fb7358adac94167d1c93da6badde1b2d30127b9a1795399704",
+    "crates/taraba-cli/src/bindings.rs": "4916406ac8f6fd2270fd51ac98b64c8919a02ae13475180f48cb9ab67d73b740",
+    "crates/taraba-cli/src/build.rs": "720f29393e8d19a18332073f334923518c180798f7fda740ef8b0d59bc8b90ca",
+    "crates/taraba-cli/src/compatibility.rs": "a9b25a1bb6495c031f0b2b752ac7888d643455090eac79aee61a4d719320a83b",
+    "crates/taraba-cli/src/component.rs": "861787ceebf3211bce49d92a6cb32ad99120cfb0dafcfd9b6b90ba8334eca2a0",
+    "crates/taraba-cli/src/core_async.rs": "07d6df0041f98dac0cb39f29b74651920a740e1599e3dbba5ebf20ca06d14fe2",
+    "crates/taraba-cli/src/core_types.rs": "8ae083b4eb3b3b235beb5e9ff5875297af789b735e88babf742193d455f27e45",
+    "crates/taraba-cli/src/detect.rs": "879fabddc70fdcd184ae243e7b7bd7c3f3554c9ed78c58172ae14645c7f878b4",
+    "crates/taraba-cli/src/diagnostics.rs": "7c99729134e03356ac8bb33cba17fa0693cb2c8c55f7520d7394ea3ddb8da5b2",
+    "crates/taraba-cli/src/helpers.rs": "5b550ca71966015c05b5850519e02bd0e70a98d5672a115d983b9de29a3d3c39",
+    "crates/taraba-cli/src/imports.rs": "e69cd8c5eb376f89e8aa92c0c2683fb84a686d23f411363ef4adf1eee3c23c66",
+    "crates/taraba-cli/src/insight.rs": "160202e0d5f7851096c483bc90a0891b3ef92b48e6cda3180e53c56328dc9478",
+    "crates/taraba-cli/src/insight_command.rs": "6b1a95b812d10911234149f5adca013e0f065828b396fc04c05caeecba79982d",
+    "crates/taraba-cli/src/interfaces.rs": "4696aa8708174a4001573c7b3c3279eb0db0455658e65f1e37c3c316c5480adc",
+    "crates/taraba-cli/src/lib.rs": "4ae1f53710445a5e16b07a570becb885d08a1775d9c8c0a1c421a7eb9cb5273c",
+    "crates/taraba-cli/src/main.rs": "1dc5a34644b7284103f50ad821e8e2a9e28140f4d28f55507639a7e34795e61e",
+    "crates/taraba-cli/src/map_future_tests.rs": "8b1760b08b7e5d2f077cd5e83125dcf361735c7317326bca43acdab9f62adf35",
+    "crates/taraba-cli/src/npm.rs": "555efcf299108d07d7e7b6e2fe464acfa267a4e2f2d57b515ff181d1a46489fc",
+    "crates/taraba-cli/src/package.rs": "72c12c8c66737466777543ba675a68dec691ea66058bd757a2946535c212784f",
+    "crates/taraba-cli/src/profile.rs": "055a544f6fb48ff77d1d2360f3f42fcc41f2ab711b721b041190d79efc9369f6",
+    "crates/taraba-cli/src/project.rs": "748bcd6be2f2225e191f014db146f5b3f3e77c0e6721557ceab51a86b30d89a4",
+    "crates/taraba-cli/src/project_build.rs": "5a1ac52126c224a9c40d03ae3dc862fd8c6903574f3364f26c2b64e7c8b4af5c",
+    "crates/taraba-cli/src/rebuild.rs": "dd8caf36ad07ea8fa9c98eaf967f2cd9e628989bb0f040029803dba17f11c071",
+    "crates/taraba-cli/src/runtime_abi.rs": "3664181309da088aa2a397bd572efbd5ecf2dca4571becb0ce4202d83424e134",
+    "crates/taraba-cli/src/watch.rs": "25d3ae59526ea783e3fee11566d4ea52c70379b59816dd420d07df7470f940f0",
+    "crates/taraba-cli/src/wit.rs": "91dd24b872d673ba866ea63d63f43a72f23ccaba6c700113b59d537630a2c9db",
+    "crates/taraba-cli/src/templates/app.rs": "ae1fe183f42aceaa6c40c163ca2f7a8246c4d5229e7b2b029cbdcf3e7b57a0eb",
+    "crates/taraba-cli/src/templates/build.rs": "96c9f478d7a96d6d1674670bc9c65418b58c18011178b0b51926b17921ba66bb",
+    "crates/taraba-cli/src/templates/component.rs": "8415ddb5878f645117651f12f7040056218caf6d1a35f30563f7e28d86280c1b",
+    "crates/taraba-cli/src/templates/jspi.rs": "682ecb4ee02a68ab7190f89837451b68e8731c198a654b60796c60eacc2c51a3",
+    "crates/taraba-cli/src/templates/map_future.rs": "b6c682a410b498eabc4be10848f0ff221b53b3d2f52ed9fe245c7bf26814f185"
+  }
+}

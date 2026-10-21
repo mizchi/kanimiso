@@ -15,7 +15,7 @@ unsafe・所有権を変えた場合は `just miri`、`just kani`、`just stress
 リリース候補を commit・push し、その SHA の CI 成功を確認します。
 clean なコミットで `just package-check --require-clean` を再実行し、各アーカイブの
 `.cargo_vcs_info.json` が同じ SHA を示し、`dirty: true` がないことを確認します。
-Miri/Kani は限定した native モデルの検証で、Safari 実機・native Component host は未検証です。
+Safari 向け検証は `just browser-check` / `just webkit-latest-check` の WebKit E2E で完了とし、Safari.app の追加実行は要求しません。Miri/Kani は限定した native モデルの検証で、native Component host での実行は未検証です。
 
 scaffold が全依存を取得できるよう、guest の3ライブラリを CLI より先に公開します。
 guest は Cargo の検証にも Wasm target を指定し、CLI は native でビルドします。
@@ -31,14 +31,14 @@ cargo publish --locked -p taraba-cli
 crates.io に反映後、checkout の外の新しいディレクトリで CLI を registry からインストールします。
 
 ```sh
-cargo install taraba-cli --version 0.2.0 --locked --root ./cli
+cargo install taraba-cli --version 0.2.1 --locked --root ./cli
 ./cli/bin/taraba new hello --no-std
 cd hello
 ../cli/bin/taraba build
 pnpm --dir pkg pack
 ```
 
-std、`new --future` でも繰り返し、`taraba-helpers = { version = "0.2.0", features = ["strings"] }`
+std、`new --future` でも繰り返し、`taraba-helpers = { version = "0.2.1", features = ["strings"] }`
 を追加したアプリも確認します。npm tarball を別アプリに install し、`AppBindings` / `AppHost`
 の型検査、Wasm instantiate、生成メソッドの実行まで通します。
 wasm-tools / jco を使う Component 経路も別途確認します。

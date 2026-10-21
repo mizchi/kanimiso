@@ -1,11 +1,4 @@
-import { test, expect } from "@playwright/test";
-test.beforeEach(async ({ page, browser, browserName }, info) => {
-  info.annotations.push({
-    type: "engine",
-    description: `${browserName} ${browser.version()}`,
-  });
-  await page.goto("/");
-});
+import { test, expect } from "./fixtures.mjs";
 test("Future rich values, memory growth, rejection identity, cancellation and disposal", async ({
   page,
   browserName,
@@ -155,11 +148,13 @@ test("resource constructors, own/borrow and Symbol.dispose preserve lifetimes ac
         io: {
           value: (text) => ({
             text,
+            async read() {
+              return slow ? new Promise(() => {}) : this.text;
+            },
             [Symbol.dispose]() {
               drops++;
             },
           }),
-          read: async (v) => (slow ? new Promise(() => {}) : v.text),
         },
       },
     });
@@ -245,4 +240,182 @@ test("AbortSignal cancels a real browser fetch", async ({ page }) => {
     };
   });
   expect(report).toEqual({ rejected: true, aborted: true, roots: 0 });
+});
+
+test("order middleware runs the typed guest through Request and Response", async ({
+  page,
+}) => {
+  const report = await page.evaluate(async () => {
+    const { createHost } = await import("/middleware/index.js");
+    const { createMiddleware } = await import("/middleware/http.mjs");
+    const host = createHost({
+      bindings: { authorize: async (tenant) => tenant !== "blocked" },
+    });
+    host.attach(
+      (
+        await WebAssembly.instantiate(
+          await (await fetch("/middleware/app.wasm")).arrayBuffer(),
+          host.imports,
+        )
+      ).instance.exports,
+    );
+    const handle = createMiddleware(host);
+    const request = (tenant) =>
+      new Request("https://shop.test/orders?dry-run=1", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-tenant": tenant },
+        body: JSON.stringify({
+          customer: "  Alice 🦀  ",
+          items: [
+            { sku: " a ", quantity: 2, unitPrice: 10 },
+            { sku: "A", quantity: 3, unitPrice: 10 },
+          ],
+        }),
+      });
+    const ok = await handle(request("shop")),
+      denied = await handle(request("blocked"));
+    const result = {
+      status: ok.status,
+      body: await ok.json(),
+      denied: denied.status,
+      error: await denied.json(),
+    };
+    host.dispose();
+    return result;
+  });
+  expect(report).toEqual({
+    status: 200,
+    body: {
+      customer: "Alice 🦀",
+      items: [{ sku: "A", quantity: 5, unitPrice: 10 }],
+      total: 50,
+      dryRun: true,
+    },
+    denied: 403,
+    error: { error: "denied" },
+  });
+});
+
+test("Rust-defined resources preserve state, type identity and borrow lifetimes", async ({
+  page,
+}) => {
+  const report = await page.evaluate(async () => {
+    const { createHost } = await import("/guest/index.js");
+    const bytes = await (await fetch("/guest/app.wasm")).arrayBuffer();
+    let slow = false,
+      duringTick,
+      duringDrop;
+    const connect = async () => {
+      const host = createHost({
+        bindings: {
+          notify: (phase) => duringDrop?.(phase),
+          tick: () => {
+            if (duringTick) return duringTick();
+            return slow ? new Promise(() => {}) : Promise.resolve(0);
+          },
+        },
+      });
+      host.attach(
+        (await WebAssembly.instantiate(bytes, host.imports)).instance.exports,
+      );
+      return host;
+    };
+    const host = await connect(),
+      value = await host.api.counter(7);
+    const updated = await value.add(2),
+      read = await value.wait();
+    const wrongTypeHost = await connect();
+    const token = await wrongTypeHost.api.token();
+    let wrongType = false;
+    try {
+      await wrongTypeHost.api.consume(token);
+    } catch (e) {
+      wrongType = e.code === "RS01";
+    }
+    token[Symbol.dispose]();
+    wrongTypeHost.dispose();
+    slow = true;
+    const c = new AbortController(),
+      pending = value.wait({ signal: c.signal });
+    pending.catch(() => {});
+    for (let i = 0; i < 60; i++) await Promise.resolve();
+    let borrowed = false;
+    try {
+      value[Symbol.dispose]();
+    } catch (e) {
+      borrowed = e.code === "RS02";
+    }
+    c.abort();
+    let cancelled = false;
+    try {
+      await pending;
+    } catch (e) {
+      cancelled = e.name === "AbortError";
+    }
+    value[Symbol.dispose]();
+    const drops = await host.api.drops();
+    slow = false;
+    const moved = await host.api.counter(4);
+    const consumed = await host.api.consume(moved);
+    moved[Symbol.dispose]();
+    const reentrant = await host.api.counter(3);
+    duringTick = () => host.dispose();
+    let disposed = false;
+    try {
+      await reentrant.wait();
+    } catch (e) {
+      disposed = e.code === "RT13";
+    }
+    for (let i = 0; i < 60; i++) await Promise.resolve();
+    reentrant[Symbol.dispose]();
+    duringTick = undefined;
+    const dropHost = await connect(),
+      dropValue = await dropHost.api.counter(3),
+      phases = [];
+    duringDrop = (phase) => {
+      phases.push([phase, dropHost.stats().dead]);
+      if (phase === 0) dropHost.dispose();
+    };
+    let dropClosed = false;
+    try {
+      dropValue[Symbol.dispose]();
+    } catch (e) {
+      dropClosed = e.code === "RT13";
+    }
+    return {
+      phases,
+      dropClosed,
+      updated,
+      read,
+      wrongType,
+      borrowed,
+      cancelled,
+      drops,
+      consumed,
+      disposed,
+      stats: host.stats(),
+    };
+  });
+  expect({ ...report, stats: undefined }).toEqual({
+    phases: [
+      [0, false],
+      [1, false],
+    ],
+    dropClosed: true,
+    updated: 9,
+    read: 9,
+    wrongType: true,
+    borrowed: true,
+    cancelled: true,
+    drops: 1,
+    consumed: 4,
+    disposed: true,
+    stats: undefined,
+  });
+  expect(report.stats.dead).toBe(true);
+  expect(
+    report.stats.live_values +
+      report.stats.live_waits +
+      report.stats.live_tasks,
+  ).toBe(0);
 });

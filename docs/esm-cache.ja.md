@@ -50,7 +50,7 @@ await build({
 
 2026-10-21 の記録です。[検証結果とランタイムのハッシュ](esm-cache-size.json)。`just library-check` で再計測した際は、この記録と日英の表を一緒に更新します。ドキュメントのテストで同梱アセットとの一致も検査します。
 
-Node.js 24 / V8、Rolldown 1.2.14 の検証用 ESM bundle の全 JS を計上しています。関数の同一性を検査する export も含むため、配布パッケージ単体のサイズ表とは別の測定です。Wasm・型定義・圧縮はこの表に含めません。Safari 実ブラウザーは未検証です。
+Node.js 24 / V8、Rolldown 1.2.14 の検証用 ESM bundle の全 JS を計上しています。関数の同一性を検査する export も含むため、配布パッケージ単体のサイズ表とは別の測定です。Wasm・型定義・圧縮はこの表に含めません。Safari 向け検証には[WebKit E2E の方針](browser-testing.ja.md)を採用しています。
 
 検証では、集約前はランタイム関数が別オブジェクト、集約後は同一オブジェクトであることと、二つの entry が同じチャンクを import することを確認します。集約前後の両ライブラリで、サイズ比較と共通の3,507ケースを通します。さらに片方の I/O を止めたまま他方を完了し、bindings と stats の独立、再開後の結果、片方の fatal 後も他方が動くこと、Future の externref slot の独立を検査します。異なる profile、debug/release、集約対象に指定しないファイルの分離は JS テストで確認します。
 

@@ -57,6 +57,7 @@ jobs:
             .cache/runtime-abi-check.json
             .cache/runtime-abi-error.log
             .cache/resources-error.log
+            .cache/guest-resources-error.log
             .cache/watch-check.json
             .cache/watch-check.log
             .cache/async-size/check.json
@@ -82,11 +83,15 @@ jobs:
       - run: just setup
       - run: pnpm exec playwright install --with-deps chrome webkit
       - run: just browser-check
+      - run: just webkit-latest-check
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: browser-verification
-          path: .cache/browser/results*
+          path: |
+            .cache/browser/results*
+            .cache/browser/report
+            .cache/browser/latest
           include-hidden-files: true
   rich-async:
     runs-on: ubuntu-24.04
@@ -110,4 +115,28 @@ jobs:
           path: |
             .cache/rich-async/report.json
             .cache/rich-async/failure.log
+          include-hidden-files: true
+
+  middleware:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.11.2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: extractions/setup-just@v4
+      - run: just setup
+      - run: just check-order-middleware
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: middleware-verification
+          path: |
+            .cache/order-middleware/report.json
+            .cache/order-middleware/failure.log
           include-hidden-files: true

@@ -1,0 +1,26 @@
+package example:order-middleware;
+world app {
+  record line { sku: string, quantity: u32, price: u32 }
+  record order-request {
+    tenant: option<string>,
+    customer: string,
+    items: list<line>,
+    preview: bool,
+  }
+  record receipt { customer: string, items: list<line>, total: u32, preview: bool }
+  enum failure {
+    missing-tenant, invalid-tenant, invalid-customer, empty-order,
+    too-many-items, invalid-sku, invalid-quantity, invalid-price,
+    conflicting-price, amount-overflow, denied,
+  }
+  type outcome = result<receipt, failure>;
+  import authorize: async func(tenant: string, total: u32) -> bool;
+  export process: async func(value: order-request) -> outcome;
+}
+world measured {
+  include app;
+  export heap-live: func() -> u32;
+  export heap-peak: func() -> u32;
+  export heap-reset: func();
+  export linear-bytes: func() -> u32;
+}

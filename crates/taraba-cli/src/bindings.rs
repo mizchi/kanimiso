@@ -92,11 +92,10 @@ pub(crate) fn compact_imports(abi: &mut Bindings) {
                     .is_none_or(|live| live.contains(n))
         })
         .map(|(_, n)| n)
-        .chain(
-            abi.exports
-                .keys()
-                .filter(|n| abi.interface_members.contains_key(*n)),
-        )
+        .chain(abi.exports.keys().filter(|n| {
+            abi.interface_members.contains_key(*n)
+                || abi.guest_resources.values().any(|g| &g.drop_export == *n)
+        }))
     {
         if names.contains_key(name) {
             continue;
@@ -200,6 +199,15 @@ fn javascript(abi: &Bindings, jspi: bool, helpers: Features, abort: bool) -> Str
         js.push_str("const decoder = new TextDecoder(\"utf-8\", {ignoreBOM: true});\n");
     }
     let resources = abi.codecs.values().any(|s| s.contains("resources."));
+    let guests = !abi.guest_resources.is_empty();
+    if guests {
+        js.push_str(&include_str!("templates/guest-resources.mjs").replacen(
+            "export function",
+            "function",
+            1,
+        ));
+    }
+
     if resources {
         js.push_str(&include_str!("templates/resources.mjs").replacen(
             "export function",
@@ -208,6 +216,16 @@ fn javascript(abi: &Bindings, jspi: bool, helpers: Features, abort: bool) -> Str
         ));
     }
     js.push_str("export function createHost(options) {\n");
+    if guests {
+        let drops = abi
+            .guest_resources
+            .iter()
+            .map(|(name, g)| format!("{}:{}", json(name), json(wire_name(abi, &g.drop_export))))
+            .collect::<Vec<_>>()
+            .join(",");
+        js.push_str(&format!("const dropNames={{{drops}}}; const guestResources=createGuestResources((type,key)=>{{try{{dispatch(dropNames[type]{} ,key)}}catch(error){{host.dispose();throw error}}}});\n", if abort { ",undefined" } else { "" }));
+    }
+
     if resources {
         js.push_str("const resources=createResources();\n");
     }
@@ -240,7 +258,16 @@ fn javascript(abi: &Bindings, jspi: bool, helpers: Features, abort: bool) -> Str
                     parameters.push("context".into());
                     values.push("context".into());
                 }
-                let call = format!("{source}({})", values.join(","));
+                let call = if let Some(m) = abi.interface_members.get(name).filter(|m| m.receiver) {
+                    format!(
+                        "{}[{}]({})",
+                        values[0],
+                        json(&m.method),
+                        values[1..].join(",")
+                    )
+                } else {
+                    format!("{source}({})", values.join(","))
+                };
                 let body = if let Some(result) = result {
                     if *asynchronous {
                         format!("Promise.resolve({call}).then(value=>{result})")
@@ -277,15 +304,18 @@ fn javascript(abi: &Bindings, jspi: bool, helpers: Features, abort: bool) -> Str
     }
     js.push_str(&format!(
         "const {{ {dispatch}, ...host }} = runtime(options{exports});\n",
-        dispatch = if resources || codec_memory || helpers.any() || aliases {
+        dispatch = if resources || guests || codec_memory || helpers.any() || aliases {
             "call: dispatch"
         } else {
             "call"
         }
     ));
-    let cleanup = resources || codec_memory || helpers.any() || aliases;
+    let cleanup = resources || guests || codec_memory || helpers.any() || aliases;
     if cleanup {
         let mut close = String::new();
+        if guests {
+            close.push_str("try{guestResources.close(true)}finally{");
+        }
         if resources {
             close.push_str("try{resources.close()}finally{");
         }
@@ -307,10 +337,15 @@ fn javascript(abi: &Bindings, jspi: bool, helpers: Features, abort: bool) -> Str
         if resources {
             close.push('}');
         }
+        if guests {
+            close.push('}');
+        }
         js.push_str(&format!(
             "const dispose=host.dispose; const close=()=>{{if(host.stats().dead){{{close}}}}};\n"
         ));
-        if resources {
+        if guests {
+            js.push_str("const quietly=()=>{try{close()}catch{}}; host.dispose=()=>{let first,failed=false;try{if(!host.stats().dead)guestResources.close()}catch(error){first=error;failed=true}try{dispose()}catch(error){if(!failed){first=error;failed=true}}if(host.stats().dead)quietly();else queueMicrotask(quietly);if(failed)throw first};const call=async(...args)=>{try{return await dispatch(...args)}catch(error){quietly();throw error}};\n");
+        } else if resources {
             js.push_str("const quietly=()=>{try{close()}catch{}}; host.dispose=()=>{try{dispose()}catch(error){quietly();throw error}if(host.stats().dead)close();else queueMicrotask(quietly)}; const call=async(...args)=>{try{return await dispatch(...args)}catch(error){quietly();throw error}};\n");
         } else {
             // Only generated Map.clear and reference assignments: cleanup cannot throw.
@@ -357,6 +392,13 @@ fn javascript(abi: &Bindings, jspi: bool, helpers: Features, abort: bool) -> Str
         js.push_str(&format!("host[{}]={{}};\n", json(namespace)));
     }
     for name in abi.exports.keys() {
+        if abi
+            .guest_resources
+            .values()
+            .any(|g| &g.drop_export == name || g.methods.values().any(|n| n == name))
+        {
+            continue;
+        }
         let target = if let Some(m) = abi.interface_members.get(name) {
             format!("host[{}][{}]", json(&m.namespace), json(&m.method))
         } else {
@@ -391,6 +433,36 @@ fn javascript(abi: &Bindings, jspi: bool, helpers: Features, abort: bool) -> Str
                 json(wire_name(abi, name))
             ));
         }
+    }
+    for (name, g) in &abi.guest_resources {
+        let mut methods = Vec::new();
+        for (method, wire) in &g.methods {
+            let signature = &abi.public_exports[wire];
+            let args = (1..signature.args.len())
+                .map(|i| format!("a{i}"))
+                .collect::<Vec<_>>();
+            let mut params = args.clone();
+            if abort {
+                params.push("options".into());
+            }
+            let tail = if args.is_empty() {
+                String::new()
+            } else {
+                format!(",{}", args.join(","))
+            };
+            methods.push(format!(
+                "{}:async({})=>call({}{} ,self{tail})",
+                json(method),
+                params.join(","),
+                json(wire_name(abi, wire)),
+                if abort { ",options?.signal" } else { "" }
+            ));
+        }
+        js.push_str(&format!(
+            "guestResources.define({},self=>({{{}}}));\n",
+            json(name),
+            methods.join(",")
+        ));
     }
     js.push_str("return host;\n}\n");
     js
@@ -445,6 +517,55 @@ fn append_parameter(args: &str, parameter: &str) -> String {
 
 fn declarations(abi: &Bindings, jspi: bool, abort: bool) -> String {
     let mut types = abi.type_declarations.clone();
+    for (name, methods) in &abi.resource_methods {
+        let mut body = String::new();
+        for (method, signature) in methods {
+            let mut args = public_arguments(signature, false, abort, true);
+            if abort {
+                args = append_parameter(&args, "context: HostContext");
+            }
+            let result = input_type(&format!("HostValue<{}, Resources>", signature.result));
+            body.push_str(&format!(
+                "{}({args}): {result}{};",
+                json(method),
+                if signature.asynchronous {
+                    format!("|PromiseLike<{result}>")
+                } else {
+                    String::new()
+                }
+            ));
+        }
+        // ResourceTypes cannot refer to its own Resources mapping; recursive
+        // host resources use the default mapping, which remains structurally typed.
+        let body = body.replace(", Resources>", ", ResourceTypes>");
+        types = types.replace(
+            &format!("{}:Disposable;", json(name)),
+            &format!("{}:Disposable & {{{body}}};", json(name)),
+        );
+    }
+    for (name, g) in &abi.guest_resources {
+        let mut body = String::new();
+        for (method, wire) in &g.methods {
+            let mut signature = abi.public_exports[wire].clone();
+            signature.args.remove(0);
+            let mut args = public_arguments(&signature, true, false, false);
+            if abort {
+                args = append_parameter(&args, "options?: CallOptions");
+            }
+            body.push_str(&format!(
+                "{}({args}):Promise<{}>;",
+                json(method),
+                signature.result
+            ));
+        }
+        types = types.replace(
+            &format!("export type {name} = Resource<{}>;", json(name)),
+            &format!(
+                "export type {name} = Resource<{}> & {{{body}}};",
+                json(name)
+            ),
+        );
+    }
     if abort {
         types.push_str("export interface CallOptions { readonly signal?: AbortSignal; }\nexport interface HostContext { readonly signal: AbortSignal; }\n");
     }
@@ -461,6 +582,9 @@ fn declarations(abi: &Bindings, jspi: bool, abort: bool) -> String {
                 .as_ref()
                 .is_some_and(|live| !live.contains(name))
         {
+            continue;
+        }
+        if abi.interface_members.get(name).is_some_and(|m| m.receiver) {
             continue;
         }
         let start = types.len();
@@ -518,6 +642,13 @@ fn declarations(abi: &Bindings, jspi: bool, abort: bool) -> String {
     types.push_str("}\nexport interface AppExports {\n");
     let mut groups = std::collections::BTreeMap::<String, String>::new();
     for (name, (args, result)) in &abi.exports {
+        if abi
+            .guest_resources
+            .values()
+            .any(|g| &g.drop_export == name || g.methods.values().any(|n| n == name))
+        {
+            continue;
+        }
         let start = types.len();
         let public = abi.public_exports.get(name);
         let args = public
@@ -569,6 +700,7 @@ stats: {runtime_host}['stats'];
     }
     let optional = if abi.imports.keys().all(|(_, name)| {
         abi.codecs.contains_key(name)
+            || abi.interface_members.get(name).is_some_and(|m| m.receiver)
             || abi
                 .live_imports
                 .as_ref()

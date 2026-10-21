@@ -12,7 +12,7 @@ crates.io の依存として追加します（Rust 1.85 以上）。
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.2.0", features = ["regexp"] }
+taraba-helpers = { version = "0.2.1", features = ["regexp"] }
 ```
 
 ```rust
@@ -124,4 +124,4 @@ private ABI は [version 付き WIT](../crates/taraba-helpers/wit/regexp.wit) �
 
 `just helpers-check` でサイズプローブ、共通 regex テスト、std/no_std × JSPI/Future の 3507 ケースと scheduling、Future キャンセル時の RegExp 解放、npm pack/install・strict TS を検証します。`just compare-helpers` で[機械可読スナップショット](helpers-size.json)とこの表を更新します。スナップショットには fixture ごとの Cargo.lock と入力ハッシュを保存します。
 
-Miri は Rust 側の借用・Drop をモデル host で確認します。Kani は実装の RegExp API とモデル FFI を使い、全 u32 handle（0 の失敗を含む）と真偽の結果について所有権と一度だけの解放を native64 で検証します。JS の正規表現エンジン・Map・Wasm ポインタ全体の証明ではありません。V8/Node で実行し、Safari 実ブラウザーは未検証です。
+Miri は Rust 側の借用・Drop をモデル host で確認します。Kani は実装の RegExp API とモデル FFI を使い、全 u32 handle（0 の失敗を含む）と真偽の結果について所有権と一度だけの解放を native64 で検証します。JS の正規表現エンジン・Map・Wasm ポインタ全体の証明ではありません。V8/Node で実行し、Safari 向け検証には[WebKit E2E の方針](browser-testing.ja.md)を採用しています。

@@ -147,7 +147,7 @@ Rust 1.85 以上を用意し、crates.io から CLI をインストールして 
 
 ```sh
 rustup target add wasm32-unknown-unknown
-cargo install taraba-cli --version 0.2.0 --locked
+cargo install taraba-cli --version 0.2.1 --locked
 # Binaryen 133 をインストールし、各ツールを PATH に配置する
 # --binaryen /path/to/bin または TARABA_BINARYEN でも指定可能
 ```
@@ -160,7 +160,7 @@ taraba 自体を開発する場合は、checkout から導入できます。
 cargo install --path /path/to/taraba/crates/taraba-cli --locked --force
 ```
 
-その開発構成では、`taraba new hello --future` の後、アプリの `Cargo.toml` に次を加え、Rust runtime も同じ checkout に揃えます。crates.io の 0.2.0 を使う場合、この上書きは不要です。
+その開発構成では、`taraba new hello --future` の後、アプリの `Cargo.toml` に次を加え、Rust runtime も同じ checkout に揃えます。crates.io の 0.2.1 を使う場合、この上書きは不要です。
 
 ```toml
 [patch.crates-io]
@@ -352,7 +352,7 @@ Core JSPI / Future の Rust 実装内では、オプションの `taraba-helpers
 
 複数の Core ライブラリは、同じ URL の ESM に解決すれば JS ランタイムを共有できます。既定の npm 出力はパッケージごとにコピーを持つため、共通チャンクへの集約が必要です。[ESM キャッシュの検証とビルド例](esm-cache.ja.md)にサイズの実測と instance 分離の確認を載せています。
 
-JavaScript の async 実行環境は Safari 27+ / JSPI 対応 V8 を前提とします。Safari 27 実ブラウザーは未検証です。Component async / jco は upstream でも実験扱いです。その scheduler・所有権・キャンセルの契約は Component toolchain のもので、Core Future の契約とは区別します。
+JavaScript の async 実行環境は Safari 27+ / JSPI 対応 V8 を前提とします。Safari 向け検証は Playwright WebKit E2E で完了しています。Component async / jco は upstream でも実験扱いです。その scheduler・所有権・キャンセルの契約は Component toolchain のもので、Core Future の契約とは区別します。
 
 現在の scalar async 比較は [taraba / Embassy / wasm-bindgen](async-size.ja.md)です。過去のスナップショットは [WIT / Core / Component](wit-comparison.md)、[並行 JSPI](jspi-concurrent.md)に分けています。これらは測定時点の値で、すべての npm 出力のサイズではありません。npm の `build.json` には JS、型定義、配布する Wasm のサイズを分けて記録します。Component container も配布に含めるため、tarball 全体と実際の実行時ダウンロード量は異なります。
 

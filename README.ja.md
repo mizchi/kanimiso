@@ -19,7 +19,7 @@ Rust の `async` / `.await` で JavaScript の非同期関数を呼び、型付�
 Rust 1.85 以上と、PATH に配置した Binaryen 133 が必要です。CLI は crates.io から導入でき、生成プロジェクトには対応する Rust crate が設定されます。[インストール手順](docs/guide.ja.md#インストール)。
 
 ```sh
-cargo install taraba-cli --version 0.2.0 --locked
+cargo install taraba-cli --version 0.2.1 --locked
 rustup target add wasm32-unknown-unknown
 
 taraba new hello --future
@@ -143,13 +143,15 @@ Record・文字列・バイト列・Result を扱う[複合型の比較](docs/ri
 
 ビルド時に `format!` / `write!` などのサイズ警告を出します。`taraba build --insight` の後、`taraba insight --paths fmt` で最適化後の大きな関数と保持経路を調べられます。[解析の使い方](docs/insight.ja.md)。
 
+[注文ミドルウェアの実用例](docs/order-middleware.ja.md)では、URL/JSON を JS、検証・変換を Rust に分担し、非同期の認可から型付き npm 配布まで通します。同じ Rust 処理の taraba / 標準 wit-bindgen と、純 JS の対照を比較しています。[今後の対応](docs/roadmap.ja.md)。
+
 ## JS の標準機能を必要な分だけ使う
 
 `taraba-helpers` は、正規表現や Unicode の実装を Wasm に持ち込まず、JS エンジンの標準機能を使うためのオプションです。crates.io の依存として追加します（Rust 1.85 以上）。
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.2.0", features = ["strings"] }
+taraba-helpers = { version = "0.2.1", features = ["strings"] }
 ```
 
 ```rust
@@ -202,7 +204,7 @@ Core/JSPI の境界は数値（s32/u32/f64）です。Core Future は文字列�
 - [ドキュメント一覧](docs/README.ja.md): 過去の測定と未採用の実験。
 - [開発・検証手順](docs/development.ja.md): テスト、パッケージ検証、測定の再実行。
 
-JavaScript の async は Safari 27+ / JSPI 対応 V8 を前提とします。Safari 実機と native Component host の実行はここでは未検証です。[実行契約と制限](docs/core-runtime.ja.md)。
+JavaScript の async は Safari 27+ / JSPI 対応 V8 を前提とします。Safari 向け検証は Playwright WebKit E2E で完了しています。native Component host での実行は未検証です。[実行契約と制限](docs/core-runtime.ja.md)。
 
 CLI/runtime/JS は MIT、任意で使う allocator は MPL-2.0。[来歴とライセンス](THIRD_PARTY.md)。
 

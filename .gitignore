@@ -5,3 +5,5 @@ dist/
 .wrangler/
 *.log
 .DS_Store
+
+examples/order-middleware/pkg/

@@ -13,7 +13,7 @@ Build WIT-based Rust/Wasm **libraries**, as standard Components or npm packages 
 Requires Rust 1.85 or later. Install the CLI from crates.io:
 
 ```sh
-cargo install taraba-cli --version 0.2.0 --locked
+cargo install taraba-cli --version 0.2.1 --locked
 rustup target add wasm32-unknown-unknown
 taraba new hello --component --no-std
 cd hello
@@ -50,7 +50,7 @@ JavaScript async targets Safari 27+ / JSPI-capable V8; real Safari execution is 
 
 The Future profile has its own ownership/cancellation contract. Its typed Core bindings generate safe Rust async imports/Guest and typed TS from world-level and interface WIT `future<T>` / `future` (or equivalent `async func`), using the existing runtime ABI. Use matching CLI and Rust crates 0.2.0 or later. `build.rs` calls `taraba bindgen --wit wit --out-dir <OUT_DIR>`; `taraba build` supplies its own CLI path automatically.
 
-World-level and interface typed bindings support numbers, bool, char, string, list, option, result, tuple, record, variant, enum, flags and aliases. Only codec imports retained by optimized Wasm are emitted into the application glue; shared runtime assets are unchanged. Interfaces and imported opaque own/borrow resources support typed async. Core excludes resource methods, Rust-defined exported resources, returned/nested borrows, nested futures, streams and fixed-length lists. Use Component for standard Canonical ABI and resource bindings; proposal support follows the upstream toolchain. Native Component async follows the Component toolchain contract; it is not an implementation of the Core runtime. The scaffold does not supply WASI implementations or Preview 1 adapters.
+World-level and interface typed bindings support numbers, bool, char, string, list, option, result, tuple, record, variant, enum, flags and aliases. Only codec imports retained by optimized Wasm are emitted into the application glue; shared runtime assets are unchanged. Interfaces and imported opaque own/borrow resources support typed async. Core Future supports imported resource methods and Rust-defined exported resources. Returned/nested borrows, resource static methods, guest resources crossing host imports, nested futures, streams and fixed-length lists remain unsupported. Use Component for standard Canonical ABI and resource bindings; proposal support follows the upstream toolchain. Native Component async follows the Component toolchain contract; it is not an implementation of the Core runtime. The scaffold does not supply WASI implementations or Preview 1 adapters.
 
 See the [English guide](https://github.com/mizchi/taraba/blob/main/docs/guide.md), [日本語ガイド](https://github.com/mizchi/taraba/blob/main/docs/guide.ja.md), and [Core runtime reference](https://github.com/mizchi/taraba/blob/main/docs/core-runtime.md).
 
@@ -63,3 +63,5 @@ MPL-covered dependencies. See [license provenance](https://github.com/mizchi/tar
 `taraba build --abort-signal` opts Core Future libraries into typed per-call `{signal}` options and a final `{signal}` host callback context. It aborts the matching call's Rust tasks and cooperating host I/O without changing Wasm. Unused builds keep the ordinary runtime asset. This option is preserved by watch/update, and is rejected for JSPI and Component output. See the TypeScript guide for cancellation and optional-argument positions.
 
 [Interfaces, resources, disposal and task capacity](../../docs/typescript.md#interfaces-and-resource-lifetimes).
+
+Core resource instance methods and Rust-defined exported resources are available in 0.2.1. Update both the CLI and Rust runtime to 0.2.1 or later. See [the resource guide](https://github.com/mizchi/taraba/blob/main/docs/resources.md).

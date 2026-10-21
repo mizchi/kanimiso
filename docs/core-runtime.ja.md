@@ -37,7 +37,7 @@ world app {
 }
 ```
 
-この Core 構成では `async func(a: s32, b: s32) -> s32` も同じ意味になります。world・interface の同期・非同期関数で数値、bool、char、string、list、option、result、tuple、record、variant、enum、flags と型エイリアスに対応します。imported opaque resource の own/borrow も型付き async と併用できます。resource の method、Rust が実装する exported resource、戻り値・入れ子の borrow、stream、入れ子の future、固定長 list は Core の対象外です。標準 resource binding は `--component` を使います。それ以外の型・提案への対応は upstream toolchain に従い、Core のテストでは確認していません。
+この Core 構成では `async func(a: s32, b: s32) -> s32` も同じ意味になります。world・interface の同期・非同期関数で数値、bool、char、string、list、option、result、tuple、record、variant、enum、flags と型エイリアスに対応します。imported opaque resource の own/borrow も型付き async と併用できます。Core Future は imported resource の method と Rust が実装する exported resource の constructor・method にも対応します。戻り値・入れ子の borrow、resource の static method、Rust resource を host import に渡す構成、stream、入れ子の future、固定長 list は Core の対象外です。標準 resource binding は `--component` を使います。それ以外の型・提案への対応は upstream toolchain に従い、Core のテストでは確認していません。
 
 生成された `build.rs` が `taraba bindgen` を実行し、Cargo の OUT_DIR に `bindings.rs` を作ります。これを include して `bindings!()` を呼び、生成された `Guest` trait を `HostResult<T>` を返す `async fn` で実装し、`export!(App)` を呼びます。import は安全な async 関数で、`?` は JS のエラー identity を維持して Promise の拒否を伝播します。[全体のサンプル](../README.ja.md#最小サンプル)。
 
@@ -156,10 +156,12 @@ Rust の panic を簡易な JS Error にするには、std は `taraba::panic::s
 
 Core の `--debug` は説明付きエラー、release は RT code と[エラーの説明ページ](error-codes.md)へのリンクを出力し、説明辞書は同梱しません。fatal は最初の理由を保って JS roots を解放します。キャンセルは任意の host network I/O の中止を意味しません。遅れて解決した subscription は無効化済み ID で処理します。Drop 中の trap でも instance を閉じ、Drop を再試行しません。
 
-実行環境は Safari 27+ / JSPI 対応 V8 です。機能検出を挟まず、JSPI の組み込み API を直接呼びます。Safari 実機は未検証です。GC/js-string/exnref/funcref の機能検証と、通常ランタイムが全機能を使うことは区別します。
+実行環境は Safari 27+ / JSPI 対応 V8 です。機能検出を挟まず、JSPI の組み込み API を直接呼びます。Safari 向け検証は Playwright WebKit E2E で完了しています。GC/js-string/exnref/funcref の機能検証と、通常ランタイムが全機能を使うことは区別します。
 
 [検証手順](development.ja.md)、[現在のサイズ比較](async-size.ja.md)、[採用条件](jspi-adoption.md)。Kani は native64 の限定したモデル・部品の検証で、JS エンジン・生成 Wasm・ABI 全体の証明ではありません。
 
 [Interface・resource・終了処理・pool 設定](typescript.ja.md#interface-とリソースの寿命)。
 
 文字列は生成した TextEncoder import が出力する UTF-8 を使い、Rust 側の重複した UTF-8 検査を省きます。生成した private codec の置換は契約外です。非共有メモリとゼロ初期化済みの専用 Vec にコピーし、不正な UTF-16 は TextEncoder の置換規則に従います。[変更前後のサイズ](bundle-tuning.ja.md)。
+
+[Core resource の実装例と制約](resources.ja.md)。method / Rust resource は CLI と Rust runtime の両方で 0.2.1 以降が必要です。

@@ -12,7 +12,7 @@ JS allocations and string conversion costs still exist.
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.2.0", features = ["segmenter"] }
+taraba-helpers = { version = "0.2.1", features = ["segmenter"] }
 ```
 
 | Feature | API |
@@ -184,4 +184,4 @@ Miri checks production Rust ownership/copy/Drop with a model host. Kani uses the
 unchanged Root/JsIterator against an empty/single-item cursor model for any nonzero
 u32 cursor ID, checking unstarted/early Drop, exhaustion, fused next and independent
 item lifetime. It does not prove JS ICU/GC/iterators or Wasm codegen. Execution is
-verified in V8/Node; Safari's actual browser is untested.
+verified in V8/Node; Safari-target validation follows the [accepted WebKit E2E policy](browser-testing.md).

@@ -24,7 +24,7 @@ std のパス文字列は移動で変わるため、元とのサイズ差全体�
 - `just workers`: local workerd、release/debug × std/no_std の4構成。各3507タスク、追加20チェック、JS roots の解放。Cloudflare本番未deploy。
 - `just modern`: V8 と system JavaScriptCore で js-string / exnref / typed funcref / GC と現行 std/no_std の同一計算が通過。
 
-Safari 実ブラウザーは未検証。JavaScriptCore shell では HTML の queueMicrotask を Promise ジョブで補う。
+Safari 向け検証は[WebKit E2E の方針](browser-testing.ja.md)に従う。JavaScriptCore shell では HTML の queueMicrotask を Promise ジョブで補う。
 Kani は native 64-bit と mock backend の部品検証。JS / engine / Wasm layout / intrusive WAT 全体の形式証明ではない。
 複数 live allocation と隣接 free 結合の探索的 proof は広い条件での実行が時間切れとなり、証明済み数に含めない。
 必要なら `just kani-explore` で別途確認する。Miri/native/実 Wasm の対応テストは通過。

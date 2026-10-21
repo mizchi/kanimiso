@@ -66,6 +66,6 @@ JSON は `schema: 1`。`total_bytes` は解析入力全体、`name_bytes` は名
 
 `wasmparser` 0.252.0 で GC・externref 等を読み、`twiggy-ir` 0.8.0 の demangle と dominator 解析を使います。旧 twiggy parser の externref table 制約を避け、twiggy 本体のインストールや Node.js は不要です。
 
-`just insight-check` は JSPI/Future × std/no_std の通常版・解析付き版に共通3,507ケースとスケジューリング検証を実行し、format・警告・npm tarball 除外・古い view の拒否も確認します。`just check` に含み、`just package-check` では配布アーカイブの CLI でも検証します。Safari 実ブラウザーは未検証です。
+`just insight-check` は JSPI/Future × std/no_std の通常版・解析付き版に共通3,507ケースとスケジューリング検証を実行し、format・警告・npm tarball 除外・古い view の拒否も確認します。`just check` に含み、`just package-check` では配布アーカイブの CLI でも検証します。Safari 向け検証には[WebKit E2E の方針](browser-testing.ja.md)を採用しています。
 
 [開発・検証](development.ja.md) · [panic 通知](panic-reporting.md) · [twiggy / wasm-snip 実験](wasm-size-analysis.md)

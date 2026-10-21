@@ -740,6 +740,7 @@ export!(App);`,
     "check-runtime-abi.mjs",
     "check-interfaces.mjs",
     "check-resources.mjs",
+    "check-guest-resources.mjs",
     "check-pool.mjs",
   ]) {
     console.log(
@@ -763,13 +764,21 @@ export!(App);`,
       "tools/check-core-async.mjs",
       "tools/check-task-features.mjs",
       "tools/check-core-types.mjs",
+      "tools/check-resources.mjs",
+      "tools/check-guest-resources.mjs",
+      "tests/support/guest-resources.mjs",
+      "docs/resources.md",
+      "docs/resources.ja.md",
+      "crates/taraba/src/resource.rs",
       "tools/check-esm-cache.mjs",
       "tools/shared-runtime.mjs",
       "tools/check-watch.mjs",
       "Cargo.lock",
       "pnpm-lock.yaml",
       ...readdirSync("crates/taraba-cli/src", { recursive: true })
-        .filter((f) => f.endsWith(".rs") || f.endsWith(".wit"))
+        .filter(
+          (f) => f.endsWith(".rs") || f.endsWith(".wit") || f.endsWith(".mjs"),
+        )
         .map((f) => `crates/taraba-cli/src/${f}`),
     ].map((f) => [
       f,

@@ -8,6 +8,7 @@ mod bindings;
 mod build;
 mod component;
 mod core_async;
+mod core_resources;
 mod core_types;
 mod detect;
 mod helpers;

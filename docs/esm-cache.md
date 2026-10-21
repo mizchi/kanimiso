@@ -50,7 +50,7 @@ Use this helper for generated, self-contained Core runtimes. It does not merge a
 
 Snapshot: 2026-10-21. [Verified results and runtime hashes](esm-cache-size.json). After rerunning `just library-check`, refresh this snapshot and both tables together; documentation tests compare them with the shipped runtime assets.
 
-These are total JavaScript bytes in verification ESM bundles on Node.js 24 / V8 with Rolldown 1.2.14. They include exports used to inspect function identity, so they are a separate measurement from the single-package distribution size table. Wasm, declarations and compression are excluded here. A real Safari browser has not been tested.
+These are total JavaScript bytes in verification ESM bundles on Node.js 24 / V8 with Rolldown 1.2.14. They include exports used to inspect function identity, so they are a separate measurement from the single-package distribution size table. Wasm, declarations and compression are excluded here. Safari-target validation follows the [accepted WebKit E2E policy](browser-testing.md).
 
 Checks establish that runtime functions are distinct before sharing and identical afterwards, and that both entries import one chunk. Both libraries pass the size comparison's common 3,507 cases before and after sharing. Checks then suspend one instance while completing the other, check independent bindings and stats, resume the suspended computation, close one instance with a fatal error and reuse the other. Future externref slots are checked for isolation too. JavaScript tests cover different profiles, debug/release variants and files not selected for sharing.
 

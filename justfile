@@ -65,11 +65,17 @@ compare-rich-async: build-host
     pnpm exec prettier --check experiments/rich-async/*.mjs
     node --no-liftoff tools/compare-rich-async.mjs --snapshot
 
-# Real Chrome and Playwright WebKit (not a claim of Safari.app verification).
-browser-check: build-host
+# Real Chrome and Playwright WebKit; WebKit is the accepted Safari validation substitute.
+browser-fixtures: build-host
     cargo build --locked --release -p taraba-cli
     node tools/build-browser-fixtures.mjs
-    pnpm exec playwright test
+
+browser-check *args: browser-fixtures
+    pnpm exec playwright test {{args}}
+
+# Today's WebKit canary, isolated from the locked stable Playwright installation.
+webkit-latest-check version="next": browser-fixtures
+    node tools/check-webkit-latest.mjs {{quote(version)}}
 
 interfaces-check: build-host
     cargo build --locked --release -p taraba-cli
@@ -78,6 +84,7 @@ interfaces-check: build-host
 resources-check: build-host
     cargo build --locked --release -p taraba-cli
     node tools/check-resources.mjs
+    node tools/check-guest-resources.mjs
 
 pool-check: build-host
     cargo build --locked --release -p taraba-cli
@@ -160,6 +167,7 @@ fmt:
     rustfmt --edition 2021 --config skip_children=true verification/kani/harnesses/*.rs
     cargo fmt --manifest-path experiments/async-size/Cargo.toml --all
     cargo fmt --manifest-path experiments/rich-async/Cargo.toml
+    cargo fmt --manifest-path examples/order-middleware/Cargo.toml
     pnpm exec prettier --write experiments/rich-async/*.mjs
     pnpm exec prettier --write experiments/async-size/*.mjs experiments/async-size/bindgen/io.mjs
     node tools/prepare-allocator.mjs
@@ -190,6 +198,7 @@ kani:
     cargo kani --manifest-path .cache/kani/promise/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
     cargo kani --manifest-path .cache/kani/regexp/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
     cargo kani --manifest-path .cache/kani/iterator/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
+    cargo kani --manifest-path .cache/kani/resource/Cargo.toml --lib --output-format terse -Z unstable-options --harness-timeout 60s
     cargo kani --manifest-path .cache/kani/allocator/Cargo.toml --lib --tests --exact --harness kani_proofs::checked_rounding_all_usize_values --harness kani_boundary_proofs::neighbor_tag_bits_preserve_every_aligned_u32_address --harness kani_boundary_proofs::valid_layouts_return_null_on_refill_oom_without_overflow --output-format terse -Z unstable-options --harness-timeout 60s
     cargo kani --manifest-path .cache/kani/allocator/Cargo.toml --lib --tests --features realloc_in_place --exact --harness kani_proofs::realloc_fast_path_preserves_word_class --output-format terse -Z unstable-options --harness-timeout 60s
 
@@ -256,3 +265,21 @@ check-jspi-concurrent: prepare-jspi-concurrent
 
 experiment-jspi-concurrent: prepare-jspi-concurrent
     node tools/experiment-jspi-concurrent.mjs
+
+# Build and package the real HTTP/domain middleware example.
+build-order-middleware: build-host
+    cargo build --locked --release -p taraba-cli
+    TARABA_BINARYEN="{{justfile_directory()}}/.cache/toolchains/binaryen-version_133/bin" target/release/taraba build --manifest-path examples/order-middleware/Cargo.toml --world app --out-dir examples/order-middleware/pkg
+    node examples/order-middleware/package.mjs examples/order-middleware/pkg
+
+prepare-order-middleware: build-host
+    cargo build --locked --release -p taraba-cli
+    cargo fetch --locked --manifest-path examples/order-middleware/Cargo.toml
+    cargo fmt --manifest-path examples/order-middleware/Cargo.toml -- --check
+    pnpm exec prettier --check examples/order-middleware/*.mjs
+
+compare-order-middleware: prepare-order-middleware
+    node --no-liftoff tools/compare-order-middleware.mjs --snapshot
+
+check-order-middleware: prepare-order-middleware
+    node --no-liftoff tools/compare-order-middleware.mjs --check

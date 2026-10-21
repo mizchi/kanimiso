@@ -12,7 +12,7 @@ crates.io の依存として使う例です（Rust 1.85 以上）。デフォル
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.2.0", features = ["segmenter"] }
+taraba-helpers = { version = "0.2.1", features = ["segmenter"] }
 ```
 
 | feature | API |
@@ -156,4 +156,4 @@ full は16操作の検査用 fixture で、結果の検査用に Rust の `forma
 
 `just strings-check` / `just compare-strings` で実行・スナップショット更新できます。[JSON](strings-size.json)には Cargo.lock と入力ハッシュを記録します。`just helpers-check` / `just check` もこの検証を含みます。追加で std/no_std × JSPI/Future の共通3507ケースと scheduling、中断中の文字列・cursor・取得済み要素の保持、Future キャンセル時の解放、npm pack/install と strict TS を検査します。
 
-Miri は実際の Rust のハンドル・コピー・Drop をモデル host で検証します。Kani は実装の `Root` / `JsIterator` を読み込み、任意の非ゼロ u32 cursor ID と空／一要素の host モデルで、未開始 Drop・早期 Drop・通常終了・Fused・要素の独立した解放を検証します。JS の ICU・GC・Iterator 実装や Wasm コード生成全体の証明ではありません。V8/Node で実行し、Safari 実ブラウザーは未検証です。
+Miri は実際の Rust のハンドル・コピー・Drop をモデル host で検証します。Kani は実装の `Root` / `JsIterator` を読み込み、任意の非ゼロ u32 cursor ID と空／一要素の host モデルで、未開始 Drop・早期 Drop・通常終了・Fused・要素の独立した解放を検証します。JS の ICU・GC・Iterator 実装や Wasm コード生成全体の証明ではありません。V8/Node で実行し、Safari 向け検証には[WebKit E2E の方針](browser-testing.ja.md)を採用しています。

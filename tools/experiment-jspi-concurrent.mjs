@@ -413,7 +413,7 @@ Node --expose-gc の独立プロセスを構成ごとに3回。64 task 暖機し
 |---|---:|---:|---:|---:|
 ${memoryRows}
 
-直列構成は1件の I/O と1,023件の待ち行列、並行構成は1,024件の I/O。RSS は engine / JIT / allocator のページを含む粗いプロセス増分であり、task の厳密な stack サイズではない。JSON の parked_spills は別の32 task / 512 Bまたは1 KiB Rust配列 probe での JS snapshot のみで、engine stack や他の JS heap を含めない。snapshot のコピーコストは保持する Rust stack の深さに依存する。Safari 27 実ブラウザーは未検証。root cancel / Rust Drop の強制実行は未実装。製品への採用条件は [採用方針](jspi-adoption.md)、再実行は \`just experiment-jspi-concurrent\`。
+直列構成は1件の I/O と1,023件の待ち行列、並行構成は1,024件の I/O。RSS は engine / JIT / allocator のページを含む粗いプロセス増分であり、task の厳密な stack サイズではない。JSON の parked_spills は別の32 task / 512 Bまたは1 KiB Rust配列 probe での JS snapshot のみで、engine stack や他の JS heap を含めない。snapshot のコピーコストは保持する Rust stack の深さに依存する。Safari 向け検証は[WebKit E2E の方針](browser-testing.ja.md)に従う。root cancel / Rust Drop の強制実行は未実装。製品への採用条件は [採用方針](jspi-adoption.md)、再実行は \`just experiment-jspi-concurrent\`。
 `,
   );
 }

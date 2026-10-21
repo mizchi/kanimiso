@@ -15,8 +15,9 @@ setup は依存・Rust Wasm target・Binaryen 133・wasm-tools 1.245.1 を用意
 
 | タスク | 検証・出力 |
 |---|---|
-| `just browser-check` | Chrome・Playwright WebKit の E2E。複合型・memory.grow・JSPI・fetch のキャンセル・resource・dispose。Safari.app とは別 |
-| `just interfaces-check` / `just resources-check` | 名前空間付き binding・opaque own/borrow、async の寿命・キャンセル・strict TS・別 instance の拒否 |
+| `just browser-check` | Chrome・Playwright WebKit の E2E。複合型・memory.grow・JSPI・fetch のキャンセル・resource・dispose。Safari 向け検証の代替 |
+| `just webkit-latest-check [version]` | [最新 WebKit の E2E](browser-testing.ja.md)。@next または指定版を分離して実行。エンジン情報・HTML・trace を保存 |
+| `just interfaces-check` / `just resources-check` | 名前空間付き binding・imported method・Rust resource、own/borrow/Drop・再入中の終了処理、npm pack/install・strict TS・型/instance |
 | `just pool-check` | コンパイルした pool 容量・raw Wasm metadata の一致・枯渇・memory・watch/update の保持 |
 | `just check-rich-async` | 同じ複合型 async の216ケースと配布サイズ上限。出力は .cache のみ |
 | `just core-types-check` / `just compare-core-types` | Core 値型の往復・所有権・strict TS・未使用型の増分 0 B、型ごとのサイズ記録 |
@@ -83,4 +84,6 @@ CI workflow は製品・比較・package・modern・stress・workerd を実行�
 
 `just strings-check` は正規化・分割・文字コードと型付き Iterator を検証します。`just compare-strings` で[サイズ表](strings.ja.md)を更新します。Miri/Kani には共通 Root と Iterator の所有権も含めます。
 
-`just browser-check` は複合型・memory.grow・JSPI・実際の fetch 中断・resource の所有権・dispose を検証します。ローカルでは Chrome 156・Playwright WebKit 27.2 を通過しました。これは Safari.app の検証ではなく、Safari 27 は未検証です。CI には独立した browser と rich-async のジョブを設定し、同じ216ケースと配布サイズの上限を検査します。速度は記録のみで閾値を置きません。[検証範囲](status.ja.md#検証できている範囲)も参照してください。
+`just browser-check` は複合型・memory.grow・JSPI・実際の fetch 中断・resource の所有権・dispose を検証します。ローカルでは Chrome 156・Playwright WebKit 27.2 を通過しました。Safari 向け検証はこの WebKit E2E で完了とし、Safari.app の追加実行は不要です。CI には独立した browser と rich-async のジョブを設定し、同じ216ケースと配布サイズの上限を検査します。速度は記録のみで閾値を置きません。[検証範囲](status.ja.md#検証できている範囲)も参照してください。
+
+[最新 WebKit の実行手順・テスト項目・結果](browser-testing.ja.md)。

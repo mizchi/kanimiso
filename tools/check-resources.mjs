@@ -36,14 +36,14 @@ try {
     );
     writeFileSync(
       join(project, "wit/app.wit"),
-      `package test:resources; interface handles {resource value {constructor(text:string);} read:async func(v:borrow<value>)->string;} world app {import io:handles;use handles.{value};export make:async func()->own<value>;export inspect:async func(v:borrow<value>)->string;export consume:async func(v:own<value>)->u32;export hold:async func()->string;}`,
+      `package test:resources; interface handles {resource value {constructor(text:string);read:async func()->string;size:func()->u32;} read:async func(v:borrow<value>)->string;} world app {import io:handles;use handles.{value};export make:async func()->own<value>;export inspect:async func(v:borrow<value>)->string;export length:func(v:borrow<value>)->u32;export consume:async func(v:own<value>)->u32;export hold:async func()->string;}`,
     );
     const lib = join(project, "src/lib.rs"),
       prefix = readFileSync(lib, "utf8").split("include!(")[0];
     writeFileSync(
       lib,
       prefix +
-        `include!(concat!(env!("OUT_DIR"),"/bindings.rs"));bindings!();struct App;impl Guest for App {async fn make()->HostResult<HandlesValue>{Ok(imports::io::value("hello 🦀".into()))} async fn inspect(v:Borrowed<HandlesValue>)->HostResult<__taraba_types::alloc::string::String>{imports::io::read(&v).await} async fn consume(v:HandlesValue)->HostResult<u32>{drop(v);Ok(7)} async fn hold()->HostResult<__taraba_types::alloc::string::String>{let v=imports::io::value("hello 🦀".into());imports::io::read(&v).await}}export!(App);`,
+        `include!(concat!(env!("OUT_DIR"),"/bindings.rs"));bindings!();struct App;impl Guest for App {async fn make()->HostResult<HandlesValue>{Ok(imports::io::value("hello 🦀".into()))} async fn inspect(v:Borrowed<HandlesValue>)->HostResult<__taraba_types::alloc::string::String>{v.read().await} fn length(v:Borrowed<HandlesValue>)->u32{v.size()} async fn consume(v:HandlesValue)->HostResult<u32>{drop(v);Ok(7)} async fn hold()->HostResult<__taraba_types::alloc::string::String>{let v=imports::io::value("hello 🦀".into());v.read().await}}export!(App);`,
     );
     run(cli, ["build", "--abort-signal"], project);
     const wasm = readFileSync(join(project, "pkg/app.wasm")),
@@ -66,6 +66,14 @@ try {
     class Value {
       constructor(text) {
         this.text = text;
+      }
+      read() {
+        return slow
+          ? new Promise((r) => (release = () => r(this.text)))
+          : Promise.resolve(this.text);
+      }
+      size() {
+        return this.text.length;
       }
       [Symbol.dispose]() {
         drops++;
@@ -91,6 +99,7 @@ try {
     const host = await connect(),
       value = await host.make();
     assert.equal(await host.inspect(value), "hello 🦀");
+    assert.equal(await host.length(value), 8);
     assert.equal(drops, 0);
     slow = true;
     const c = new AbortController(),
@@ -135,7 +144,7 @@ try {
     second.dispose();
     writeFileSync(
       join(project, "test.mts"),
-      `import {createHost,type AppBindings,type HandlesValue,type ResourceTypes} from './pkg/index.js';class Value {constructor(public text:string){}[Symbol.dispose](){}} type Resources={HandlesValue:Value};const bindings={io:{value:(text:string)=>new Value(text),read:async(v:Value)=>v.text}} satisfies AppBindings<Resources>;const host=createHost<Resources>({bindings});const value:HandlesValue=await host.make();const text:string=await host.inspect(value);void text;value[Symbol.dispose]();host.dispose();\n// @ts-expect-error raw host objects are not guest leases\nhost.consume(new Value('x'));\n// @ts-expect-error constructor payload is WIT string\nbindings.io.value(123);`,
+      `import {createHost,type AppBindings,type HandlesValue,type ResourceTypes} from './pkg/index.js';class Value {constructor(public text:string){}read(){return Promise.resolve(this.text)}size(){return this.text.length}[Symbol.dispose](){}} type Resources={HandlesValue:Value};const bindings={io:{value:(text:string)=>new Value(text)}} satisfies AppBindings<Resources>;const host=createHost<Resources>({bindings});const value:HandlesValue=await host.make();const text:string=await host.inspect(value);void text;value[Symbol.dispose]();host.dispose();\n// @ts-expect-error raw host objects are not guest leases\nhost.consume(new Value('x'));\n// @ts-expect-error constructor payload is WIT string\nbindings.io.value(123);`,
     );
     run(process.execPath, [
       resolve("node_modules/typescript/bin/tsc"),

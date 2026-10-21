@@ -38,9 +38,16 @@ Each report is dated and records source hashes. The new async-size report is the
 | [JSPI Future measurements](jspi-future-measurements.md) | Experimental Future adapter and adoption gates |
 | [Concurrent JSPI](jspi-concurrent.md) | Unadopted stack snapshots: concurrency, memory and timing |
 | [JSPI adoption policy](jspi-adoption.md) | Why the existing Future backend remains available |
-| [Engine baseline](engine-baseline.md) | Target engine capabilities and unverified Safari execution |
+| [Engine baseline](engine-baseline.md) | Target engine capabilities and accepted WebKit validation for Safari |
 | [Extraction verification](verification.md) / [provenance](../provenance.json) | Historical extraction evidence |
 
 [JSPI Future source](../experiments/jspi-future/README.md) and [concurrent JSPI source](../experiments/jspi-concurrent/README.md) remain separate from library builds.
 
 [Bundle tuning before/after](bundle-tuning.md): Wasm, JS, gzip and Brotli for the same workload.
+
+- [Order middleware example and measurements](order-middleware.md)
+- [Roadmap](roadmap.md)
+
+[Expose stateful Rust resources through WIT](resources.md)
+
+[Stable and latest canary browser E2E](browser-testing.md)

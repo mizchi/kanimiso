@@ -13,7 +13,7 @@ Add the crate from crates.io (Rust 1.85+):
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.2.0", features = ["regexp"] }
+taraba-helpers = { version = "0.2.1", features = ["regexp"] }
 ```
 
 ```rust
@@ -167,4 +167,4 @@ Miri checks borrowed buffers and Drop with a model host. Kani checks the unchang
 RegExp API against a modeled FFI for any u32 handle and boolean result, including
 zero/error and exactly-once release, on native64. These are not proofs of the JS
 regex engine, Map or Wasm pointer transport. Execution is checked in V8/Node;
-Safari's actual browser has not been tested.
+Safari-target validation follows the [accepted WebKit E2E policy](browser-testing.md).

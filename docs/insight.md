@@ -67,6 +67,6 @@ JSON uses `schema: 1`. `total_bytes` counts the analysis input, `name_bytes` cou
 
 The inspector decodes GC/externref and other modern features with wasmparser 0.252.0, then uses twiggy-ir 0.8.0 demangling/dominators. It avoids the old twiggy parser's externref-table limitation and needs neither a twiggy installation nor Node.js.
 
-`just insight-check` runs the same 3,507 cases and scheduling checks against ordinary/analysis builds in JSPI/Future × std/no_std. It also checks formatting, warnings/suppression, actual npm tarball exclusion and stale-view rejection. It is part of `just check`; `just package-check` repeats it with an archived, installed CLI. Safari browser execution remains unverified.
+`just insight-check` runs the same 3,507 cases and scheduling checks against ordinary/analysis builds in JSPI/Future × std/no_std. It also checks formatting, warnings/suppression, actual npm tarball exclusion and stale-view rejection. It is part of `just check`; `just package-check` repeats it with an archived, installed CLI. Safari-target validation follows the [accepted WebKit E2E policy](browser-testing.md).
 
 [Development](development.md) · [Panic reporting](panic-reporting.md) · [Earlier twiggy/wasm-snip experiments](wasm-size-analysis.md)

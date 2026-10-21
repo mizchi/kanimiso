@@ -22,6 +22,7 @@ export function prepareKani(root = ".cache/kani") {
     "crates/taraba/src/waker.rs",
     "crates/taraba/src/promise.rs",
     "crates/taraba/src/value.rs",
+    "crates/taraba/src/resource.rs",
     "crates/taraba-helpers/src/regexp.rs",
     `${harnesses}/regexp.rs`,
     "crates/taraba-helpers/src/handle.rs",
@@ -31,6 +32,19 @@ export function prepareKani(root = ".cache/kani") {
       (n) => `${harnesses}/${n}.rs`,
     ),
   ];
+  mkdirSync(`${root}/resource/src`, { recursive: true });
+  copyFileSync(
+    "crates/taraba/src/resource.rs",
+    `${root}/resource/src/resource.rs`,
+  );
+  writeFileSync(
+    `${root}/resource/src/lib.rs`,
+    "extern crate alloc;mod resource;\n",
+  );
+  writeFileSync(
+    `${root}/resource/Cargo.toml`,
+    `[package]\nname="taraba-resource-kani"\nversion="0.0.0"\nedition="2024"\n[workspace]\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
+  );
   mkdirSync(`${root}/allocator/src`, { recursive: true });
   mkdirSync(`${root}/waker/src`, { recursive: true });
   mkdirSync(`${root}/promise/src`, { recursive: true });
@@ -106,6 +120,9 @@ export function prepareKani(root = ".cache/kani") {
     `[package]\nname="taraba-promise-kani"\nversion="0.0.0"\nedition="2021"\n[workspace]\n[lints.rust]\nunexpected_cfgs={level="warn",check-cfg=['cfg(kani)']}\n`,
   );
   const files = [
+    "resource/Cargo.toml",
+    "resource/src/lib.rs",
+    "resource/src/resource.rs",
     "allocator/Cargo.toml",
     "allocator/LICENSE",
     ...[
@@ -140,6 +157,7 @@ export function prepareKani(root = ".cache/kani") {
       "Wasm/native test page backend is replaced by a single-agent always-OOM refill backend; harness seeds 512 bytes of real free-cell storage; no memory.grow, OS, mutex or JS proof",
       "Waker source only expands wasm32 wake import gate to cfg(kani); mock records ID/call count; clone/drop/wake/constructor bodies unchanged",
       "Promise/value production sources are copied unchanged; private completion proof appended; modeled host checks root ownership and subscription retirement for any nonzero u32 ID. Native64 only: no JS, Wasm pointer dereference, arbitrary Waker behavior or exhaustion proof",
+      "Resource storage copied unchanged; verifies one live borrow survives owner removal and drops once, plus saturating generation advancement for every u16. Native64 only; not a proof of arbitrary store histories, JS leases or Wasm single-agent enforcement",
       "Kani uses its pinned native 64-bit Rust toolchain; wasm32 layout/codegen and JS execution are outside these proofs",
       "RegExp production API/Drop prefix is unchanged; its FFI modules are replaced by a single-handle host model. Any u32 handle, boolean result and one-byte ASCII UTF-8 borrow; JS regex semantics/Map/memory.grow are outside the proof",
       "Root/JsIterator copied unchanged; model host provides an empty or single-item synchronous cursor for any nonzero u32 cursor ID. Checks early Drop, exhaustion, fused next and independent item lifetime. Clone, Unicode, JS return() and string-copy bytes are outside this proof",
