@@ -54,7 +54,7 @@ default = [{default}]
 std = [{std_feature}]
 [dependencies]
 {runtime_dependency}
-taraba-allocator = {{version = "0.1.0", default-features = false}}
+taraba-allocator = {{version = "{sdk_version}", default-features = false}}
 wit-bindgen = {{version = "=0.58.0", default-features = false, features = [{wit_features}]}}
 [profile.release]
 opt-level = "z"
@@ -62,6 +62,7 @@ lto = true
 panic = "abort"
 codegen-units = 1
 "#,
+            sdk_version = env!("CARGO_PKG_VERSION"),
             wit_features = if component {
                 "\"macros\", \"async\", \"async-spawn\""
             } else {
@@ -73,9 +74,12 @@ codegen-units = 1
                 "\"taraba/std\""
             },
             runtime_dependency = if jspi || component {
-                ""
+                String::new()
             } else {
-                "taraba = {version = \"0.1.0\", default-features = false}"
+                format!(
+                    "taraba = {{version = \"{}\", default-features = false}}",
+                    env!("CARGO_PKG_VERSION")
+                )
             },
             default = if no_std { "" } else { "\"std\"" }
         ),
@@ -134,6 +138,17 @@ mod tests {
         new_project(&path, true).unwrap();
         let manifest = fs::read_to_string(path.join("Cargo.toml")).unwrap();
         assert!(manifest.contains("version = \"0.1.0\""));
+        assert!(manifest.contains(&format!(
+            "taraba-allocator = {{version = \"{}\"",
+            env!("CARGO_PKG_VERSION")
+        )));
+        let future = root.path().join("future");
+        new_future_project(&future, true).unwrap();
+        let future_manifest = fs::read_to_string(future.join("Cargo.toml")).unwrap();
+        assert!(future_manifest.contains(&format!(
+            "taraba = {{version = \"{}\"",
+            env!("CARGO_PKG_VERSION")
+        )));
         assert!(!manifest.contains("path ="));
         assert!(new_project(&path, false).is_err());
         assert!(super::super::wit::parse(&path.join("wit"), None).is_ok());

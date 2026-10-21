@@ -25,7 +25,7 @@ setup は依存・Rust Wasm target・Binaryen 133・wasm-tools 1.245.1 を用意
 | `just msrv-check` | Rust 1.85.0 で native CLI と全 feature の Wasm ライブラリを確認。事前に toolchain と Wasm target を用意 |
 | `just check` | Rust/JS、format、Core の fatal/所有権、JSPI stack spill、npm 利用側、現在のドキュメントリンク |
 | `just library-check` | 現在の CLI から pack・外部 install・strict TS、3構成×std/no_std、raw/Cargo/watch の update 再生成と失敗時の保持、Component のドメイン値とエラー、Core の共通 ESM と instance 分離 |
-| `node tools/check-runtime-abi.mjs` | 公開版 runtime 0.1.0 を負の対照に、同じ SemVer 系列でも ABI のない raw/Cargo 入力を拒否し既存出力を保持。library/package 検証にも含む |
+| `node tools/check-runtime-abi.mjs` | 公開版 runtime 0.1.0 を負の対照に、SemVer と ABI を別々に検査し、非互換の Cargo/raw 入力を拒否して既存出力を保持。library/package 検証にも含む |
 | `just package-check` | 4 crate を package し、展開した CLI で外部アプリと npm 生成を再検証 |
 | `just watch-check` | 実 Cargo/CLI の監視、workspace・feature・外部 path 依存、失敗後の復帰、出力除外、ビルド中の編集、Ctrl-C |
 | `just panic-check` | Core の std/no_std × JSPI/Future、release/debug の panic 通知、通常の format/trap、hook 前の payload 整形。check にも含む |

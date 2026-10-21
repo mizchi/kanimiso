@@ -6,7 +6,7 @@ Derived from `wee_alloc_bw` / `wee_alloc`; licensed under **MPL-2.0**.
 Requires Rust 1.85 or later. Add the crate from crates.io:
 
 ```sh
-cargo add taraba-allocator@0.1.0 --no-default-features
+cargo add taraba-allocator@0.2.0 --no-default-features
 ```
 
 ```rust

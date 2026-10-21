@@ -35,14 +35,14 @@ After the libraries are available on crates.io, install the CLI from the
 registry in a fresh directory outside the checkout:
 
 ```sh
-cargo install taraba-cli --version 0.1.0 --locked --root ./cli
+cargo install taraba-cli --version 0.2.0 --locked --root ./cli
 ./cli/bin/taraba new hello --no-std
 cd hello
 ../cli/bin/taraba build
 pnpm --dir pkg pack
 ```
 
-Repeat with std and `new --future`, and add `taraba-helpers = { version = "0.1.0", features = ["strings"] }`.
+Repeat with std and `new --future`, and add `taraba-helpers = { version = "0.2.0", features = ["strings"] }`.
 Install the resulting npm tarball into another application, typecheck its
 `AppBindings`/`AppHost`, instantiate Wasm and run a generated method. Exercise
 the Component path separately with wasm-tools/jco. Binaryen 133 must be available;

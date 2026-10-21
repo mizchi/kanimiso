@@ -18,7 +18,7 @@
 
 `--component` は標準の Component Model / Canonical ABI を使います。二つの Core 構成は JS 向けの独自 ABI で、成果物の契約は異なります。npm 化は実行方式とは別の選択肢です。
 
-型付き Core async API と新しいランタイム機能は未リリースです。CLI と対応する Rust runtime を同じ checkout から使ってください。[インストール手順](#インストール)と、実装済み・未対応・未検証を分けた[対応状況](status.ja.md)を参照してください。
+型付き Core async API は 0.2.0 で利用できます。CLI と Rust crate の版を揃えてください。[インストール手順](#インストール)と[対応状況](status.ja.md)を参照してください。
 
 ## 生成するファイルと編集サイクル
 
@@ -147,20 +147,20 @@ Rust 1.85 以上を用意し、crates.io から CLI をインストールして 
 
 ```sh
 rustup target add wasm32-unknown-unknown
-cargo install taraba-cli --version 0.1.0 --locked
+cargo install taraba-cli --version 0.2.0 --locked
 # Binaryen 133 をインストールし、各ツールを PATH に配置する
 # --binaryen /path/to/bin または TARABA_BINARYEN でも指定可能
 ```
 
 Component ビルドには `wasm-tools 1.245.1`、Component の **npm ビルド**にはさらに Node.js 24+ と `@bytecodealliance/jco@1.39.0` が必要です。jco のパスは `--jco /path/to/jco` で指定します。Core 用 JS は CLI に内包し、Core の生成には Node / jco は不要です。利用者によるこのリポジトリの checkout や esbuild での生成は必要ありません。
 
-このガイドの未リリース Core API を使う場合は、代わりに checkout から導入します。
+taraba 自体を開発する場合は、checkout から導入できます。
 
 ```sh
 cargo install --path /path/to/taraba/crates/taraba-cli --locked --force
 ```
 
-`taraba new hello --future` の後、生成したアプリの `Cargo.toml` に次を加え、Rust runtime も同じ checkout に揃えます。現在の自動 Box 化と task pool 設定には更新した runtime が必要です。CLI のインストールだけでは Rust の依存は更新されません。
+その開発構成では、`taraba new hello --future` の後、アプリの `Cargo.toml` に次を加え、Rust runtime も同じ checkout に揃えます。crates.io の 0.2.0 を使う場合、この上書きは不要です。
 
 ```toml
 [patch.crates-io]

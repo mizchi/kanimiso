@@ -12,7 +12,7 @@ JS allocations and string conversion costs still exist.
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.1.0", features = ["segmenter"] }
+taraba-helpers = { version = "0.2.0", features = ["segmenter"] }
 ```
 
 | Feature | API |

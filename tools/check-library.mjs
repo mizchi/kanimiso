@@ -217,7 +217,7 @@ async function install(out, profile, id, rich = false, license = "MIT") {
   const notice = readFileSync(join(installed, "NOTICE.taraba"), "utf8");
   assert.ok(
     notice.includes(
-      "https://crates.io/api/v1/crates/taraba-allocator/0.1.0/download",
+      `https://crates.io/api/v1/crates/taraba-allocator/${JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version}/download`,
     ),
   );
   assert.ok(

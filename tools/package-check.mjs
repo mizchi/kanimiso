@@ -18,6 +18,7 @@ import { asyncCases } from "../tests/support/async-contract.mjs";
 import { verifyWatch } from "./check-watch.mjs";
 const root = resolve("."),
   temp = mkdtempSync(join(tmpdir(), "taraba-package-"));
+const version = JSON.parse(readFileSync("package.json", "utf8")).version;
 const rustEnv = rustEnvironment(root);
 const run = (bin, args, cwd = root, env = rustEnv) =>
   execFileSync(bin, args, {
@@ -64,9 +65,9 @@ try {
       ...(name === "taraba-cli" ? [] : ["--target", "wasm32-unknown-unknown"]),
     ];
     run("cargo", args);
-    const archive = resolve(`target/package/${name}-0.1.0.crate`);
+    const archive = resolve(`target/package/${name}-${version}.crate`);
     run("tar", ["-xzf", archive, "-C", temp]);
-    const pkg = join(temp, `${name}-0.1.0`),
+    const pkg = join(temp, `${name}-${version}`),
       manifest = readFileSync(`${pkg}/Cargo.toml`, "utf8");
     assert.ok(
       !manifest.includes('path = "../../'),
@@ -105,7 +106,7 @@ try {
       "--locked",
       "--offline",
       "--path",
-      `${temp}/taraba-cli-0.1.0`,
+      `${temp}/taraba-cli-${version}`,
       "--root",
       install,
     ],
@@ -113,7 +114,10 @@ try {
     env,
   );
   const cli = `${install}/bin/taraba`;
-  assert.match(run(cli, ["--version"], temp, env).toString(), /0\.1\.0/);
+  assert.equal(
+    run(cli, ["--version"], temp, env).toString().trim(),
+    `taraba ${version}`,
+  );
   for (const profile of ["core", "jspi"]) {
     const jspi = profile === "jspi",
       name = `consumer-${profile}`;
@@ -127,9 +131,9 @@ try {
       manifest = `${project}/Cargo.toml`;
     let toml = readFileSync(manifest, "utf8");
     assert.ok(!toml.includes("path ="));
-    toml += `\n[patch.crates-io]\ntaraba-allocator = {path = ${JSON.stringify(`${temp}/taraba-allocator-0.1.0`)}}\n`;
+    toml += `\n[patch.crates-io]\ntaraba-allocator = {path = ${JSON.stringify(`${temp}/taraba-allocator-${version}`)}}\n`;
     if (!jspi)
-      toml += `taraba = {path = ${JSON.stringify(`${temp}/taraba-0.1.0`)}}\n`;
+      toml += `taraba = {path = ${JSON.stringify(`${temp}/taraba-${version}`)}}\n`;
     writeFileSync(manifest, toml);
     run("cargo", ["fetch", "--manifest-path", manifest], project, env);
     for (const mode of ["no_std", "std"]) {
@@ -306,31 +310,31 @@ try {
   run(process.execPath, ["tools/check-library.mjs"], root, {
     ...env,
     TARABA_LIBRARY_CLI: cli,
-    TARABA_LIBRARY_RUNTIME: `${temp}/taraba-0.1.0`,
-    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-0.1.0`,
+    TARABA_LIBRARY_RUNTIME: `${temp}/taraba-${version}`,
+    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-${version}`,
   });
   result.npm_libraries_verified_from_archived_cli = true;
   run(process.execPath, ["tools/check-insight.mjs"], root, {
     ...env,
     TARABA_LIBRARY_CLI: cli,
-    TARABA_LIBRARY_RUNTIME: `${temp}/taraba-0.1.0`,
-    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-0.1.0`,
+    TARABA_LIBRARY_RUNTIME: `${temp}/taraba-${version}`,
+    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-${version}`,
   });
   result.insight_verified_from_archived_cli = true;
   run(process.execPath, ["tools/check-helpers.mjs"], root, {
     ...env,
     TARABA_LIBRARY_CLI: cli,
-    TARABA_LIBRARY_RUNTIME: `${temp}/taraba-0.1.0`,
-    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-0.1.0`,
-    TARABA_LIBRARY_HELPERS: `${temp}/taraba-helpers-0.1.0`,
+    TARABA_LIBRARY_RUNTIME: `${temp}/taraba-${version}`,
+    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-${version}`,
+    TARABA_LIBRARY_HELPERS: `${temp}/taraba-helpers-${version}`,
     TARABA_HELPERS_SMOKE: "1",
   });
   result.helpers_verified_from_archived_cli = true;
   run(process.execPath, ["tools/check-strings.mjs"], root, {
     ...env,
     TARABA_LIBRARY_CLI: cli,
-    TARABA_LIBRARY_HELPERS: `${temp}/taraba-helpers-0.1.0`,
-    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-0.1.0`,
+    TARABA_LIBRARY_HELPERS: `${temp}/taraba-helpers-${version}`,
+    TARABA_LIBRARY_ALLOCATOR: `${temp}/taraba-allocator-${version}`,
     TARABA_HELPERS_SMOKE: "1",
   });
   result.strings_verified_from_archived_cli = true;

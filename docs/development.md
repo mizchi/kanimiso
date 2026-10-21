@@ -27,7 +27,7 @@ setup installs dependencies, the Wasm Rust target, Binaryen 133 and wasm-tools 1
 | `just insight-check` | Formatting hints, optimized size/retention inspection, common cases against ordinary builds, npm analysis exclusion and stale-view rejection |
 | `just check` | Rust/JS tests, formatting, Core fatal/ownership behavior, JSPI spills, npm consumer checks and active documentation links |
 | `just library-check` | Current CLI: pack/install, strict TS, three profiles × std/no_std, raw/Cargo/watch update replay and rollback, rich Component domain/errors, shared Core ESM and instance isolation |
-| `node tools/check-runtime-abi.mjs` | Published 0.1.0 runtime as a negative control: same SemVer line, incompatible raw/Cargo inputs rejected, previous output preserved; also included in library/package checks |
+| `node tools/check-runtime-abi.mjs` | Published 0.1.0 runtime as a negative control: independent SemVer/ABI guards reject incompatible Cargo/raw inputs, previous output preserved; also included in library/package checks |
 | `just package-check` | Packages all four crates, installs an unpacked CLI, repeats external consumers and npm library generation |
 | `just watch-check` | Real Cargo/CLI watch: workspace/features/local dependencies, recovery, output exclusions, edits during builds and Ctrl-C |
 | `just compare-async-size` | Common sync/async implementations with Embassy, Tokio, async-executor, async-std, wasm-bindgen and FuturesUnordered; writes docs/async-size.{json,md} and Japanese report |

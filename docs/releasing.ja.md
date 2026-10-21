@@ -31,14 +31,14 @@ cargo publish --locked -p taraba-cli
 crates.io に反映後、checkout の外の新しいディレクトリで CLI を registry からインストールします。
 
 ```sh
-cargo install taraba-cli --version 0.1.0 --locked --root ./cli
+cargo install taraba-cli --version 0.2.0 --locked --root ./cli
 ./cli/bin/taraba new hello --no-std
 cd hello
 ../cli/bin/taraba build
 pnpm --dir pkg pack
 ```
 
-std、`new --future` でも繰り返し、`taraba-helpers = { version = "0.1.0", features = ["strings"] }`
+std、`new --future` でも繰り返し、`taraba-helpers = { version = "0.2.0", features = ["strings"] }`
 を追加したアプリも確認します。npm tarball を別アプリに install し、`AppBindings` / `AppHost`
 の型検査、Wasm instantiate、生成メソッドの実行まで通します。
 wasm-tools / jco を使う Component 経路も別途確認します。

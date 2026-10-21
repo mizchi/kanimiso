@@ -12,7 +12,7 @@ Enable the crate's `std` feature and install before running application code. JS
 
 ```toml
 [dependencies]
-taraba = { version = "0.1.0", features = ["std"] }
+taraba = { version = "0.2.0", features = ["std"] }
 ```
 
 ```rust

@@ -13,7 +13,7 @@ Add the crate from crates.io (Rust 1.85+):
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.1.0", features = ["regexp"] }
+taraba-helpers = { version = "0.2.0", features = ["regexp"] }
 ```
 
 ```rust

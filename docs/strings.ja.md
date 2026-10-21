@@ -12,7 +12,7 @@ crates.io の依存として使う例です（Rust 1.85 以上）。デフォル
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.1.0", features = ["segmenter"] }
+taraba-helpers = { version = "0.2.0", features = ["segmenter"] }
 ```
 
 | feature | API |

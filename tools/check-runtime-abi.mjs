@@ -36,8 +36,8 @@ try {
   writeFileSync(
     manifest,
     readFileSync(manifest, "utf8").replace(
-      'taraba = {version = "0.1.0"',
-      'taraba = {version = "=0.1.0"',
+      /(taraba(?:-allocator)? = \{version = ")[^"]+"/g,
+      '$1=0.1.0"',
     ),
   );
   const output = join(project, "pkg");
@@ -50,7 +50,13 @@ try {
   // A failed upgrade must preserve an existing generated directory.
   const legacy = run(["build"]);
   assert.notEqual(legacy.status, 0);
-  assert.match(legacy.stderr, /missing taraba runtime ABI/);
+  assert.match(legacy.stderr, /incompatible with CLI/);
+  const compiled = spawnSync(
+    "cargo",
+    ["build", "--release", "--target", "wasm32-unknown-unknown"],
+    { cwd: project, env: { ...env, TARABA_BINDGEN: cli }, encoding: "utf8" },
+  );
+  assert.equal(compiled.status, 0, compiled.stderr);
   assert.doesNotMatch(legacy.stderr, /cargo build failed/);
   // Cargo normalizes package names to lowercase; read its selected package name.
   const packageName = readFileSync(manifest, "utf8")
@@ -86,7 +92,7 @@ try {
     ) + "\n",
   );
   console.log(
-    "runtime ABI: published 0.1.0 is rejected by Cargo and raw-Wasm builds despite the matching SemVer line",
+    "runtime ABI: published 0.1.0 is rejected by Cargo and raw-Wasm builds by independent SemVer and ABI guards",
   );
 } catch (error) {
   writeFileSync(resolve(".cache/runtime-abi-error.log"), error.stack);

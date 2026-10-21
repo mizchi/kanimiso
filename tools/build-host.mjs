@@ -178,7 +178,7 @@ writeFileSync(
   `${assetsRoot}/provenance.json`,
   JSON.stringify(
     {
-      version: "0.1.0",
+      version: JSON.parse(readFileSync("package.json", "utf8")).version,
       rolldown: rolldownVersion,
       inputs: Object.fromEntries(inputs.map((f) => [f, sha(readFileSync(f))])),
       assets: Object.fromEntries(

@@ -16,10 +16,10 @@ Optional [`taraba-helpers`](docs/helpers.md) borrow JavaScript regex and string 
 
 Write Rust `async` / `.await` code that calls JavaScript async functions, then expose it as a typed npm package. Promise waits leave the JS event loop free.
 
-The typed Core async API below is unreleased. With Rust 1.85 or later, install the CLI and use the matching Rust runtime from a checkout, then create a project outside the repository. Put the Binaryen 133 tools on PATH for builds. See [installation and Cargo override](docs/guide.md#installation).
+Requires Rust 1.85 or later and Binaryen 133 on PATH. Install the CLI from crates.io; generated projects use matching Rust crates. See [installation](docs/guide.md#installation).
 
 ```sh
-cargo install --path /path/to/taraba/crates/taraba-cli --locked --force
+cargo install taraba-cli --version 0.2.0 --locked
 rustup target add wasm32-unknown-unknown
 
 taraba new hello --future
@@ -153,7 +153,7 @@ Builds warn about formatting macros such as `format!` / `write!`. Run `taraba bu
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.1.0", features = ["strings"] }
+taraba-helpers = { version = "0.2.0", features = ["strings"] }
 ```
 
 ```rust

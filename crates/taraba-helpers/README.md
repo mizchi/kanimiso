@@ -16,7 +16,7 @@ within each generated host. No extra npm dependency or manual binding is needed.
 String helpers keep text in JS and expose lazy Rust iterators:
 
 ```toml
-taraba-helpers = { version = "0.1.0", features = ["segmenter"] }
+taraba-helpers = { version = "0.2.0", features = ["segmenter"] }
 ```
 
 ```rust
@@ -39,7 +39,7 @@ Add the crate from crates.io (Rust 1.85+):
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.1.0", features = ["regexp"] }
+taraba-helpers = { version = "0.2.0", features = ["regexp"] }
 ```
 
 ```rust

@@ -18,7 +18,7 @@ Build Rust/Wasm libraries from **WIT contracts**, including async functions, and
 
 `--component` uses standard Component Model Canonical ABI. The two Core profiles use a private JS ABI. Component and Core artifacts are different contracts; they are not interchangeable. npm packaging is a separate choice that can be combined with either.
 
-The typed Core async API and newer runtime features are unreleased. Use the CLI and matching Rust runtime from this checkout; see [installation](#installation). The [capability summary](status.md) separates implemented features, unsupported forms and unverified environments.
+The typed Core async API is available in 0.2.0. Use matching CLI and Rust crate versions; see [installation](#installation). The [capability summary](status.md) separates implemented features, unsupported forms and unverified environments.
 
 ## Generated files and editing workflow
 
@@ -161,20 +161,20 @@ Requires Rust 1.85 or later. Install the CLI from crates.io and add the Rust Was
 
 ```sh
 rustup target add wasm32-unknown-unknown
-cargo install taraba-cli --version 0.1.0 --locked
+cargo install taraba-cli --version 0.2.0 --locked
 # Install Binaryen 133 and put its tools on PATH.
 # --binaryen /path/to/bin or TARABA_BINARYEN can select another location.
 ```
 
 Component builds also require `wasm-tools 1.245.1`. Component **npm** builds additionally require Node.js 24+ and `@bytecodealliance/jco@1.39.0`; `--jco /path/to/jco` selects the executable. Core builds embed their JS runtime and require neither Node nor jco. No consumer needs this repository checkout or esbuild.
 
-For the unreleased Core APIs in this guide, install from a checkout instead:
+For development of taraba itself, you can install from a checkout instead:
 
 ```sh
 cargo install --path /path/to/taraba/crates/taraba-cli --locked --force
 ```
 
-After `taraba new hello --future`, add this override to the generated application's `Cargo.toml` to use the matching runtime. It is required for the current Box fallback and configurable task pool; installing the CLI alone does not update Rust dependencies.
+For that development setup, after `taraba new hello --future`, add this override to the application's `Cargo.toml` to use the matching runtime. Registry users of 0.2.0 do not need this override.
 
 ```toml
 [patch.crates-io]

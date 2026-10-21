@@ -364,7 +364,10 @@ mod tests {
             assert!(fs::metadata(dest.path().join(file)).unwrap().len() > 0);
         }
         let notice = fs::read_to_string(dest.path().join("NOTICE.taraba")).unwrap();
-        assert!(notice.contains("https://crates.io/api/v1/crates/taraba-allocator/0.1.0/download"));
+        assert!(notice.contains(&format!(
+            "https://crates.io/api/v1/crates/taraba-allocator/{}/download",
+            env!("CARGO_PKG_VERSION")
+        )));
         assert!(notice.contains("MPL-2.0"));
         assert!(notice.contains("modified"));
     }

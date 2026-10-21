@@ -15,4 +15,4 @@ probes = ["test-api", "jsrt/test-api"]
 
 [dependencies]
 jsrt = { package = "taraba", path = "../../crates/taraba", default-features = false }
-taraba-allocator = { version = "0.1.0", path = "../../crates/taraba-allocator", default-features = false }
+taraba-allocator = { version = "0.2.0", path = "../../crates/taraba-allocator", default-features = false }

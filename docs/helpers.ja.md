@@ -12,7 +12,7 @@ crates.io の依存として追加します（Rust 1.85 以上）。
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.1.0", features = ["regexp"] }
+taraba-helpers = { version = "0.2.0", features = ["regexp"] }
 ```
 
 ```rust

@@ -2,7 +2,7 @@
 
 [English](typescript.md) | 日本語
 
-WIT をインターフェースの定義元にし、Rust の async API と npm パッケージの型定義を生成します。Core の値型 binding は未リリースのため、[CLI を checkout から導入](guide.ja.md#インストール)してください。
+WIT をインターフェースの定義元にし、Rust の async API と npm パッケージの型定義を生成します。CLI と Rust crate は 0.2.0 以降を使います。[インストール手順](guide.ja.md#インストール)を参照してください。
 
 ```sh
 taraba new interop --future --no-std
@@ -176,4 +176,4 @@ resource の method、Rust が実装する exported resource、戻り値や入�
 
 instance を使い終えたら `host.dispose()` を呼びます。複数回呼んでも安全です。Future のタスクをキャンセルして Drop し、subscription と JS root を解放し、abort 対応の I/O を中断します。poll 内で呼んだ場合は poll が戻るまで Drop を待ちます。以後の呼び出しは `RT13` で reject します。JSPI でも呼び出し元の Promise は直ちに reject しますが、停止中の Wasm stack は元のホスト I/O が完了するまでエンジンに残ります。
 
-`taraba build --task-slots 16` は Core Future の静的 pool を16スロットにしてコンパイルします。既定は1,024スロット、1スロット128 Bで、上限を超えると fatal OOM になります。大きな Future はヒープに pin しますが、消費するスロットは1つです。JS 上の制限値だけでなく静的領域を変更します。生の Wasm を入力する場合は、コンパイル済み容量と一致する値が必要です。watch と `taraba update` は設定を引き継ぎます。未リリースのため、この checkout の runtime を使ってください。
+`taraba build --task-slots 16` は Core Future の静的 pool を16スロットにしてコンパイルします。既定は1,024スロット、1スロット128 Bで、上限を超えると fatal OOM になります。大きな Future はヒープに pin しますが、消費するスロットは1つです。JS 上の制限値だけでなく静的領域を変更します。生の Wasm を入力する場合は、コンパイル済み容量と一致する値が必要です。watch と `taraba update` は設定を引き継ぎます。Rust runtime 0.2.0 以降が必要です。

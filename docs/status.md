@@ -2,7 +2,7 @@
 
 English | [日本語](status.ja.md)
 
-This page describes the current checkout. The typed Core bindings, resource/lifecycle APIs, cancellation option and configurable pool described here are unreleased changes; installing published 0.1.0 does not provide all of them. For development, build the CLI and use matching Rust crates from this checkout as described in the [development guide](development.md).
+This page describes 0.2.0. When upgrading from 0.1.0, update both the CLI and Rust crate dependencies, then regenerate `pkg/`. See the [installation guide](guide.md#installation).
 
 ## Choosing an execution contract
 

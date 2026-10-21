@@ -16,10 +16,10 @@ Rust でフロントエンドのミドルウェアを書くために、Wasm と 
 
 Rust の `async` / `.await` で JavaScript の非同期関数を呼び、型付きの npm パッケージとして公開できます。Promise の待機中も JS のイベントループは動き続けます。
 
-以下の型付き Core async API は未リリースです。Rust 1.85 以上で CLI と対応する Rust runtime を同じ checkout から使い、リポジトリ外でプロジェクトを作成します。ビルドには Binaryen 133 のツールを PATH に配置してください。[インストールと Cargo の依存設定](docs/guide.ja.md#インストール)。
+Rust 1.85 以上と、PATH に配置した Binaryen 133 が必要です。CLI は crates.io から導入でき、生成プロジェクトには対応する Rust crate が設定されます。[インストール手順](docs/guide.ja.md#インストール)。
 
 ```sh
-cargo install --path /path/to/taraba/crates/taraba-cli --locked --force
+cargo install taraba-cli --version 0.2.0 --locked
 rustup target add wasm32-unknown-unknown
 
 taraba new hello --future
@@ -149,7 +149,7 @@ Record・文字列・バイト列・Result を扱う[複合型の比較](docs/ri
 
 ```toml
 [dependencies]
-taraba-helpers = { version = "0.1.0", features = ["strings"] }
+taraba-helpers = { version = "0.2.0", features = ["strings"] }
 ```
 
 ```rust

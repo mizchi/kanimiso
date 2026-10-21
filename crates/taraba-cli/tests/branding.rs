@@ -5,7 +5,10 @@ fn taraba_cli_and_generated_projects_use_the_new_name() {
     let cli = env!("CARGO_BIN_EXE_taraba");
     let version = Command::new(cli).arg("--version").output().unwrap();
     assert!(version.status.success());
-    assert_eq!(String::from_utf8(version.stdout).unwrap(), "taraba 0.1.0\n");
+    assert_eq!(
+        String::from_utf8(version.stdout).unwrap(),
+        format!("taraba {}\n", env!("CARGO_PKG_VERSION"))
+    );
     let help = Command::new(cli).arg("--help").output().unwrap();
     assert!(help.status.success());
     assert!(

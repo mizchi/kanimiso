@@ -2,7 +2,7 @@
 
 English | [日本語](typescript.ja.md)
 
-Use WIT as the interface definition and generate both Rust async bindings and npm type declarations. Core value bindings are unreleased; [install the CLI from a checkout](guide.md#installation).
+Use WIT as the interface definition and generate both Rust async bindings and npm type declarations. Use CLI and Rust crates 0.2.0 or later; see [installation](guide.md#installation).
 
 ```sh
 taraba new interop --future --no-std
@@ -176,4 +176,4 @@ Resource methods, Rust-defined exported resources, returned borrows and nested b
 
 Call `host.dispose()` when an instance is no longer needed. It is idempotent. Future tasks are cancelled and dropped, subscriptions and JS roots are cleared, and abort-enabled I/O receives cancellation. Disposal inside a poll waits until the poll returns. New calls reject with `RT13`. For JSPI, caller Promises reject immediately, but a suspended Wasm stack remains engine-owned until its original host I/O settles.
 
-`taraba build --task-slots 16` compiles a Core Future pool with 16 slots (default 1,024). Each slot reserves 128 B; overflow is fatal OOM. A larger Future uses a pinned heap allocation without consuming extra slots. This option changes static storage, not merely a JS limit. Raw-Wasm builds must match the capacity already compiled into the runtime. `taraba update` and watch preserve the setting. The option requires the updated, unreleased runtime from this checkout.
+`taraba build --task-slots 16` compiles a Core Future pool with 16 slots (default 1,024). Each slot reserves 128 B; overflow is fatal OOM. A larger Future uses a pinned heap allocation without consuming extra slots. This option changes static storage, not merely a JS limit. Raw-Wasm builds must match the capacity already compiled into the runtime. `taraba update` and watch preserve the setting. The option requires Rust runtime 0.2.0 or later.
